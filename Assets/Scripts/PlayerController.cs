@@ -1,13 +1,25 @@
 using UnityEngine;
+using ActInterfaces;
+using System;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IMovable
 {
     public float moveSpeed = 5f;
     private Rigidbody2D rb;
-    private Animator animator;
 
     private Vector2 moveInput;
+    public void Move(Vector2 move, float velocity) 
+    {
+        //while (true)
+        {
+            rb.linearVelocity = move.normalized * velocity;
+        }
+    }
+    public void Jump(float duration)
+    {
+        Console.WriteLine("Not implemented");
+    }
 
     void Awake()
     {
@@ -23,6 +35,6 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        rb.linearVelocity = moveInput.normalized * moveSpeed;
+        Move(moveInput, moveSpeed);
     }
 }

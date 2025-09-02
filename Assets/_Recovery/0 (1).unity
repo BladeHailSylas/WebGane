@@ -505,7 +505,7 @@ Transform:
   m_GameObject: {fileID: 559650619}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.5, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -532,7 +532,7 @@ MonoBehaviour:
   recover: 0.1
   cooldown: 0.08
   swingAngle: 120
-  pivotToBlade: 1.5
+  pivotToBlade: 0
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -949,7 +949,8 @@ GameObject:
   - component: {fileID: 863693146}
   - component: {fileID: 863693147}
   - component: {fileID: 863693148}
-  m_Layer: 0
+  - component: {fileID: 863693149}
+  m_Layer: 7
   m_Name: Enemy
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1035,6 +1036,18 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.375
+--- !u!114 &863693149
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 863693145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc0241031271208488532abf6f278dd0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDummy
 --- !u!1 &1040480339
 GameObject:
   m_ObjectHideFlags: 0
@@ -1369,7 +1382,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.0625, y: 2, z: 1}
+  m_LocalScale: {x: 0.0625, y: 0.75, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1449676599}
@@ -1525,8 +1538,8 @@ Transform:
   m_GameObject: {fileID: 1449676598}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0.25, y: 0, z: 0}
+  m_LocalScale: {x: 2, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1240324200}
@@ -1594,7 +1607,7 @@ MonoBehaviour:
   knockback: 7
   enemyMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   attacker: {fileID: 0}
 --- !u!1 &1517524293
 GameObject:
@@ -1751,7 +1764,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1752660214}
   - component: {fileID: 1752660215}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Sprite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
