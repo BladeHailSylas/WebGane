@@ -43,6 +43,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "GeneralSkill",
+                    "type": "Button",
+                    "id": "6c1189e2-bbd2-4ceb-8072-db79697bfc73",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Skill1",
                     "type": "Button",
                     "id": "641cd816-40e6-41b4-8c3d-04687c349290",
@@ -440,6 +449,17 @@
                     "processors": "",
                     "groups": "Gamepad",
                     "action": "Ultimate",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3d37000d-dc03-48ea-a509-a94cf4e5a822",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "GeneralSkill",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

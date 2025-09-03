@@ -3,23 +3,13 @@ using ActInterfaces;
 using System;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class PlayerController : MonoBehaviour, IMovable
+public class PlayerController : MonoBehaviour
 {
-    public float moveSpeed = 5f;
+    [SerializeField] private PlayerActs acts;
+    [SerializeField] private PlayerStats stats;
     private Rigidbody2D rb;
 
     private Vector2 moveInput;
-    public void Move(Vector2 move, float velocity) 
-    {
-        //while (true)
-        {
-            rb.linearVelocity = move.normalized * velocity;
-        }
-    }
-    public void Jump(float duration)
-    {
-        Console.WriteLine("Not implemented");
-    }
 
     void Awake()
     {
@@ -35,6 +25,6 @@ public class PlayerController : MonoBehaviour, IMovable
 
     void FixedUpdate()
     {
-        Move(moveInput, moveSpeed);
+        acts.Move(moveInput, rb);
     }
 }

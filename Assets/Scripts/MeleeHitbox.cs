@@ -9,7 +9,7 @@ using System;
 [RequireComponent(typeof(Collider2D))]
 public class MeleeHitbox : MonoBehaviour
 {
-    public float damage = 3f;
+    public float damage = 12f;
     public float knockback = 7f;
     public LayerMask enemyMask; // Enemy 레이어만 맞도록
 
@@ -31,7 +31,7 @@ public class MeleeHitbox : MonoBehaviour
         _hitThisSwing.Add(other);
 
         Vector2 dir = (other.bounds.center - attacker.position);
-        if (other.TryGetComponent<IVulnerable>(out var dmg))
+        if (other.TryGetComponent<IVulnerable>(out var dmg)) // 인터페이스 가져오는 이 기능으로 플레이어 스탯 참조 시도
         {
             dmg.TakeDamage(damage);
         }

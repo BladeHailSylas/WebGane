@@ -26,7 +26,7 @@ public class MeleeAttack : MonoBehaviour, IAttackable
 
     [Header("Debug")]
     public float MaxCooldown { get; private set; }
-    public float BasicCooldown { get; private set; }
+    public float BaseCooldown { get; private set; }
     public float Cooldown { get; private set; }
 
 
@@ -41,8 +41,8 @@ public class MeleeAttack : MonoBehaviour, IAttackable
         if (hitbox) hitbox.attacker = transform;
         if (hitbox) hitbox.gameObject.SetActive(false);
         if (debugBlade) debugBlade.enabled = true;
-        BasicCooldown = cooldown;
-        Cooldown = BasicCooldown;
+        BaseCooldown = cooldown;
+        Cooldown = BaseCooldown;
     }
 
     void Update()
@@ -85,11 +85,20 @@ public class MeleeAttack : MonoBehaviour, IAttackable
 
         // 1) Windup: 피벗을 기준으로 반대편으로 약간 틀어 “예비자세”
         float half = swingAngle * 0.5f;
-        float startAngle = weaponPivot.eulerAngles.z - half;
-        float endAngle = weaponPivot.eulerAngles.z + half;
+        float startAngle, endAngle;
+        if (_secondAttack)
+        {
+            startAngle = weaponPivot.eulerAngles.z + half;
+            endAngle = weaponPivot.eulerAngles.z - half;
+        }
+        else
+        {
+            startAngle = weaponPivot.eulerAngles.z - half;
+            endAngle = weaponPivot.eulerAngles.z + half;
+        }
 
-        // Windup 동안 살짝 뒤로 빼는 맛(선택)
-        float t = 0f;
+            // Windup 동안 살짝 뒤로 빼는 맛(선택)
+            float t = 0f;
         float windStart = weaponPivot.eulerAngles.z;
         float windTarget = startAngle;
         while (t < windup)
