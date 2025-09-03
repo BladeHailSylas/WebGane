@@ -2,6 +2,7 @@
 using StatsInterfaces;
 using System.Collections;
 using UnityEngine;
+using Effecter;
 public interface IPlayerActs : IMovable, IVulnerable, IAffectable, IKnockbackable
 {
     //플레이어가 할 수 있는 행동들에 대한 인터페이스
@@ -29,11 +30,11 @@ public class PlayerActs : MonoBehaviour, IPlayerActs //스탯 참조 및 관리 
             rb.linearVelocity = move.normalized * stats.GetStat(StatType.Velocity, StatRef.Base);
         }
     }
-    public void ApplyEffect(ActInterfaces.Effects buffType, float duration, float Amplifier = 0)
+    public void ApplyEffect(Effects buffType, float duration, float Amplifier = 0)
     {
-        stats.AddEffect((StatsInterfaces.Effects)buffType, duration, Amplifier);
+        stats.AddEffect(buffType, duration, Amplifier);
     }
-    public void Cleanse(ActInterfaces.Effects buffType)
+    public void Cleanse(Effects buffType)
     {
         stats.RemoveEffect(buffType);
     }

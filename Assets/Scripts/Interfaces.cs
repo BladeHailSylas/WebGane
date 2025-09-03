@@ -3,13 +3,18 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Effecter;
 
-namespace ActInterfaces
+namespace Effecter
 {
     public enum Effects
     {
         None = 0, Haste, DamageBoost, ReduceDamage, GainHealth, GainMana, Slow, Stun, Silence, Root, Tumbled, Damage
     }
+}
+
+namespace ActInterfaces
+{
     public interface IVulnerable //피해를 받아 죽을 수 있음
     {
         void TakeDamage(float damage, float apRatio = 0, bool isFixed = false);
@@ -68,10 +73,6 @@ namespace ActInterfaces
 
 namespace StatsInterfaces
 {
-    public enum Effects
-    {
-        None = 0, Haste, DamageBoost, ReduceDamage, GainHealth, GainMana, Slow, Stun, Silence, Root, Tumbled, Damage
-    }
     public enum StatType
     {
         Health, HealthRegen,

@@ -2,6 +2,7 @@ using StatsInterfaces;
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
+using Effecter;
 
 public interface  IPlayerStats : IDefensiveStats, IOffensiveStats, ICasterStats, IMovingStats, IEffectStats, IStatProvider
 {}
@@ -142,12 +143,12 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // 플레이어 스탯 �
         }
         EffectList.Remove(e);
     }
-    public void RemoveEffect(ActInterfaces.Effects buffType)
+    public void RemoveEffect(Effects buffType)
     {
-        Effects e = (Effects)buffType;
-        if (EffectList.ContainsKey(e))
+        
+        if (EffectList.ContainsKey(buffType))
         {
-            EffectList.Remove(e);
+            EffectList.Remove(buffType);
         }
     }
 }
