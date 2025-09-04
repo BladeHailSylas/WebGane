@@ -1,11 +1,12 @@
 // MeleeAttack.cs
 // Player(혹은 Player 하위 적당한 오브젝트)에 붙입니다.
 // WeaponPivot과 Hitbox를 Inspector에서 연결하세요.
+// 코드 분석하고 해체해서 Character에 재연결해야 함
 using UnityEngine;
 using System.Collections;
 using ActInterfaces;
 
-public class MeleeAttack : MonoBehaviour, IAttackable
+public class MeleeAttack : MonoBehaviour, IAttackable // IAttackable을 여기에 두어도 괜찮은가
 {
     [Header("Refs")]
     public Transform weaponPivot;     // 회전 중심
@@ -22,7 +23,7 @@ public class MeleeAttack : MonoBehaviour, IAttackable
     [Tooltip("스윙 총 각도(육십분법)")]
     public float swingAngle = 120f;
     public float pivotToBlade; //= 0.8f; // 피벗→칼날 거리(디버그 막대 길이용)
-
+    // 이상 Skill 스펙, Character의 Skill definition에 추가할 것
     [Header("Debug")]
     public float MaxCooldown { get; private set; }
     public float BaseCooldown { get; private set; }

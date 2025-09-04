@@ -1,6 +1,8 @@
 ﻿// MeleeHitbox.cs
 // Hitbox 오브젝트(Trigger Collider 보유)에 붙입니다.
 // 스윙 시작 시 Enable, 끝나면 Disable. 활성 동안 충돌한 Enemy에 1회씩만 데미지 전송.
+// 이 또한 분석이 필요한 부분, 웬만하면 hitbox는 숨겼다 표시하는 게 아니라 즉시 추가 및 삭제하고 싶음
+// 다시 말해 시전 즉시 추가/삭제를 원한다면 아예 Hitbox의 SO를 만드는 방법도 고려해야 함
 using UnityEngine;
 using System.Collections.Generic;
 using ActInterfaces;
@@ -11,7 +13,7 @@ public class MeleeHitbox : MonoBehaviour
     public float damage = 12f;
     public float apratio = 0f;
     public float knockback = 7f;
-    public LayerMask enemyMask; // Enemy 레이어만 맞도록
+    public LayerMask enemyMask; // Enemy 레이어만 맞도록, default를 Foe로 설정하고 싶으므로 방법을 찾아야 함
 
     // 공격자(주로 Player) Transform — 넉백 방향 계산에 필요
     [HideInInspector] public Transform attacker;

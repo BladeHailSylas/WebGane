@@ -23,8 +23,9 @@ public class PlayerController : MonoBehaviour
         controls.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
         controls.Player.Move.canceled += ctx => moveInput = Vector2.zero;
         // Attack (버튼 눌렀을 때)
-        controls.Player.Attack.performed += _ => atkctrl.Attack();
-        controls.Player.Skill1.performed += _ => OnSkill1();
+        controls.Player.Attack.performed += _ => //atkctrl.Attack(); <- 일반 공격은 계수가 1이지만, 기술은 보통 1이 아니므로 대책이 필요함
+        controls.Player.Skill1.performed += _ => OnSkill1(); //기반 다지기가 마무리되므로 지금껏 구상한 캐릭터 리스트 가져올 것
+
         controls.Player.Skill2.performed += _ => OnSkill2();
         controls.Player.Skill3.performed += _ => OnSkill3();
         controls.Player.Ultimate.performed += _ => OnUltimate();

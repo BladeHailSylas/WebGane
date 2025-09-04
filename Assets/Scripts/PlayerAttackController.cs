@@ -4,13 +4,10 @@ using Generals;
 
 public interface IPlayerAttack : IAttackable, ICastable
 { }
-public class PlayerAttackController : MonoBehaviour, IPlayerAttack
+public class PlayerAttackController : MonoBehaviour
 {
-    [SerializeField] private MeleeAttack meleeAttack;
+    [SerializeField] private MeleeAttack meleeAttack; // 이거 이렇게 둬야 하는지 확인해야 됨
     [SerializeField] private PlayerStats stats;
-    public float BaseCooldown => 0f; //쿨타임이 0이 되었을 경우에만 공격 가능한 기능이 필요함
-    public float MaxCooldown => 0f; //이게 쿨타임 총량
-    public float Cooldown => 0f; //이게 남은 쿨타임
     public void Attack(float attacker)
     {
         if (meleeAttack != null)

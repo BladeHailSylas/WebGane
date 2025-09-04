@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using Generals;
-public class PlayerAlive : MonoBehaviour//, IPlayerCharacter
+public class PlayerAlive : MonoBehaviour//, IPlayerCharacter -> 그냥 SO로 생성하는 역할, SO 가져오는 역할이랑 같은 namespace에 있어도 될 듯
 {
     [SerializeField] PlayerStats stats;
     public void StatsInitialize()

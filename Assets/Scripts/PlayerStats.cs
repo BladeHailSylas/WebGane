@@ -152,14 +152,15 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // 플레이어 스탯 �
         }
         EffectList.Remove(e);
     }
-    public void RemoveEffect(Effects buffType) //Cleanse가 호출하는 메서드
+    public void RemoveEffect(Effects buffType) //Cleanse가 호출하는 메서드, 긍정적 효과를 제거할 수 있는지는 생각해 봐야 할 듯
     {
         if (EffectList.ContainsKey(buffType))
         {
             EffectList.Remove(buffType);
         }
     }
-    public void ClearNegative() // 방해 효과 전체 제거, Cleanse가 호출하는 메서드
+    public void ClearNegative() // 방해 효과 전체 제거: 지속 피해 효과는 제거하지 않는 설계가 좋음(지속 피해 캐릭터가 죽어요), Cleanse가 호출하는 메서드
+                                // 방해 효과의 정의를 "종료/해제될 때까지 제대로 행동할 수 없게 만드는 효과" 로 정의하면 됨, 지속 피해는 받든 어쩌든 행동이 되니까
     {
         foreach (var effect in EffectList.Keys)
         {
