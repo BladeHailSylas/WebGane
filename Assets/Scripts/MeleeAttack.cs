@@ -4,7 +4,6 @@
 using UnityEngine;
 using System.Collections;
 using ActInterfaces;
-using Unity.VisualScripting;
 
 public class MeleeAttack : MonoBehaviour, IAttackable
 {
@@ -33,7 +32,7 @@ public class MeleeAttack : MonoBehaviour, IAttackable
     private Camera _cam;
     private bool _busy;
     private float _coolRemain;
-    private bool _secondAttack;
+    private bool _secondAttack; // 2번째 공격
 
     void Awake()
     {
@@ -58,9 +57,6 @@ public class MeleeAttack : MonoBehaviour, IAttackable
             debugBlade.transform.localPosition = new Vector3(pivotToBlade * 0.5f, 0, 0);
             debugBlade.size = new Vector2(debugBlade.size.x, pivotToBlade);
         }
-
-        if (Input.GetMouseButtonDown(0))
-            Attack();
     }
 
     void AimPivotToMouse()
@@ -73,20 +69,20 @@ public class MeleeAttack : MonoBehaviour, IAttackable
         weaponPivot.rotation = Quaternion.Euler(0, 0, angle);
     }
 
-    public void Attack()
+    public void Attack(float attacker)
     {
         if (_busy || _coolRemain > 0f) return;
-        StartCoroutine(CoAttack());
+        StartCoroutine(CoAttack(attacker));
     }
 
-    public IEnumerator CoAttack()
+    public IEnumerator CoAttack(float attacker)
     {
         _busy = true;
 
         // 1) Windup: 피벗을 기준으로 반대편으로 약간 틀어 “예비자세”
         float half = swingAngle * 0.5f;
         float startAngle, endAngle;
-        if (_secondAttack)
+        if (_secondAttack) // 짝수 번째 공격은 반대 방향
         {
             startAngle = weaponPivot.eulerAngles.z + half;
             endAngle = weaponPivot.eulerAngles.z - half;
@@ -112,8 +108,11 @@ public class MeleeAttack : MonoBehaviour, IAttackable
 
         // 2) Active: 히트박스 On + start→end로 스윕
         if (hitbox) hitbox.gameObject.SetActive(true);
+        hitbox.damage = attacker;
+        if (_secondAttack) hitbox.apratio = 0.5f;
+        else hitbox.apratio = 0f;
 
-        t = 0f;
+            t = 0f;
         while (t < active)
         {
             t += Time.deltaTime;
@@ -133,6 +132,6 @@ public class MeleeAttack : MonoBehaviour, IAttackable
 
         _busy = false;
 
-        _secondAttack ^= true; // 다음 공격은 반대로 공격
+        _secondAttack ^= true; // 홀짝 토글
     }
 }

@@ -2,33 +2,27 @@
 using StatsInterfaces;
 using System.Collections;
 using UnityEngine;
-using Effecter;
-public interface IPlayerActs : IMovable, IVulnerable, IAffectable, IKnockbackable
-{
-    //플레이어가 할 수 있는 행동들에 대한 인터페이스
-}
-public class PlayerActs : MonoBehaviour, IPlayerActs //스탯 참조 및 관리 필요, MeleeHitbox의 주석 참조
+using GeneralSets;
+public class PlayerActs : MonoBehaviour, IAffectable, IPlayerLocomotion //스탯 참조 및 관리 필요, MeleeHitbox의 주석 참조
 {
     [SerializeField] private PlayerStats stats;
+    [SerializeField] private PlayerLocomotion locomotion;
     public void TakeDamage(float damage, float apratio, bool isFixed)
     {
-        stats.ReduceStat(true, damage, apratio, isFixed);
-        if (stats.Health <= 0f) Die();
+        stats.ReduceStat(ReduceType.Health, damage, apratio, isFixed);
     }
     public void Die()
     {
-        if (stats.IsDead) Destroy(gameObject);
+        //죽는 효과(죽메) 등 여기에 추가 가능
+        Destroy(gameObject);
     }
     public void ApplyKnockback(Vector2 direction, float force, float time, bool isFixed)
     {
-        throw new System.NotImplementedException();
+        locomotion.ApplyKnockback(direction, force, time, isFixed);
     }
     public void Move(Vector2 move, Rigidbody2D rb)
     {
-        //while(!stats.HasEffect(StatsInterface.Effects.Stun))
-        {
-            rb.linearVelocity = move.normalized * stats.GetStat(StatType.Velocity, StatRef.Base);
-        }
+        locomotion.Move(move, rb);
     }
     public void ApplyEffect(Effects buffType, float duration, float Amplifier = 0)
     {
@@ -36,17 +30,17 @@ public class PlayerActs : MonoBehaviour, IPlayerActs //스탯 참조 및 관리 
     }
     public void Cleanse(Effects buffType)
     {
-        stats.RemoveEffect(buffType);
+        if (buffType == Effects.None)
+        {
+            stats.ClearNegative();
+        }
+        else
+        {
+            stats.RemoveEffect(buffType);
+        }
     }
-    public void Jump(float duration)
+    public void Jump(float duration, float wait = 1f)
     {
-        StartCoroutine(CoJump(duration));
-
-    }
-    public IEnumerator CoJump(float duration)
-    {
-        stats.StatSwitch(StatBool.OnGround);
-        yield return new WaitForSeconds(duration);
-        stats.StatSwitch(StatBool.OnGround);
+        locomotion.Jump(duration, wait);
     }
 }

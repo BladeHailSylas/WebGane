@@ -1,15 +1,17 @@
-﻿using NUnit.Framework;
-using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Effecter;
+using GeneralSets;
 
-namespace Effecter
+namespace GeneralSets
 {
     public enum Effects
     {
-        None = 0, Haste, DamageBoost, ReduceDamage, GainHealth, GainMana, Slow, Stun, Silence, Root, Tumbled, Damage
+        None = 0, Haste, DamageBoost, ReduceDamage, GainHealth, GainMana, Slow, Stun, Silence, Root, Tumbled, Damage //Damage는 지속 피해, duration을 0으로 하면 즉시 피해도 가능함
+    }
+    public enum ReduceType
+    {
+        Health = 0, Mana
     }
 }
 
@@ -36,14 +38,17 @@ namespace ActInterfaces
 
     public interface IAttackable : IActivatable // 일반 공격
     {
-        void Attack();
-        IEnumerator CoAttack();
+        void Attack(float attackDamage);
     }
 
     public interface ICastable : IActivatable // 기술 캐스트
     {
-        void Cast(int spellIndex, float mana);
-        IEnumerator CoCast(int spellIndex, float mana);
+        void Cast(CastKey key, float mana, Rigidbody2D target, bool absoluteTarget = false);
+        void Cast(CastKey key, float mana, Vector2 targetArea, bool penetration = false);
+    }
+    public enum CastKey
+    {
+        Skill1, Skill2, Skill3, Ultimate, General // Default Shift, Q, E, R, F
     }
 
     public interface ITogglable // 토글 기술
@@ -60,7 +65,7 @@ namespace ActInterfaces
     public interface IMovable
     {
         void Move(UnityEngine.Vector2 direction, Rigidbody2D rb);
-        void Jump(float time);
+        void Jump(float time, float wait = 1f);
     }
 
     public interface IAffectable
@@ -104,9 +109,14 @@ namespace StatsInterfaces
         float BaseArmor { get; }
         float Armor { get; }
 
+    }
+    
+    public interface IResistiveStats
+    {
+        float Shield {  get; } // 일반 보호막
+        float SpecialShield { get; } //특수 보호막은 일반 보호막과 다름
         float BaseDamageReduction { get; }
         float DamageReduction { get; }
-
     }
 
     public interface IOffensiveStats
@@ -135,5 +145,7 @@ namespace StatsInterfaces
         Dictionary<Effects, float> EffectList { get; }
         float EffectResistance { get; }
         bool HasEffect(Effects e);
+        HashSet<Effects> PositiveEffects { get; }
+        HashSet<Effects> NegativeEffects { get; }
     }
 }

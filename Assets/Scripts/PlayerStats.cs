@@ -2,11 +2,11 @@ using StatsInterfaces;
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
-using Effecter;
+using GeneralSets;
 
-public interface  IPlayerStats : IDefensiveStats, IOffensiveStats, ICasterStats, IMovingStats, IEffectStats, IStatProvider
+public interface  IPlayerStats : IDefensiveStats, IOffensiveStats, ICasterStats, IMovingStats, IEffectStats, IStatProvider // PlayerStats¿¡´Â »ó¼ÓÀ» ÇÏ³ª¸¸, ³Ê¹« ¸¹À¸¸é °ü¸® ¾î·Á¿ò
 {}
-public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, Empty¿¡ ºÙÀÌ±â?
+public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, ´Ù¸¥ °÷¿¡¼­´Â ÂüÁ¶¸¸
 {
     public float BaseHealth { get; private set; }
     public float MaxHealth { get; private set; }
@@ -17,8 +17,8 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     public float HealthRegen { get; private set; }
     public float BaseDamageReduction { get; private set; }
     public float DamageReduction { get; private set; }
-    public float BaseAttackDamage { get; private set; }
-    public float AttackDamage { get; private set; }
+    public float BaseAttackDamage { get; private set; } = 10f;
+    public float AttackDamage { get; private set; } = 12f;
     public float BaseMana { get; private set; }
     public float MaxMana { get; private set; }
     public float Mana { get; private set; }
@@ -30,9 +30,6 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     public bool OnGround { get; private set; }
     public bool IsDead { get; private set; }
     public bool IsImmune { get; private set; }
-
-    public float EffectResistance { get; private set; } = 0f; // »óÅÂ ÀÌ»ó ÀúÇ× (0% ±âº»)
-    public Dictionary<Effects, float> EffectList { get; private set; } = new();
 
     public float GetBool(StatBool sb)
     {
@@ -82,27 +79,23 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
             _ => 0f,
         };
     }
-    public void ReduceStat(bool stat, float amount, float apratio = 0, bool isfixed = false)
+    public void ReduceStat(ReduceType stat, float amount, float apratio = 0, bool isfixed = false)
     {
-        if(!stat && !isfixed) // true¸é ¸¶³ª, false¸é Ã¼·Â
+        if(stat == ReduceType.Mana) // 1(Mana)ÀÌ¸é ¸¶³ª, 0(Health)ÀÌ¸é Ã¼·Â
         {
             Mana = Mathf.Max(0f, Mana - amount);
             Health = Mathf.Max(0f, Health - amount);
             if (Health <= 0f) IsDead = true;
         }
-        else if(isfixed)
+        else if(isfixed) //°íÁ¤ ÇÇÇØ
         {
             Health = Mathf.Max(0f, Health - amount);
         }
-        else
+        else //ÀÏ¹Ý ÇÇÇØ
         {
             Health = Mathf.Max(0f, Health - amount * (80 / (80 + Armor * (1 - apratio))) * (DamageReduction + 1));
         }
         if (Health <= 0f) IsDead = true;
-    }
-    public bool HasEffect(Effects e)
-    {
-        return EffectList.ContainsKey(e);
     }
     public void StatSwitch(StatBool sb)
     {
@@ -121,7 +114,18 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
                 break;
         }
     }
-    public void AddEffect(Effects buffType, float duration, float Amplifier = 0)
+    //Effect Ç×¸ñ
+    public float EffectResistance { get; private set; } = 0f; // »óÅÂ ÀÌ»ó ÀúÇ× (0% ±âº»)
+    public Dictionary<Effects, float> EffectList { get; private set; } = new();
+    public HashSet<Effects> PositiveEffects { get; private set; } = new() { Effects.Haste, Effects.DamageBoost, Effects.ReduceDamage, Effects.GainHealth, Effects.GainMana };
+    public HashSet<Effects> NegativeEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Silence, Effects.Root, Effects.Tumbled, Effects.Damage };
+    public HashSet<Effects> DisturbEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Silence, Effects.Root, Effects.Tumbled }; //¹æÇØ È¿°ú, Damage´Â ¾ö¿¬ÇÑ °ø°Ý È¿°úÀÌ¹Ç·Î EffectResistanceÀÇ ¿µÇâÀ» ¹ÞÁö ¾ÊÀ½
+    public bool HasEffect(Effects e) // CC È®ÀÎ¿¡ ÇÊ¿ä
+    {
+        return EffectList.ContainsKey(e);
+    }
+
+    public void AddEffect(Effects buffType, float duration, float Amplifier = 0) //Effect´Â Stats¿¡ ¿µÇâÀ» ÁÖ¹Ç·Î ¿©±â¼­ °ü¸®ÇÏ°í ½Í±â´Â ÇÑµ¥, È®Àå¼ºÀ» »ý°¢ÇÏ¸é Effects¸¦ µû·Î µÎ´Â °Ô ³ªÀ»Áöµµ
     {
         if (EffectList.ContainsKey(buffType))
         {
@@ -132,23 +136,41 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
             EffectList.Add(buffType, duration);
             StartCoroutine(CoEffectDuration(buffType, duration));
         }
+        Affection(buffType, duration, Amplifier); //FixedUpdate()¿Í È£ÃâÀÌ Áßº¹µÇ¾î 2¹ø Àû¿ëµÇ´Â °Í¿¡ À¯ÀÇ, ÃßÈÄ ÀÌÆåÆ® ±¸ÇöÇÒ ¶§ ÇÚµé¸µ ÇÊ¿ä
     }
-    public IEnumerator CoEffectDuration(Effects e, float duration)
+    public void Affection(Effects buffType, float duration, float Amplifier = 0) // Amplifier´Â È¿°úÀÇ °­µµ, ¿¹¸¦ µé¾î Haste/Slow¸é ÀÌµ¿¼Óµµ º¯µ¿¼º, Damage¸é ÃÊ´ç ÇÇÇØ·® -> Âü°í·Î, DamageÀÇ Amplifier´Â »ó´ë°¡ °¡ÇÏ´Â ¿ø·¡ ÇÇÇØ·®À» ¹ÞÀ¸¹Ç·Î ¿©±â¼­ DamageResistance¸¦ °è»êÇØ¾ß ÇÔ
+    {
+        Debug.Log($"Effect {buffType.GetType()} has affected for {duration} with amp {Amplifier}"); //Effect Àû¿ëÇÒ ¶§, DisturbEffects´Â EffectResistance Àû¿ëÇÒ °Í
+    }
+    public IEnumerator CoEffectDuration(Effects e, float duration) //Effect Áö¼Ó½Ã°£ °ü¸®
     {
         while (duration > 0f)
         {
-            duration -= Time.deltaTime * (1 - EffectResistance);
+            duration -= Time.deltaTime;
             EffectList[e] = duration;
             yield return null;
         }
         EffectList.Remove(e);
     }
-    public void RemoveEffect(Effects buffType)
+    public void RemoveEffect(Effects buffType) //Cleanse°¡ È£ÃâÇÏ´Â ¸Þ¼­µå
     {
-        
         if (EffectList.ContainsKey(buffType))
         {
             EffectList.Remove(buffType);
         }
     }
+    public void ClearNegative() // ¹æÇØ È¿°ú ÀüÃ¼ Á¦°Å, Cleanse°¡ È£ÃâÇÏ´Â ¸Þ¼­µå
+    {
+        foreach (var effect in EffectList.Keys)
+        {
+            if (EffectList.ContainsKey(effect) && DisturbEffects.Contains(effect))
+            {
+                EffectList.Remove(effect);
+            }
+        }
+    }
+    /*void FixedUpdate()
+    {
+        Affection(Effects.Haste, 0f, 10f);
+    }*/
 }
