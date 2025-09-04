@@ -16,7 +16,7 @@ public class MeleeHitbox : MonoBehaviour
     // 공격자(주로 Player) Transform — 넉백 방향 계산에 필요
     [HideInInspector] public Transform attacker;
 
-    private readonly HashSet<Collider2D> _hitThisSwing = new(); // readonly이긴 한데 이거 뭔지 모르겠음. 피격된 Collider 집합체인 것 같은데 readonly에 문제가 없는지 확인해야 할 듯
+    private readonly HashSet<Collider2D> _hitThisSwing = new(); // readonly이긴 한데 이거 뭔지 모르겠음. 추측컨대 피격된 Collider 집합체인 것 같은데 readonly에 문제가 없는지 확인해야 할 듯
 
     void OnEnable()
     {
@@ -32,7 +32,7 @@ public class MeleeHitbox : MonoBehaviour
         _hitThisSwing.Add(other); //readonly인데 Add는 가능함. 아마 인스턴스만 readonly이고 메서드 참조는 가능한 듯
 
         //Vector2 dir = (other.bounds.center - attacker.position);
-        if (other.TryGetComponent<IVulnerable>(out var dmg)) // 인터페이스 가져오는 이 기능으로 플레이어 스탯 참조 시도 << 무산됨ㅋㅋ
+        if (other.TryGetComponent<IVulnerable>(out var dmg))
         {
             dmg.TakeDamage(damage, apratio);
         }

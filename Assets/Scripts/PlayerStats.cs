@@ -2,9 +2,9 @@ using StatsInterfaces;
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
-using GeneralSets;
+using Generals;
 
-public interface  IPlayerStats : IDefensiveStats, IOffensiveStats, ICasterStats, IMovingStats, IEffectStats, IStatProvider // PlayerStats에는 상속을 하나만, 너무 많으면 관리 어려움
+public interface  IPlayerStats : IDefensiveStats, IOffensiveStats, ICasterStats, IMoverStats, IEffectStats, IStatProvider // PlayerStats에는 상속을 하나만, 너무 많으면 관리 어려움
 {}
 public sealed class PlayerStats : MonoBehaviour, IPlayerStats // 플레이어 스탯 관리, 다른 곳에서는 참조만
 {

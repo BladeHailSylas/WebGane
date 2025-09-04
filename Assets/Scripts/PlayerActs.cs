@@ -2,7 +2,7 @@
 using StatsInterfaces;
 using System.Collections;
 using UnityEngine;
-using GeneralSets;
+using Generals;
 public class PlayerActs : MonoBehaviour, IAffectable, IPlayerLocomotion //스탯 참조 및 관리 필요, MeleeHitbox의 주석 참조
 {
     [SerializeField] private PlayerStats stats;

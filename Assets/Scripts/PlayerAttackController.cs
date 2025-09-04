@@ -1,6 +1,6 @@
 using ActInterfaces;
 using UnityEngine;
-using GeneralSets;
+using Generals;
 
 public interface IPlayerAttack : IAttackable, ICastable
 { }

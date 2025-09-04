@@ -1,9 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using GeneralSets;
+using Generals;
+using ActInterfaces;
+using StatsInterfaces;
 
-namespace GeneralSets
+namespace Generals
 {
     public enum Effects
     {
@@ -12,6 +14,17 @@ namespace GeneralSets
     public enum ReduceType
     {
         Health = 0, Mana
+    }
+    public interface IPlayerCharacter : IDefensiveStats, IResistiveStats, IOffensiveStats, ICasterStats, IMoverStats, 
+        ITogglable, IAttackable
+    {
+        string DisplayName { get; }
+        void Attack();
+        void ShillShift();
+        void SkillQ();
+        void SkillE();
+        void Ultimate();
+
     }
 }
 
@@ -133,7 +146,7 @@ namespace StatsInterfaces
         float ManaRegen { get; }
     }
 
-    public interface IMovingStats
+    public interface IMoverStats
     {
         bool OnGround { get; }
         float BaseVelocity { get; }

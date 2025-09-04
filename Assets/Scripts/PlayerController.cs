@@ -23,7 +23,7 @@ public class PlayerController : MonoBehaviour
         controls.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
         controls.Player.Move.canceled += ctx => moveInput = Vector2.zero;
         // Attack (버튼 눌렀을 때)
-        controls.Player.Attack.performed += _ => OnAttack();
+        controls.Player.Attack.performed += _ => atkctrl.Attack();
         controls.Player.Skill1.performed += _ => OnSkill1();
         controls.Player.Skill2.performed += _ => OnSkill2();
         controls.Player.Skill3.performed += _ => OnSkill3();
