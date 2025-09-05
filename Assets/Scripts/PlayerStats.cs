@@ -119,7 +119,7 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     public Dictionary<Effects, float> EffectList { get; private set; } = new();
     public HashSet<Effects> PositiveEffects { get; private set; } = new() { Effects.Haste, Effects.DamageBoost, Effects.ReduceDamage, Effects.GainHealth, Effects.GainMana };
     public HashSet<Effects> NegativeEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Silence, Effects.Root, Effects.Tumbled, Effects.Damage };
-    public HashSet<Effects> DisturbEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Silence, Effects.Root, Effects.Tumbled }; //¹æÇØ È¿°ú, Damage´Â ¾ö¿¬ÇÑ °ø°Ý È¿°úÀÌ¹Ç·Î EffectResistanceÀÇ ¿µÇâÀ» ¹ÞÁö ¾ÊÀ½
+    public HashSet<Effects> DisturbEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Silence, Effects.Root, Effects.Tumbled }; //¹æÇØ È¿°ú, Damage´Â ¾ö¿¬ÇÑ °ø°Ý È¿°úÀÌ¹Ç·Î EffectResistanceÀÇ ¿µÇâÀ» ¹ÞÁö ¾ÊÀ½, CC ¡ø ¹æÇØ
     public bool HasEffect(Effects e) // CC È®ÀÎ¿¡ ÇÊ¿ä
     {
         return EffectList.ContainsKey(e);
@@ -136,7 +136,8 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
             EffectList.Add(buffType, duration);
             StartCoroutine(CoEffectDuration(buffType, duration));
         }
-        Affection(buffType, duration, Amplifier); //FixedUpdate()¿Í È£ÃâÀÌ Áßº¹µÇ¾î 2¹ø Àû¿ëµÇ´Â °Í¿¡ À¯ÀÇ, ÃßÈÄ ÀÌÆåÆ® ±¸ÇöÇÒ ¶§ ÇÚµé¸µ ÇÊ¿ä
+        Affection(buffType, duration, Amplifier); // FixedUpdate()¿Í È£ÃâÀÌ Áßº¹µÇ¾î 2¹ø Àû¿ëµÇ´Â °Í¿¡ À¯ÀÇ, ÃßÈÄ ÀÌÆåÆ® ±¸ÇöÇÒ ¶§ ÇÚµé¸µ ÇÊ¿ä
+                                                // FixedUpdate()´Â Verify ¹× reload ¿ëµµ·Î »ç¿ëÇÏ°í ½ÍÀ¸¹Ç·Î ±¸ÇöÇÒ ¶§ °í·ÁÇØ¾ß ÇÔ
     }
     public void Affection(Effects buffType, float duration, float Amplifier = 0) // Amplifier´Â È¿°úÀÇ °­µµ, ¿¹¸¦ µé¾î Haste/Slow¸é ÀÌµ¿¼Óµµ º¯µ¿¼º, Damage¸é ÃÊ´ç ÇÇÇØ·® -> Âü°í·Î, DamageÀÇ Amplifier´Â »ó´ë°¡ °¡ÇÏ´Â ¿ø·¡ ÇÇÇØ·®À» ¹ÞÀ¸¹Ç·Î ¿©±â¼­ DamageResistance¸¦ °è»êÇØ¾ß ÇÔ
     {
@@ -152,7 +153,8 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
         }
         EffectList.Remove(e);
     }
-    public void RemoveEffect(Effects buffType) //Cleanse°¡ È£ÃâÇÏ´Â ¸Þ¼­µå, ±àÁ¤Àû È¿°ú¸¦ Á¦°ÅÇÒ ¼ö ÀÖ´ÂÁö´Â »ý°¢ÇØ ºÁ¾ß ÇÒ µí
+    public void RemoveEffect(Effects buffType) // Cleanse°¡ È£ÃâÇÏ´Â ¸Þ¼­µå, ±àÁ¤Àû È¿°ú¸¦ Á¦°ÅÇÒ ¼ö ÀÖ´ÂÁö´Â »ý°¢ÇØ ºÁ¾ß ÇÒ µí
+                                                // ¹°·Ð Cleanse´Â Åë³äÀûÀ¸·Î ±àÁ¤Àû È¿°ú¸¦ Á¦°ÅÇÏÁö ¾Ê´Â °ÍÀ¸·Î ÀÎ½ÄµÇ¹Ç·Î Á¦°ÅÇÏÁö ¾Ê°í ½ÍÀ½
     {
         if (EffectList.ContainsKey(buffType))
         {
@@ -161,6 +163,7 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     }
     public void ClearNegative() // ¹æÇØ È¿°ú ÀüÃ¼ Á¦°Å: Áö¼Ó ÇÇÇØ È¿°ú´Â Á¦°ÅÇÏÁö ¾Ê´Â ¼³°è°¡ ÁÁÀ½(Áö¼Ó ÇÇÇØ Ä³¸¯ÅÍ°¡ Á×¾î¿ä), Cleanse°¡ È£ÃâÇÏ´Â ¸Þ¼­µå
                                 // ¹æÇØ È¿°úÀÇ Á¤ÀÇ¸¦ "Á¾·á/ÇØÁ¦µÉ ¶§±îÁö Á¦´ë·Î Çàµ¿ÇÒ ¼ö ¾ø°Ô ¸¸µå´Â È¿°ú" ·Î Á¤ÀÇÇÏ¸é µÊ, Áö¼Ó ÇÇÇØ´Â ¹Þµç ¾îÂ¼µç Çàµ¿ÀÌ µÇ´Ï±î
+                                // "Áö¼Ó ÇÇÇØ·Î Á×À¸¸é Á¦´ë·Î Çàµ¿ÇÒ ¼ö ¾øÀÝ¾Æ¿ä!" << ÁöµôÀÌ Á¾·á/ÇØÁ¦µÈ ÈÄ¿¡µµ Á¦´ë·Î Çàµ¿ÇÒ ¼ö ¾ø´Â °Å´Ï±î ¸ð¼ø ¾øÀ½
     {
         foreach (var effect in EffectList.Keys)
         {

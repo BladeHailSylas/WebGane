@@ -15,17 +15,6 @@ namespace Generals
     {
         Health = 0, Mana
     }
-    public interface IPlayerCharacter : IDefensiveStats, IResistiveStats, IOffensiveStats, ICasterStats, IMoverStats, 
-        ITogglable, IAttackable
-    {
-        string DisplayName { get; }
-        void Attack();
-        void ShillShift();
-        void SkillQ();
-        void SkillE();
-        void Ultimate();
-
-    }
 }
 
 namespace ActInterfaces
@@ -56,8 +45,7 @@ namespace ActInterfaces
 
     public interface ICastable : IActivatable // 기술 캐스트
     {
-        void Cast(CastKey key, float mana, Rigidbody2D target, bool absoluteTarget = false);
-        void Cast(CastKey key, float mana, Vector2 targetArea, bool penetration = false);
+        void Cast(CastKey key);
     }
     public enum CastKey
     {
@@ -160,5 +148,50 @@ namespace StatsInterfaces
         bool HasEffect(Effects e);
         HashSet<Effects> PositiveEffects { get; }
         HashSet<Effects> NegativeEffects { get; }
+    }
+}
+namespace CharacterSOInterfaces
+{
+    public interface IPlayable
+    {
+        void InitializeFromSpec(PlayerCharacterSpec spec);
+        GameObject Prefab { get; }
+        string DisplayName { get; }
+
+    }
+    public enum HitboxShape2D { Box, Capsule }
+    public interface IHitboxShape
+    {
+        HitboxShape2D Shape { get; }
+        Vector2 Size { get; }
+        Vector2 LocalOffset { get; }
+        CapsuleDirection2D CapsuleDirection { get; }
+    }
+    public interface IHitboxNumeric
+    {
+        float Damage { get; }
+        float ApRatio { get; }
+        float Knockback { get; }
+        LayerMask EnemyMask { get; }
+    }
+    public interface IHitboxLifecycle
+    {
+        float ActiveTime { get; }
+        string HitboxLayerName { get; }
+    }
+    public interface IHitboxSpec : IHitboxShape, IHitboxNumeric, IHitboxLifecycle
+    { }
+    public interface ISkillSpec
+    {
+        string DisplayName { get; }
+        float Cooldown { get; }
+        ISkillRunner Bind(UnityEngine.GameObject owner); // 실행체를 owner에 부착/초기화
+    }
+
+    public interface ISkillRunner
+    {
+        bool IsBusy { get; }
+        bool IsOnCooldown { get; }
+        void TryCast(); // 입력이 들어왔을 때 호출
     }
 }

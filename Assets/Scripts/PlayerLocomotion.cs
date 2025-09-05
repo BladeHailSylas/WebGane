@@ -9,17 +9,6 @@ public class PlayerLocomotion : MonoBehaviour
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private PlayerStats stats;
     private Vector2 movement;
-    private void Update()
-    {
-        // Input
-        movement.x = Input.GetAxisRaw("Horizontal");
-        movement.y = Input.GetAxisRaw("Vertical");
-    }
-    private void FixedUpdate()
-    {
-        // Movement
-        Move(movement, rb);
-    }
     public void Move(Vector2 move, Rigidbody2D rb)
     {
         //while(!stats.HasEffect(StatsInterface.Effects.Stun))
