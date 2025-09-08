@@ -1,15 +1,23 @@
 using UnityEngine;
+using CharacterSOInterfaces;
 
-[CreateAssetMenu(menuName = "Game/PlayerCharacter Spec (No Prefab)", fileName = "PlayerCharacterSpec_Dummy")]
+public enum SkillSlot { Attack, Skill1, Skill2, Skill3, Ultimate }
+
+[CreateAssetMenu(menuName = "Game/PlayerCharacter Spec")]
 public class PlayerCharacterSpec : ScriptableObject
 {
-    [Header("Basic Info")]
+    [System.Serializable]
+    public struct SkillBinding
+    {
+        public SkillSlot slot;
+        public ScriptableObject mechanic;           // ISkillMechanic 구현 SO
+        [SerializeReference] public ISkillParam param; // 전용 파라미터(MeleeParams 등)
+    }
+
     public string displayName = "Dummy";
+    public float baseMaxHP = 100f, baseAttack = 10f, baseDefense = 2f;
 
-    [Header("Base Stats (Dummy)")]
-    public float baseMaxHP = 100f;
-    public float baseAttack = 10f;
-    public float baseDefense = 2f;
-
-    // 나중에 필요하면 스킬 데이터, 아이콘 등 확장 가능
+    public SkillBinding attack;
+    public SkillBinding skill1;
+    // 필요 시 skill2/3/ult 추가
 }

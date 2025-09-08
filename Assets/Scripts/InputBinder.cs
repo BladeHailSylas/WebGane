@@ -22,12 +22,12 @@ public sealed class InputBinder : MonoBehaviour
         controls.Player.Move.canceled += _ => playerController.MakeMove(Vector2.zero);
 
         // 공격/스킬 → AttackController
-        /*controls.Player.Attack.performed += _ => attackController.Attack();
-        controls.Player.Skill1.performed += _ => attackController.Cast(1);
-        controls.Player.Skill2.performed += _ => attackController.Cast(2);
-        controls.Player.Skill3.performed += _ => attackController.Cast(3);
-        controls.Player.Ultimate.performed += _ => attackController.Cast(99);
-        controls.Player.GeneralSkill.performed += _ => attackController.Cast(0);*/
+        controls.Player.Attack.performed += _ => attackController.OnAttack(_);
+        controls.Player.Skill1.performed += _ => attackController.OnSkill1(_);
+        controls.Player.Skill2.performed += _ => attackController.OnSkill2(_);
+        //controls.Player.Skill3.performed += _ => attackController.OnSkill3(_);
+        //controls.Player.Ultimate.performed += _ => attackController.Ultimate(_);
+        //controls.Player.GeneralSkill.performed += _ => attackController.GeneralSkill(_);
     }
 
     void OnDisable()

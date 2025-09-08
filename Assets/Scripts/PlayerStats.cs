@@ -117,7 +117,7 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // 플레이어 스탯 �
     //Effect 항목
     public float EffectResistance { get; private set; } = 0f; // 상태 이상 저항 (0% 기본)
     public Dictionary<Effects, float> EffectList { get; private set; } = new();
-    public HashSet<Effects> PositiveEffects { get; private set; } = new() { Effects.Haste, Effects.DamageBoost, Effects.ReduceDamage, Effects.GainHealth, Effects.GainMana };
+    public HashSet<Effects> PositiveEffects { get; private set; } = new() { Effects.Haste, Effects.DamageBoost, Effects.ReduceDamage, Effects.GainHealth, Effects.GainMana, Effects.Invisibility };
     public HashSet<Effects> NegativeEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Silence, Effects.Root, Effects.Tumbled, Effects.Damage };
     public HashSet<Effects> DisturbEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Silence, Effects.Root, Effects.Tumbled }; //방해 효과, Damage는 엄연한 공격 효과이므로 EffectResistance의 영향을 받지 않음, CC ⊂ 방해
     public bool HasEffect(Effects e) // CC 확인에 필요

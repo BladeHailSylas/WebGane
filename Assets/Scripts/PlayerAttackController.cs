@@ -1,33 +1,67 @@
+// PlayerAttackController.cs  (교체)
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using CharacterSOInterfaces;
-// 입력은 기존 프로젝트 흐름에 맞춰 바인딩(여기선 메서드 호출 예시로 단순화)
 
 public class PlayerAttackController : MonoBehaviour
 {
     [Header("Character")]
-    public Character1 character; // 캐릭터 SO (인스펙터에서 할당)  :contentReference[oaicite:13]{index=13}
+    [SerializeField] PlayerCharacterSpec characterSpec; // 캐릭터 SO (슬롯→메커니즘+파라미터)
+    public PlayerCharacterSpec Spec { get { return characterSpec; } set { characterSpec = value; } }
 
-    // 슬롯별 실행체 보관
-    private readonly Dictionary<SkillSlot, ISkillRunner> runners = new();
+    [Header("Input")]
+    public InputActionReference attackKey;   // LClick 등
+    public InputActionReference skill1Key;   // Q 등
+    public InputActionReference skill2Key;   // E 등 (필요시)
+
+    private readonly Dictionary<SkillSlot, ISkillRunner> _runners = new();
 
     void Awake()
     {
-        // 캐릭터 SO에서 스킬 매핑 읽어 실행체 생성
-        foreach (var sb in character.skills)
-        {
-            if (sb.specAsset is not ISkillSpec spec)
-            {
-                Debug.LogError($"Skill spec이 ISkillSpec가 아님: {sb.specAsset}");
-                continue;
-            }
-            var runner = spec.Bind(gameObject); // 실행체를 현재 플레이어에 부착
-            if (runner != null) runners[sb.slot] = runner;
-        }
+        _runners.Clear();
+        BindSlot(characterSpec.attack);
+        BindSlot(characterSpec.skill1);
+        // 필요 시 skill2/skill3도 동일 패턴
     }
 
-    // 예시 입력 메서드(기존 Input System에서 호출해도 됨)
-    public void OnPrimary() { if (runners.TryGetValue(SkillSlot.Primary, out var r)) r.TryCast(); }
-    public void OnSkill1() { if (runners.TryGetValue(SkillSlot.Skill1, out var r)) r.TryCast(); }
-    public void OnSkill2() { if (runners.TryGetValue(SkillSlot.Skill2, out var r)) r.TryCast(); }
+    /*void OnEnable()
+    {
+        if (attackKey) { attackKey.action.Enable(); attackKey.action.performed += OnAttack; }
+        if (skill1Key) { skill1Key.action.Enable(); skill1Key.action.performed += OnSkill1; }
+        if (skill2Key) { skill2Key.action.Enable(); skill2Key.action.performed += OnSkill2; }
+    }
+
+    void OnDisable()
+    {
+        if (attackKey) attackKey.action.performed -= OnAttack;
+        if (skill1Key) skill1Key.action.performed -= OnSkill1;
+        if (skill2Key) skill2Key.action.performed -= OnSkill2;
+
+        attackKey?.action.Disable();
+        skill1Key?.action.Disable();
+        skill2Key?.action.Disable();
+    }*/
+    public void OnAttack(InputAction.CallbackContext _) { TryCast(SkillSlot.Attack); }
+    public void OnSkill1(InputAction.CallbackContext _) { TryCast(SkillSlot.Skill1); }
+    public void OnSkill2(InputAction.CallbackContext _) { TryCast(SkillSlot.Skill2); }
+
+    void TryCast(SkillSlot slot)
+    {
+        if (_runners.TryGetValue(slot, out var r)) r.TryCast();
+    }
+
+    void BindSlot(PlayerCharacterSpec.SkillBinding b)
+    {
+        if (b.mechanic is not ISkillMechanic mech || b.param == null) return;
+        if (!mech.ParamType.IsInstanceOfType(b.param))
+        {
+            Debug.LogError($"Param 타입 불일치: need {mech.ParamType.Name}, got {b.param.GetType().Name}");
+            return;
+        }
+
+        var runner = gameObject.AddComponent<SkillRunner>(); // ← 공용 Runner
+        runner.Init(mech, b.param);
+        _runners[b.slot] = runner;
+    }
 }

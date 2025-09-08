@@ -1,25 +1,20 @@
 using UnityEngine;
-using CharacterSOInterfaces;
+
 public sealed class PlayerInstaller : MonoBehaviour
 {
     [SerializeField] private PlayerCharacterSpec spec;
+    [SerializeField] private PlayerAttackController controller;
 
     private void Awake()
     {
-        if (spec == null)
+        if (spec == null || controller == null)
         {
-            Debug.LogError("[PlayerInstaller] Spec이 비어 있습니다.");
+            Debug.LogError("[PlayerInstaller] Spec 또는 Controller가 비어 있습니다.");
             return;
         }
 
-        // Installer 자신에 IPlayerCharacter 컴포넌트가 있으면 초기화
-        var pc = GetComponent<IPlayable>();
-        /*if (pc == null)
-        {
-            // 없다면 직접 붙여도 됨
-            pc = gameObject.GetComponent<IPlayable>();
-        }*/
-
-        pc.InitializeFromSpec(spec);
+        // 여기서 아무 일도 하지 않고,
+        // PlayerAttackController가 스스로 Awake에서 spec을 읽도록 둡니다.
+        controller.Spec = spec;
     }
 }

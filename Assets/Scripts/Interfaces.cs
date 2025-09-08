@@ -9,7 +9,7 @@ namespace Generals
 {
     public enum Effects
     {
-        None = 0, Haste, DamageBoost, ReduceDamage, GainHealth, GainMana, Slow, Stun, Silence, Root, Tumbled, Damage //Damage는 지속 피해, duration을 0으로 하면 즉시 피해도 가능함
+        None = 0, Haste, DamageBoost, ReduceDamage, GainHealth, GainMana, Invisibility, Slow, Stun, Silence, Root, Tumbled, Damage //Damage는 지속 피해, duration을 0으로 하면 즉시 피해도 가능함
     }
     public enum ReduceType
     {
@@ -187,11 +187,33 @@ namespace CharacterSOInterfaces
         float Cooldown { get; }
         ISkillRunner Bind(UnityEngine.GameObject owner); // 실행체를 owner에 부착/초기화
     }
+    public interface ISkillParam { }
+    public interface ISkillRunner { bool IsBusy { get; } bool IsOnCooldown { get; } void TryCast(); }
 
-    public interface ISkillRunner
+    public interface ISkillMechanic
     {
-        bool IsBusy { get; }
-        bool IsOnCooldown { get; }
-        void TryCast(); // 입력이 들어왔을 때 호출
+        System.Type ParamType { get; }
+        
+        
+        
+        IEnumerator Cast(Transform owner, Camera cam, ISkillParam param);
+    }
+
+    public abstract class SkillMechanicBase<TParam> : ScriptableObject, ISkillMechanic
+        where TParam : ISkillParam
+    {
+        public System.Type ParamType => typeof(TParam);
+
+        // 비제네릭 진입점: 타입 가드 + 제네릭 오버로드로 위임
+        public IEnumerator Cast(Transform owner, Camera cam, ISkillParam param)
+        {
+            if (param is not TParam p)
+                throw new System.InvalidOperationException(
+                    $"Param type mismatch. Need {typeof(TParam).Name}, got {param?.GetType().Name ?? "null"}");
+            return Cast(owner, cam, p);
+        }
+
+        // ✔ 여기서 실제 로직(코루틴)을 정의한다
+        public abstract IEnumerator Cast(Transform owner, Camera cam, TParam param);
     }
 }

@@ -1,37 +1,56 @@
-using UnityEngine;
 using CharacterSOInterfaces;
+using UnityEngine;
 
-[CreateAssetMenu(menuName = "Game/Skills/Melee Attack")]
-public class MeleeAttackSpec : ScriptableObject, ISkillSpec
+[System.Serializable]
+public class MeleeParams : ISkillParam, IHasCooldown
 {
-    [Header("UI")]
-    public string displayName = "Melee";
-
-    [Header("Timing")]
-    public float windup = 0.06f;
-    public float active = 0.08f;
-    public float recover = 0.10f;
-    public float cooldown = 0.08f;
-
-    [Header("Swing")]
-    public float swingAngle = 120f;
-
-    [Header("Hitbox Spec (설계도)")]
-    public ScriptableObject hitboxSpecAsset; // IHitboxSpec 구현 SO (예: Character1Hitbox)
-
-    public string DisplayName => displayName;
+    public float radius = 1.6f, angleDeg = 120f;
+    public float windup = 0.05f, recover = 0.08f, cooldown = 0.10f;
+    public float damage = 10f, knockback = 6f, apRatio = 0f;
+    public LayerMask enemyMask;
     public float Cooldown => cooldown;
+}
 
-    public ISkillRunner Bind(GameObject owner)
+[CreateAssetMenu(menuName = "Mechanics/MeleeInstant")]
+public class MeleeInstantMechanic : SkillMechanicBase<MeleeParams>
+{
+    public override System.Collections.IEnumerator Cast(Transform owner, Camera cam, MeleeParams p)
     {
-        var spec = hitboxSpecAsset as IHitboxSpec;
-        if (spec == null)
+        if (p.windup > 0f) yield return new WaitForSeconds(p.windup);
+
+        Vector2 origin = owner.position;
+        Vector2 fwd = GetMouseDir(cam, origin);
+        float half = p.angleDeg * 0.5f;
+
+        var raw = Physics2D.OverlapCircleAll(origin, p.radius, p.enemyMask);
+        foreach (var c in raw)
         {
-            Debug.LogError($"[MeleeAttackSpec] hitboxSpecAsset가 IHitboxSpec가 아닙니다: {hitboxSpecAsset}");
-            return null;
+            if (p.angleDeg < 359f)
+            {
+                Vector2 to = (Vector2)c.bounds.ClosestPoint(origin) - origin;
+                if (to.sqrMagnitude > 1e-6f)
+                {
+                    float ang = Vector2.SignedAngle(fwd, to.normalized);
+                    if (Mathf.Abs(ang) > half) continue;
+                }
+            }
+            if (c.TryGetComponent(out ActInterfaces.IVulnerable v))
+                v.TakeDamage(p.damage, p.apRatio);
+
+            if (c.attachedRigidbody)
+            {
+                var dir = ((Vector2)c.bounds.center - origin).normalized;
+                c.attachedRigidbody.AddForce(dir * p.knockback, ForceMode2D.Impulse);
+            }
         }
-        var r = owner.AddComponent<MeleeAttackRunner>();
-        r.Init(owner.transform, this, spec);
-        return r;
+
+        if (p.recover > 0f) yield return new WaitForSeconds(p.recover);
+    }
+
+    static Vector2 GetMouseDir(Camera cam, Vector2 from)
+    {
+        if (!cam) return Vector2.right;
+        var m = cam.ScreenToWorldPoint(Input.mousePosition);
+        m.z = 0f; return ((Vector2)m - from).normalized;
     }
 }
