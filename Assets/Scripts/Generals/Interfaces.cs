@@ -2,14 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Generals;
-using ActInterfaces;
-using StatsInterfaces;
 
 namespace Generals
 {
     public enum Effects
     {
         None = 0, Haste, DamageBoost, ReduceDamage, GainHealth, GainMana, Invisibility, Slow, Stun, Silence, Root, Tumbled, Damage //Damage는 지속 피해, duration을 0으로 하면 즉시 피해도 가능함
+    }
+    public class EffectState
+    {
+        public float duration;
+        public int amplifier;
+        public EffectState(float dur, int amp)
+        {
+            duration = dur; amplifier = amp;
+        }
     }
     public enum ReduceType
     {
@@ -60,21 +67,20 @@ namespace ActInterfaces
 
     public interface IKnockbackable
     {
-        void ApplyKnockback(UnityEngine.Vector2 direction, float force, float time, bool isFixed);
+        void ApplyKnockback(Vector2 direction, float force);
     }
 
     public interface IMovable
     {
-        void Move(UnityEngine.Vector2 direction, Rigidbody2D rb);
+        void Move(Vector2 direction, Rigidbody2D rb, float velocity);
         void Jump(float time, float wait = 1f);
     }
 
     public interface IAffectable
     {
-        void ApplyEffect(Effects buffType, float duration, float Amplifier = 0);
+        void ApplyEffect(Effects buffType, float duration, int Amplifier = 0);
         void Cleanse(Effects buffType);
     }
-
 }
 
 namespace StatsInterfaces
@@ -132,6 +138,7 @@ namespace StatsInterfaces
         float Mana { get; }
         float BaseManaRegen { get; }
         float ManaRegen { get; }
+        //쿨타임?
     }
 
     public interface IMoverStats
@@ -143,49 +150,20 @@ namespace StatsInterfaces
     }
     public interface IEffectStats
     {
-        Dictionary<Effects, float> EffectList { get; }
+        Dictionary<Effects, EffectState> EffectList { get; }
         float EffectResistance { get; }
         bool HasEffect(Effects e);
         HashSet<Effects> PositiveEffects { get; }
         HashSet<Effects> NegativeEffects { get; }
     }
 }
-namespace CharacterSOInterfaces
+namespace SOInterfaces
 {
-    public interface IPlayable
-    {
-        void InitializeFromSpec(PlayerCharacterSpec spec);
-        GameObject Prefab { get; }
-        string DisplayName { get; }
-
-    }
-    public enum HitboxShape2D { Box, Capsule }
-    public interface IHitboxShape
-    {
-        HitboxShape2D Shape { get; }
-        Vector2 Size { get; }
-        Vector2 LocalOffset { get; }
-        CapsuleDirection2D CapsuleDirection { get; }
-    }
-    public interface IHitboxNumeric
-    {
-        float Damage { get; }
-        float ApRatio { get; }
-        float Knockback { get; }
-        LayerMask EnemyMask { get; }
-    }
-    public interface IHitboxLifecycle
-    {
-        float ActiveTime { get; }
-        string HitboxLayerName { get; }
-    }
-    public interface IHitboxSpec : IHitboxShape, IHitboxNumeric, IHitboxLifecycle
-    { }
     public interface ISkillSpec
     {
         string DisplayName { get; }
         float Cooldown { get; }
-        ISkillRunner Bind(UnityEngine.GameObject owner); // 실행체를 owner에 부착/초기화
+        ISkillRunner Bind(GameObject owner); // 실행체를 owner에 부착/초기화
     }
     public interface ISkillParam { }
     public interface ISkillRunner { bool IsBusy { get; } bool IsOnCooldown { get; } void TryCast(); }

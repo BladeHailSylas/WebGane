@@ -1,9 +1,9 @@
 using UnityEngine;
-using CharacterSOInterfaces;
+using SOInterfaces;
 
 public enum SkillSlot { Attack, Skill1, Skill2, Skill3, Ultimate }
 
-[CreateAssetMenu(menuName = "Game/PlayerCharacter Spec")]
+[CreateAssetMenu(menuName = "Game/PlayerCharacterSpec")]
 public class PlayerCharacterSpec : ScriptableObject
 {
     [System.Serializable]
@@ -14,7 +14,7 @@ public class PlayerCharacterSpec : ScriptableObject
         [SerializeReference] public ISkillParam param; // 전용 파라미터(MeleeParams 등)
     }
 
-    public string displayName = "Dummy";
+    public string displayName = "CharacterTester";
     public float baseMaxHP = 100f, baseAttack = 10f, baseDefense = 2f;
 
     public SkillBinding attack;

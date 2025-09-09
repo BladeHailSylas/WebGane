@@ -1,4 +1,4 @@
-using CharacterSOInterfaces;
+using SOInterfaces;
 using UnityEngine;
 
 public class SkillRunner : MonoBehaviour, ISkillRunner
@@ -14,7 +14,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 
     public void Init(ISkillMechanic mechanic, ISkillParam param)
     {
-        this.mech = mechanic;
+        mech = mechanic;
         this.param = param;
         cam = Camera.main;
     }

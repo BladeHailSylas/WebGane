@@ -1,5 +1,5 @@
 using UnityEngine;
-using CharacterSOInterfaces;
+using SOInterfaces;
 
 [CreateAssetMenu(menuName = "Scriptable Objects/Character1")]
 public class Character1 : ScriptableObject
