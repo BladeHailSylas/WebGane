@@ -1,8 +1,9 @@
 using StatsInterfaces;
 using UnityEngine;
-using Generals;
+using EffectInterfaces;
+using System.Collections.Generic;
 
-public interface  IPlayerStats : IDefensiveStats, IOffensiveStats, ICasterStats, IMoverStats, IStatProvider // PlayerStats¿¡´Â »ó¼ÓÀ» ÇÏ³ª¸¸, ³Ê¹« ¸¹À¸¸é °ü¸® ¾î·Á¿ò
+public interface  IPlayerStats : IDefensiveStats, IResistiveStats, IOffensiveStats, ICasterStats, IMoverStats, IStatProvider // PlayerStats¿¡´Â »ó¼ÓÀ» ÇÏ³ª¸¸, ³Ê¹« ¸¹À¸¸é °ü¸® ¾î·Á¿ò
 {}
 public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, ´Ù¸¥ °÷¿¡¼­´Â ÂüÁ¶¸¸
 {
@@ -10,6 +11,8 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     public float BaseHealth { get; private set; }
     public float MaxHealth { get; private set; }
     public float Health { get; private set; }
+    public float Shield { get; private set; }
+    public float SpecialShield { get; private set; }
     public float BaseArmor { get; private set; }
     public float Armor { get; private set; }
     public float BaseHealthRegen { get; private set; }
@@ -18,6 +21,7 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     public float DamageReduction { get; private set; }
     public float BaseAttackDamage { get; private set; } = 10f;
     public float AttackDamage { get; private set; } = 12f;
+    public List<float> ArmorPenetration { get; private set; } = new();
     public float BaseMana { get; private set; }
     public float MaxMana { get; private set; }
     public float Mana { get; private set; }
@@ -28,6 +32,7 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     public float JumpTime { get; private set; }
     public bool OnGround { get; private set; }
     public bool IsDead { get; private set; }
+
 
     public float GetBool(StatBool sb)
     {
@@ -76,23 +81,51 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
             _ => 0f,
         };
     }
-    public void ReduceStat(ReduceType stat, float amount, float apratio = 0, bool isfixed = false)
+    public float GetArmorRatio() //ÇÃ·¹ÀÌ¾î°¡ ÇÇÇØ¸¦ °¡ÇÏ´Â °æ¿ì¿¡¸¸ ¾²ÀÓ
+    {
+        float TotalAR = 1f;
+        foreach (float ap in ArmorPenetration)
+        {
+            TotalAR *= 1 - ap / 100;
+        }
+        return TotalAR;
+    }
+    public void ReduceStat(ReduceType stat, float damage, float armorRatio = 1f, bool isfixed = false)
     {
         if(stat == ReduceType.Mana) // 1(Mana)ÀÌ¸é ¸¶³ª, 0(Health)ÀÌ¸é Ã¼·Â
         {
-            Mana = Mathf.Max(0f, Mana - amount);
-            Health = Mathf.Max(0f, Health - amount);
-            if (Health <= 0f) IsDead = true;
+            Mana = Mathf.Max(0f, Mana - damage);
         }
-        else if(isfixed) //°íÁ¤ ÇÇÇØ
+        else
         {
-            Health = Mathf.Max(0f, Health - amount);
-        }
-        else //ÀÏ¹Ý ÇÇÇØ
-        {
-            Health = Mathf.Max(0f, Health - amount * (80 / (80 + Armor * (1 - apratio))) * (1 - DamageReduction));
+            Damaged(damage, armorRatio, isfixed);
         }
         if (Health <= 0f) IsDead = true;
+    }
+    float DamageReductionCalc(float armor, float armorRatio = 1f, float damageReduction = 0f) //Player°¡ ÇÇÇØ¸¦ ¹Þ´Â °æ¿ì
+    {
+        return (80 / (80 + armor * armorRatio)) * (1 + damageReduction);
+    }
+    void Damaged(float damage, float armorRatio = 1f, bool isfixed = false)
+    {
+        if(IsDead || damage <= 0f) return;
+        if(!isfixed) damage *= DamageReductionCalc(Armor, armorRatio, DamageReduction);
+        if(SpecialShield > damage)
+        {
+            SpecialShield -= damage;
+        }
+        else if(SpecialShield + Shield > damage)
+        {
+            Shield -= SpecialShield - damage;
+        }
+        else
+        {
+            Health -= Shield + SpecialShield - damage;
+        }
+        if (Health <= 0f)
+        {
+            IsDead = true;
+        }
     }
     public void StatSwitch(StatBool sb)
     {

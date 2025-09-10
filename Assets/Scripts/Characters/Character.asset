@@ -9,14 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bf7073e8df68294b9284c374d64cc5d, type: 3}
-  m_Name: Character1
-  m_EditorClassIdentifier: Assembly-CSharp::Character1
+  m_Script: {fileID: 11500000, guid: 445649f50aec67e4cafa4d013ee54b14, type: 3}
+  m_Name: Character
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterSpec
   displayName: Character1
   baseMaxHP: 100
   baseAttackDamage: 12
   baseDefense: 3
-  skills: []
-  references:
-    version: 2
-    RefIds: []

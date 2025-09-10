@@ -1,21 +1,26 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Generals;
+using EffectInterfaces;
 
-namespace Generals
+namespace EffectInterfaces
 {
     public enum Effects
     {
-        None = 0, Haste, DamageBoost, ReduceDamage, GainHealth, GainMana, Invisibility, Slow, Stun, Silence, Root, Tumbled, Damage //Damage는 지속 피해, duration을 0으로 하면 즉시 피해도 가능함
+        None = 0, Haste, DamageBoost, ReduceDamage, GainHealth, GainMana, Invisibility, Slow, Stun, Suppressed, Root, Tumbled, Damage //Damage는 지속 피해, duration을 0으로 하면 즉시 피해도 가능함
     }
     public class EffectState
     {
         public float duration;
         public int amplifier;
-        public EffectState(float dur, int amp)
+        public GameObject effecter;
+        public EffectState()
+        { 
+        }
+        public EffectState(float dur, int amp, GameObject eft)
         {
-            duration = dur; amplifier = amp;
+            duration = dur; amplifier = amp; effecter = eft;
         }
     }
     public enum ReduceType
@@ -23,12 +28,11 @@ namespace Generals
         Health = 0, Mana
     }
 }
-
 namespace ActInterfaces
 {
     public interface IVulnerable //피해를 받아 죽을 수 있음
     {
-        void TakeDamage(float damage, float apRatio = 0, bool isFixed = false);
+        void TakeDamage(float damage, float apratio = 1f, bool isFixed = false);
         void Die();
     }
 
@@ -48,6 +52,8 @@ namespace ActInterfaces
     public interface IAttackable : IActivatable // 일반 공격
     {
         void Attack(float attackDamage);
+        //
+        //void Drain(float amount);
     }
 
     public interface ICastable : IActivatable // 기술 캐스트
@@ -79,10 +85,9 @@ namespace ActInterfaces
     public interface IAffectable
     {
         void ApplyEffect(Effects buffType, float duration, int Amplifier = 0);
-        void Cleanse(Effects buffType);
+        void Purify(Effects buffType);
     }
 }
-
 namespace StatsInterfaces
 {
     public enum StatType
@@ -130,6 +135,7 @@ namespace StatsInterfaces
     {
         float BaseAttackDamage { get; }
         float AttackDamage { get; }
+        List<float> ArmorPenetration { get; }
     }
     public interface ICasterStats
     {
@@ -159,30 +165,31 @@ namespace StatsInterfaces
 }
 namespace SOInterfaces
 {
-    public interface ISkillSpec
-    {
-        string DisplayName { get; }
-        float Cooldown { get; }
-        ISkillRunner Bind(GameObject owner); // 실행체를 owner에 부착/초기화
-    }
-    public interface ISkillParam { }
-    public interface ISkillRunner { bool IsBusy { get; } bool IsOnCooldown { get; } void TryCast(); }
+    public enum SkillSlot { Attack, RMBSkill, ShiftSkill, Ultimate }
+    public interface ISkillParam { }                    // 파라미터 마커
+    public interface IHasCooldown : ISkillParam { float Cooldown { get; } }
 
+    public interface ISkillRunner
+    {
+        bool IsBusy { get; }
+        bool IsOnCooldown { get; }
+        void TryCast();
+    }
+
+    // 메커니즘(공식): "캐스팅 코루틴"을 제공
     public interface ISkillMechanic
     {
         System.Type ParamType { get; }
-        
-        
-        
         IEnumerator Cast(Transform owner, Camera cam, ISkillParam param);
     }
+
+    // 제네릭 베이스: 타입 가드 + 제네릭 오버로드
 
     public abstract class SkillMechanicBase<TParam> : ScriptableObject, ISkillMechanic
         where TParam : ISkillParam
     {
         public System.Type ParamType => typeof(TParam);
 
-        // 비제네릭 진입점: 타입 가드 + 제네릭 오버로드로 위임
         public IEnumerator Cast(Transform owner, Camera cam, ISkillParam param)
         {
             if (param is not TParam p)
@@ -190,8 +197,7 @@ namespace SOInterfaces
                     $"Param type mismatch. Need {typeof(TParam).Name}, got {param?.GetType().Name ?? "null"}");
             return Cast(owner, cam, p);
         }
-
-        // ✔ 여기서 실제 로직(코루틴)을 정의한다
+        
         public abstract IEnumerator Cast(Transform owner, Camera cam, TParam param);
     }
 }

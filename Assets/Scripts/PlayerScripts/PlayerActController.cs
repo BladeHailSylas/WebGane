@@ -1,7 +1,7 @@
 ﻿using StatsInterfaces;
 using ActInterfaces;
 using UnityEngine;
-using Generals;
+using EffectInterfaces;
 public class PlayerActController : MonoBehaviour, IVulnerable, IKnockbackable //IAffectable //이게 Controller의 역할을 수행하게 될 듯
 {
     [SerializeField] PlayerStats stats;

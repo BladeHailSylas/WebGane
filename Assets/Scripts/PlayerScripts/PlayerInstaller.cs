@@ -1,8 +1,8 @@
 using UnityEngine;
-
+using SOInterfaces;
 public sealed class PlayerInstaller : MonoBehaviour
 {
-    [SerializeField] private PlayerCharacterSpec spec;
+    [SerializeField] private CharacterSpec spec;
     [SerializeField] private PlayerAttackController controller;
 
     private void Awake()
@@ -15,6 +15,6 @@ public sealed class PlayerInstaller : MonoBehaviour
 
         // 여기서 아무 일도 하지 않고,
         // PlayerAttackController가 스스로 Awake에서 spec을 읽도록 둡니다.
-        controller.Spec = spec;
+        controller.spec = spec;
     }
 }

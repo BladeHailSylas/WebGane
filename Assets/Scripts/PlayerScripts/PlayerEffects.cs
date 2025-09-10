@@ -1,5 +1,5 @@
 using ActInterfaces;
-using Generals;
+using EffectInterfaces;
 using StatsInterfaces;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,9 +11,9 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
     public float EffectResistance { get; private set; } = 0f; // 효과 저항력 (0% 기본)
     public Dictionary<Effects, EffectState> EffectList { get; private set; } = new();
     public HashSet<Effects> PositiveEffects { get; private set; } = new() { Effects.Haste, Effects.DamageBoost, Effects.ReduceDamage, Effects.GainHealth, Effects.GainMana, Effects.Invisibility };
-    public HashSet<Effects> NegativeEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Silence, Effects.Root, Effects.Tumbled, Effects.Damage };
-    public HashSet<Effects> DisturbEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Silence, Effects.Root, Effects.Tumbled }; //방해 효과, Damage는 엄연한 공격 효과이므로 EffectResistance의 영향을 받지 않음, CC ⊂ 방해
-    public HashSet<Effects> CCEffects { get; private set; } = new() { Effects.Stun, Effects.Silence, Effects.Root, Effects.Tumbled };
+    public HashSet<Effects> NegativeEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Suppressed, Effects.Root, Effects.Tumbled, Effects.Damage };
+    public HashSet<Effects> DisturbEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Suppressed, Effects.Root, Effects.Tumbled }; //방해 효과, Damage는 엄연한 공격 효과이므로 EffectResistance의 영향을 받지 않음, CC ⊂ 방해
+    public HashSet<Effects> CCEffects { get; private set; } = new() { Effects.Stun, Effects.Suppressed, Effects.Root, Effects.Tumbled };
     public bool HasEffect(Effects e) => EffectList.ContainsKey(e); //CC 확인에 필요함
 
     public void ApplyEffect(Effects buffType, float duration = -1, int amp = 0) //Effect는 Stats에 영향을 주므로 여기서 관리하고 싶기는 한데, 확장성을 생각하면 Effects를 따로 두는 게 나을지도
@@ -25,7 +25,7 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
         }
         else
         {
-            EffectList.Add(buffType, new EffectState(duration, amp));
+            EffectList.Add(buffType, new EffectState(duration, amp, null));
             StartCoroutine(CoEffectDuration(buffType, duration));
         }
         Affection(buffType, duration, amp); // FixedUpdate()와 호출이 중복되어 2번 적용되는 것에 유의, 추후 이펙트 구현할 때 핸들링 필요
@@ -49,8 +49,9 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
         }
         EffectList.Remove(e);
     }
-    public void Cleanse(Effects buffType) // Cleanse가 호출하는 메서드, 긍정적 효과를 제거할 수 있는지는 생각해 봐야 할 듯
+    public void Purify(Effects buffType) // 정화, Cleanse가 모든 버프를 제거할 수 있는지 생각할 필요가 있음
                                                 // 물론 Cleanse는 통념적으로 긍정적 효과를 제거하지 않는 것으로 인식되므로 제거하지 않는 게 나을 것
+                                                // 한편 넘어짐(Tumbled)은 가장 강력한 CC 효과로 설계했기에 정화로 제거하지 않아야 하는지 고려 필요
     {
         if (EffectList.ContainsKey(buffType))
         {

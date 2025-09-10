@@ -183,7 +183,7 @@ GameObject:
   - component: {fileID: 190525852}
   - component: {fileID: 190525853}
   m_Layer: 6
-  m_Name: Attackers
+  m_Name: AttackControl
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -540,7 +540,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerLocomotion
   rb: {fileID: 1725135779}
-  stats: {fileID: 1759644521}
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -726,7 +725,7 @@ GameObject:
   - component: {fileID: 766404441}
   - component: {fileID: 766404442}
   m_Layer: 6
-  m_Name: InputManage
+  m_Name: InputBinder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -759,7 +758,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e98055def49fee449be0102741f9d62c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InputBinder
-  playerController: {fileID: 1725135778}
+  playerControl: {fileID: 1725135782}
   attackController: {fileID: 190525853}
 --- !u!1 &793188088
 GameObject:
@@ -1052,7 +1051,7 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 0
   m_SleepingMode: 1
-  m_CollisionDetection: 1
+  m_CollisionDetection: 0
   m_Constraints: 0
 --- !u!58 &863693148
 CircleCollider2D:
@@ -1102,7 +1101,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc0241031271208488532abf6f278dd0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDummy
---- !u!1 &979727238
+--- !u!1 &881497801
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1110,44 +1109,42 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 979727239}
-  - component: {fileID: 979727240}
+  - component: {fileID: 881497803}
+  - component: {fileID: 881497802}
   m_Layer: 6
-  m_Name: Actor
+  m_Name: Effects
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &979727239
+--- !u!114 &881497802
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 881497801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a24968047dd25804d88ee4c245caa358, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerEffects
+--- !u!4 &881497803
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 979727238}
+  m_GameObject: {fileID: 881497801}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1725135780}
+  m_Father: {fileID: 1759644520}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &979727240
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 979727238}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 61bdc374649cabc48888af853b46402f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerActs
-  stats: {fileID: 1759644521}
-  locomotion: {fileID: 565241915}
 --- !u!1 &1040480339
 GameObject:
   m_ObjectHideFlags: 0
@@ -1705,8 +1702,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1725135780}
   - component: {fileID: 1725135779}
-  - component: {fileID: 1725135778}
   - component: {fileID: 1725135781}
+  - component: {fileID: 1725135782}
   m_Layer: 6
   m_Name: Player
   m_TagString: BlueTeam
@@ -1714,21 +1711,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1725135778
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1725135777}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 78f537a5d9a606944ba70c510227ee10, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  acts: {fileID: 979727240}
-  stats: {fileID: 1759644521}
-  atkctrl: {fileID: 190525853}
 --- !u!50 &1725135779
 Rigidbody2D:
   serializedVersion: 5
@@ -1754,7 +1736,7 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 0
   m_SleepingMode: 1
-  m_CollisionDetection: 1
+  m_CollisionDetection: 0
   m_Constraints: 0
 --- !u!4 &1725135780
 Transform:
@@ -1769,9 +1751,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 0.75}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1822249925}
   - {fileID: 766404441}
-  - {fileID: 979727239}
+  - {fileID: 1822249925}
   - {fileID: 1759644520}
   - {fileID: 565241914}
   - {fileID: 855105503}
@@ -1814,6 +1795,21 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.375
+--- !u!114 &1725135782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1725135777}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bfd2eb4f2efb554595b918510adc5f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerActs
+  stats: {fileID: 1759644521}
+  locomotion: {fileID: 565241915}
+  effects: {fileID: 881497802}
 --- !u!1 &1752660213
 GameObject:
   m_ObjectHideFlags: 0
@@ -1915,7 +1911,7 @@ GameObject:
   - component: {fileID: 1759644520}
   - component: {fileID: 1759644521}
   m_Layer: 6
-  m_Name: StatBox
+  m_Name: Stats
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1933,7 +1929,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 881497803}
   m_Father: {fileID: 1725135780}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1759644521
@@ -1948,6 +1945,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d20ead164ec755041bb167eda8c36996, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
+  effects: {fileID: 881497802}
 --- !u!1 &1822249924
 GameObject:
   m_ObjectHideFlags: 0
