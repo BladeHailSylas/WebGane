@@ -4,7 +4,7 @@ using ActInterfaces;
 using Unity.Hierarchy;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class EnemyDummy : MonoBehaviour, IVulnerable //그냥 임시 더미, 절대 이렇게 만들면 안 됨
+public class EnemyDummy : MonoBehaviour, IVulnerable//, ITargetable //그냥 임시 더미, 절대 이렇게 만들면 안 됨
 {
     public float BasicHealth { get; private set; } = 100f;
     public float MaxHealth { get; private set; } = 150f;
@@ -14,7 +14,7 @@ public class EnemyDummy : MonoBehaviour, IVulnerable //그냥 임시 더미, 절대 이렇
     public float Armor { get; private set; }
 
     public bool IsDead { get; private set; }
-
+    //[SerializeField] Transform myTransform;
     private float _armorIncreaseRate = 0f; //방어력 버프
     private Rigidbody2D rb;
     private SpriteRenderer sr;
@@ -45,13 +45,17 @@ public class EnemyDummy : MonoBehaviour, IVulnerable //그냥 임시 더미, 절대 이렇
         }
         else
         {
-            Health = Mathf.Max(0f, Health - damage * apratio); // 대미지 * 피해율, 피해율 산출을 하나의 메서드로 사용? << PlayerStats의 ReduceStat에 구현됨
+            Health = Mathf.Max(0f, Health - damage * 80 / (80 + Armor * (1 - apratio / 100))); // 대미지 * 피해율, 피해율 산출을 하나의 메서드로 사용? << PlayerStats의 ReduceStat에 구현됨
             _armorIncreaseRate += 0.1f; // 피격 시마다 방어력 10% 증가(임시 버프, 실제 버프는 이렇게 적용하지 않음)
             StartCoroutine(Flash());
         }
-        Debug.Log($"Enemy took {damage * apratio} damage");
+        Debug.Log($"Enemy took {damage * 80 / (80 + Armor * (1 - apratio / 100))} damage");
         if (Health <= 0f) Die();
     }
+    /*public bool TryGetTarget(out Transform target) {
+        target = myTransform;
+        return true;
+    }*/
     System.Collections.IEnumerator Flash()
     {
         var original = sr.color;

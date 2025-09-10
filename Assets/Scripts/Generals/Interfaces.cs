@@ -87,6 +87,10 @@ namespace ActInterfaces
         void ApplyEffect(Effects buffType, float duration, int Amplifier = 0);
         void Purify(Effects buffType);
     }
+    public interface ITargetable
+    {
+        bool TryGetTarget(out Transform target); // 잠금 대상이 없으면 false
+    }
 }
 namespace StatsInterfaces
 {

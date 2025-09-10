@@ -2,22 +2,6 @@ using SOInterfaces;
 using System.Collections;
 using UnityEngine;
 
-[System.Serializable]
-public class MeleeParams : ISkillParam, IHasCooldown
-{
-    [Header("Area")]
-    public float radius = 1.6f;
-    [Range(0, 360)] public float angleDeg = 120f;  // 360이면 원형
-    public LayerMask enemyMask;
-
-    [Header("Damage")]
-    public float attack = 10f, apRatio = 0f, knockback = 6f, attackPercent = 1.0f;
-
-    [Header("Timing")]
-    public float windup = 0.05f, recover = 0.08f, cooldown = 0.10f;
-    public float Cooldown => cooldown;
-}
-
 [CreateAssetMenu(menuName = "Mechanics/Melee Instant")]
 public class MeleeInstantMechanic : SkillMechanicBase<MeleeParams>
 {
