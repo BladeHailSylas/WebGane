@@ -64,7 +64,7 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
     {
         foreach (var effect in EffectList.Keys)
         {
-            if (DisturbEffects.Contains(effect))
+            if (DisturbEffects.Contains(effect) && EffectList[effect].duration != float.PositiveInfinity)
             {
                 EffectList.Remove(effect);
             }
