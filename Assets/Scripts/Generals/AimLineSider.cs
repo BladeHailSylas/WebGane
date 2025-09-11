@@ -1,8 +1,5 @@
-// AimLine.cs
-// - 플레이어 위치에서 마우스 월드 좌표까지 선을 그립니다.
-// - 장애물 레이어를 지정하면 Raycast로 선 길이를 그 지점까지 "클램프"할 수 있습니다.
-// - URP/2D 프로젝트에서도 바로 사용 가능.
-// AimLine이 범위 지정형 기술의 최대 사거리를 지정해 주는 역할을 하면 안 될까?
+// AimLineSider가 특정 기술의 좌우 범위를 나타낼 수 있다면? 혹은 이펙트로 접근이 가능하여 의미가 없다?
+// 일단 AimLine을 그대로 가져왔는데 이게 필요할지 지워질지는 좀 개발을 해봐야 할 듯
 using UnityEngine;
 
 [RequireComponent(typeof(Transform))]

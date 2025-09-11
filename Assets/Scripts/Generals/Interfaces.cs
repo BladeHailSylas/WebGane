@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using EffectInterfaces;
+using StatsInterfaces;
 
 namespace EffectInterfaces
 {
@@ -26,6 +26,23 @@ namespace EffectInterfaces
     public enum ReduceType
     {
         Health = 0, Mana
+    }
+    public interface IEffectStats
+    {
+        Dictionary<Effects, EffectState> EffectList { get; }
+        float EffectResistance { get; }
+        bool HasEffect(Effects e);
+        HashSet<Effects> PositiveEffects { get; }
+        HashSet<Effects> NegativeEffects { get; }
+    }
+
+    // 예: 방관% 모디파이어 (곱 연산)
+    public sealed class ArmorPenPercentMod : IStatModifier
+    {
+        public readonly float Percent;  // 0~100
+        public ArmorPenPercentMod(float percent) { Percent = Mathf.Clamp(percent, 0, 100); }
+        public void Apply(PlayerStats s) => s.AddArmorPen(Percent);
+        public void Remove(PlayerStats s) => s.RemoveArmorPen(Percent);
     }
 }
 namespace ActInterfaces
@@ -158,13 +175,10 @@ namespace StatsInterfaces
         float Velocity { get; }
         float JumpTime { get; }
     }
-    public interface IEffectStats
+    public interface IStatModifier
     {
-        Dictionary<Effects, EffectState> EffectList { get; }
-        float EffectResistance { get; }
-        bool HasEffect(Effects e);
-        HashSet<Effects> PositiveEffects { get; }
-        HashSet<Effects> NegativeEffects { get; }
+        void Apply(PlayerStats stats);
+        void Remove(PlayerStats stats);
     }
 }
 namespace SOInterfaces

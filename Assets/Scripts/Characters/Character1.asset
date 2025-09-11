@@ -73,7 +73,7 @@ MonoBehaviour:
           m_Bits: 8
         damage: 8
         apRatio: 0
-        knockback: 5
+        knockback: 0
         cooldown: 0.35
         retargetOnLost: 0
         retargetRadius: 3

@@ -17,7 +17,8 @@ public class HomingProjectileMovement : MonoBehaviour
         speed = P.speed;
 
         // (테스트용 시각화) 점 스프라이트
-        var sr = gameObject.AddComponent<SpriteRenderer>();
+        var sr = gameObject.AddComponent<SpriteRenderer>(); //Prefab을 쓰고 싶다면 어떻게 해야 하는가? HomingParams에서 Prefab을 참조하고 여기서 호출?
+
         sr.sprite = GenerateDotSprite();
         sr.sortingOrder = 1000;
         transform.localScale = Vector3.one * (P.radius * 2f);

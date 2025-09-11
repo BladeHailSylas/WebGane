@@ -141,4 +141,9 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // 플레이어 스탯 �
                 break;
         }
     }
+    public void AddArmorPen(float percent) => ArmorPenetration.Add(percent);
+    public void RemoveArmorPen(float percent)
+    {
+        if(ArmorPenetration.Contains(percent)) ArmorPenetration.Remove(percent);
+    }
 }

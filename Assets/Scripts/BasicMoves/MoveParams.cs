@@ -29,7 +29,7 @@ public class HomingParams : ISkillParam, IHasCooldown
     public float maxLife = 3f;             // 안전 장치(초)
 
     [Header("Collision")]
-    public LayerMask enemyMask;
+    public LayerMask enemyMask; //LayerMask의 default를 설정하는 방법? = LayerMask.GetMask("Foe");?
     public LayerMask blockerMask;
 
     [Header("Damage")]
