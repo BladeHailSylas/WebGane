@@ -7,6 +7,7 @@ public class MeleeInstantMechanic : SkillMechanicBase<MeleeParams>
 {
     public override IEnumerator Cast(Transform owner, Camera cam, MeleeParams p)
     {
+        Debug.Log("Melee Instant Skill Casted");
         if (p.windup > 0f) yield return new WaitForSeconds(p.windup);
 
         Vector2 origin = owner.position;

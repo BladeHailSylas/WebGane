@@ -169,7 +169,7 @@ namespace StatsInterfaces
 }
 namespace SOInterfaces
 {
-    public enum SkillSlot { Attack, RMBSkill, ShiftSkill, Ultimate }
+    public enum SkillSlot { Attack, Skill1, Skill2, Ultimate }
     public interface ISkillParam { }                    // 파라미터 마커
     public interface IHasCooldown : ISkillParam { float Cooldown { get; } }
 
@@ -185,6 +185,10 @@ namespace SOInterfaces
     {
         System.Type ParamType { get; }
         IEnumerator Cast(Transform owner, Camera cam, ISkillParam param);
+    }
+    public interface ITargetedMechanic : ISkillMechanic
+    {
+        IEnumerator Cast(Transform owner, Camera cam, ISkillParam param, Transform target);
     }
 
     // 제네릭 베이스: 타입 가드 + 제네릭 오버로드
@@ -204,4 +208,5 @@ namespace SOInterfaces
         
         public abstract IEnumerator Cast(Transform owner, Camera cam, TParam param);
     }
+
 }

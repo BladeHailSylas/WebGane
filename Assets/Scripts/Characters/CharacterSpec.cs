@@ -14,5 +14,5 @@ public class CharacterSpec : ScriptableObject
         public ScriptableObject mechanic;
         [SerializeReference] public ISkillParam param;
     }
-    public SkillBinding attack, rmbSkill, shiftSkill, ultimate;
+    public SkillBinding attack, skill1, skill2, ultimate;
 }

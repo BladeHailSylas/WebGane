@@ -23,7 +23,7 @@ public class PlayerAttackController : MonoBehaviour
     void Awake()
     {
         Bind(spec.attack);
-        Bind(spec.rmbSkill);
+        Bind(spec.skill1);
     }
 
     void Bind(CharacterSpec.SkillBinding b)
@@ -41,12 +41,12 @@ public class PlayerAttackController : MonoBehaviour
     void OnEnable()
     {
         if (attackKey) { attackKey.action.Enable(); attackKey.action.performed += _ => TryCast(SkillSlot.Attack); }
-        if (skill1Key) { skill1Key.action.Enable(); skill1Key.action.performed += _ => TryCast(SkillSlot.RMBSkill); }
+        if (skill1Key) { skill1Key.action.Enable(); skill1Key.action.performed += _ => TryCast(SkillSlot.Skill1); }
     }
     void OnDisable()
     {
         if (attackKey) attackKey.action.performed -= _ => TryCast(SkillSlot.Attack);
-        if (skill1Key) skill1Key.action.performed -= _ => TryCast(SkillSlot.RMBSkill);
+        if (skill1Key) skill1Key.action.performed -= _ => TryCast(SkillSlot.Skill1);
         attackKey?.action.Disable(); skill1Key?.action.Disable();
     }
 

@@ -1,13 +1,14 @@
 using UnityEngine;
+using ActInterfaces;
 
-public class HomingProjectileMover : MonoBehaviour
+public class HomingProjectileMovement : MonoBehaviour
 {
-    HomingProjectileParams P;
+    HomingParams P;
     Transform owner, target;
     Vector2 dir;
     float speed, traveled, life;
 
-    public void Init(HomingProjectileParams p, Transform owner, Transform target)
+    public void Init(HomingParams p, Transform owner, Transform target)
     {
         P = p; this.owner = owner; this.target = target;
         Vector2 start = owner.position;
@@ -57,7 +58,7 @@ public class HomingProjectileMover : MonoBehaviour
         {
             Move(hitEnemy.distance);
             var c = hitEnemy.collider;
-            if (c.TryGetComponent(out ActInterfaces.IVulnerable v))
+            if (c.TryGetComponent(out IVulnerable v))
                 v.TakeDamage(P.damage, P.apRatio);
             if (c.attachedRigidbody)
                 c.attachedRigidbody.AddForce(dir * P.knockback, ForceMode2D.Impulse);

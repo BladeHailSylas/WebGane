@@ -18,7 +18,7 @@ public class MeleeParams : ISkillParam, IHasCooldown
 }
 
 [System.Serializable]
-public class HomingProjectileParams : ISkillParam, IHasCooldown
+public class HomingParams : ISkillParam, IHasCooldown
 {
     [Header("Projectile")]
     public float speed = 10f;              // 초기 속도
