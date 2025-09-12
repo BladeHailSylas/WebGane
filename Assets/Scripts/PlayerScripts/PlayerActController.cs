@@ -18,7 +18,8 @@ public class PlayerActController : MonoBehaviour, IVulnerable, IKnockbackable //
     {
         if(move != null && effects.IsMovable) 
         {
-            locomotion.Move(move, rig,stats.GetStat(StatType.Velocity, StatRef.Current));
+            Debug.Log("You are using fixed value instead of reference of stats");
+            locomotion.Move(move, rig, 8f); //임시로 상수를 사용, 나중에 수정 필요
         }
     }
 

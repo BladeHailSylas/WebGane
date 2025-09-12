@@ -107,6 +107,7 @@ namespace StatsInterfaces
     {
         Health, HealthRegen,
         Armor, DamageReduction,
+        Shield, SpecialShield,
         AttackDamage,
         Mana, ManaRegen,
         Velocity, JumpTime

@@ -70,7 +70,7 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
             }
         }
     }
-    void OnEnable()
+    /*void OnEnable()
     {
         EventBus.Subscribe<BuffApplyReq>(OnBuffApply);
         EventBus.Subscribe<BuffRemoveReq>(OnBuffRemove);
@@ -96,5 +96,5 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
     {
         yield return new WaitForSeconds(dur);
         mod.Remove(this);
-    }
+    }*/
 }

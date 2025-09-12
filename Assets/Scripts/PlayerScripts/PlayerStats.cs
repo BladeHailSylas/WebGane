@@ -1,7 +1,8 @@
 using StatsInterfaces;
-using UnityEngine;
 using System.Collections.Generic;
-public sealed class PlayerStats : MonoBehaviour, IStatProvider // 플레이어 스탯 관리, 다른 곳에서는 참조만
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using UnityEngine;
+public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에서는 참조만
 {
     [SerializeField] PlayerEffects effects;
     public float BaseHealth { get; private set; }
@@ -27,67 +28,9 @@ public sealed class PlayerStats : MonoBehaviour, IStatProvider // 플레이어 스탯 
     public float JumpTime { get; private set; }
     public bool OnGround { get; private set; }
     public bool IsDead { get; private set; }
-    public float GetBool(StatBool sb)
-    {
-        return sb switch
-        {
-            StatBool.OnGround => OnGround ? 1f : 0f,
-            StatBool.IsDead => IsDead ? 1f : 0f,
-            _ => 0f,
-        };
-    }
-    public float GetStat(StatType t, StatRef re = StatRef.Current)
-    {
-        return 1f;
-    }
-    /*public float GetStat(StatType t, StatRef re = StatRef.Current) //너무 길어진다?
-    {
-        return re switch
-        {
-            StatRef.Base => t switch
-            {
-                StatType.Health => BaseHealth,
-                StatType.HealthRegen => BaseHealthRegen,
-                StatType.Armor => BaseArmor,
-                StatType.AttackDamage => BaseAttackDamage,
-                StatType.Mana => BaseMana,
-                StatType.ManaRegen => BaseManaRegen,
-                StatType.Velocity => BaseVelocity,
-                StatType.JumpTime => JumpTime,
-                _ => 0f,
-            },
-            StatRef.Max => t switch
-            {
-                StatType.Health => MaxHealth,
-                StatType.Mana => MaxMana,
-                _ => 0f,
-            },
-            StatRef.Current => t switch
-            {
-                StatType.Health => Health,
-                StatType.HealthRegen => HealthRegen,
-                StatType.Armor => Armor,
-                StatType.AttackDamage => AttackDamage,
-                StatType.Mana => Mana,
-                StatType.ManaRegen => ManaRegen,
-                StatType.Velocity => Velocity,
-                _ => 0f,
-            },
-            _ => 0f,
-        };
-    }*/
-    public float GetArmorRatio() //플레이어가 피해를 가하는 경우에만 쓰임
-    {
-        float TotalAR = 1f;
-        foreach (float ap in ArmorPenetration)
-        {
-            TotalAR *= 1 - ap / 100;
-        }
-        return TotalAR;
-    }
     public void ReduceStat(ReduceType stat, float damage, float armorRatio = 1f, bool isfixed = false)
     {
-        if(stat == ReduceType.Mana) // 1(Mana)이면 마나, 0(Health)이면 체력
+        if (stat == ReduceType.Mana) // 1(Mana)이면 마나, 0(Health)이면 체력
         {
             Mana = Mathf.Max(0f, Mana - damage);
         }
@@ -103,13 +46,13 @@ public sealed class PlayerStats : MonoBehaviour, IStatProvider // 플레이어 스탯 
     }
     void Damaged(float damage, float armorRatio = 1f, bool isfixed = false)
     {
-        if(IsDead || damage <= 0f) return;
+        if (IsDead || damage <= 0f) return;
         if (!isfixed) damage *= DamageReductionCalc(Armor, armorRatio, TotalDamageReduction());
-        if(SpecialShield > damage)
+        if (SpecialShield > damage)
         {
             SpecialShield -= damage;
         }
-        else if(SpecialShield + Shield > damage)
+        else if (SpecialShield + Shield > damage)
         {
             Shield -= SpecialShield - damage;
         }
@@ -122,46 +65,34 @@ public sealed class PlayerStats : MonoBehaviour, IStatProvider // 플레이어 스탯 
             IsDead = true;
         }
     }
-    public void StatSwitch(StatBool sb)
-    {
-        switch (sb)
-        {
-            case StatBool.OnGround:
-                OnGround = !OnGround;
-                break;
-            case StatBool.IsDead:
-                IsDead = !IsDead;
-                break;
-        }
-    }
-    public void AddArmorPen(float percent) => ArmorPenetration.Add(percent);
-    public void RemoveArmorPen(float percent)
-    {
-        if(ArmorPenetration.Contains(percent)) ArmorPenetration.Remove(percent);
-    }
-    public float TotalArmorPenetration()
+    public float TotalArmorPenetration() //필드를 건드는 메서드가 아니므로 public으로 두어도 되지 않을까
     {
         float totalAP = 1f;
-        foreach(var ap in ArmorPenetration)
+        foreach (var ap in ArmorPenetration)
         {
-            totalAP *= (1 - ap / 100);
+            totalAP *= (1 - ap / 100); // 단일 AP 비율이 100%를 넘으면 방어력이 마이너스라 피해 배율이 너무 커지므로 그런 일이 절대로 없어야 함
         }
         return totalAP;
     }
     public float TotalDamageReduction()
     {
         float totalDR = 1f;
-        foreach(var dr in DamageReduction)
+        foreach (var dr in DamageReduction)
         {
             totalDR *= (1 - dr / 100);
         }
-        return Mathf.Max(0.15f, totalDR);
+        return Mathf.Max(0.15f, totalDR); //공격자 우선(하게 두되 대안을 주어라) -> 대미지가 들어가게 두되 다른 생존 수단(체력 회복, 보호막 등)으로 원콤이 안 나게 하라
     }
 }
-public sealed class ArmorPenPercentMod : IStatModifier
-{
-    public readonly float Percent;  // 0~100
-    public ArmorPenPercentMod(float percent) { Percent = Mathf.Clamp(percent, 0, 100); }
-    public void Apply(PlayerStats s) => s.AddArmorPen(Percent);
-    public void Remove(PlayerStats s) => s.RemoveArmorPen(Percent);
-}
+//PlayerStats가 꽤 길어지는데 따로 분류할 방법이?
+//Health, Mana와 같은 것은 array나 List로 묶어서 enum StatRef(Base, Max, Current)와 연계해야 되나?
+//아니면 길어지는 것이 필연적이므로 그냥 가만히 둔다? Stat부터 너무 많아서 어쩔 수 없나?
+//PlayerStatsController가 존재한다고 해도 메서드를 유의미하게 가져갈 것 같지 않은데?
+//여기에 event listening까지 하면 코드가 꽤 길어질 것인데
+//그렇다고 PlayerStatsController가 PlayerStats를 직접 수정하는 건 싫다, 접근 벡터를 줄이고 싶음
+//아니면 오히려 Controller가 있기에 접근 벡터가 줄어든다?
+//현재 구조: 다른 객체가 필요한 시기에 직접 PlayerStats를 참조
+//컨트롤러: 다른 객체가 Controller를 참조, Controller만 PlayerStats를 참조
+//이게 더 나은 것 같기는 하지만, 우리는 궁극적으로 event를 통한 SerializeField 참조 제거를 원함
+//event로 SerializeField 전체 참조가 가능한지는 잘 몰라도 가능한 한 접근 벡터를 줄일 수 있을 것으로 예상
+//StatsEventListener같은 걸 만든다? 오히려 접근 벡터를 늘리는 방안 같다고 생각
