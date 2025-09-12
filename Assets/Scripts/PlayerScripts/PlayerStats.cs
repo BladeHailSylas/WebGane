@@ -1,11 +1,7 @@
 using StatsInterfaces;
 using UnityEngine;
-using EffectInterfaces;
 using System.Collections.Generic;
-
-public interface  IPlayerStats : IDefensiveStats, IResistiveStats, IOffensiveStats, ICasterStats, IMoverStats, IStatProvider // PlayerStats¿¡´Â »ó¼ÓÀ» ÇÏ³ª¸¸, ³Ê¹« ¸¹À¸¸é °ü¸® ¾î·Á¿ò
-{}
-public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, ´Ù¸¥ °÷¿¡¼­´Â ÂüÁ¶¸¸
+public sealed class PlayerStats : MonoBehaviour, IStatProvider // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, ´Ù¸¥ °÷¿¡¼­´Â ÂüÁ¶¸¸
 {
     [SerializeField] PlayerEffects effects;
     public float BaseHealth { get; private set; }
@@ -17,8 +13,7 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     public float Armor { get; private set; }
     public float BaseHealthRegen { get; private set; }
     public float HealthRegen { get; private set; }
-    public float BaseDamageReduction { get; private set; }
-    public float DamageReduction { get; private set; }
+    public List<float> DamageReduction { get; private set; }
     public float BaseAttackDamage { get; private set; } = 10f;
     public float AttackDamage { get; private set; } = 12f;
     public List<float> ArmorPenetration { get; private set; } = new();
@@ -32,8 +27,6 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     public float JumpTime { get; private set; }
     public bool OnGround { get; private set; }
     public bool IsDead { get; private set; }
-
-
     public float GetBool(StatBool sb)
     {
         return sb switch
@@ -45,6 +38,10 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     }
     public float GetStat(StatType t, StatRef re = StatRef.Current)
     {
+        return 1f;
+    }
+    /*public float GetStat(StatType t, StatRef re = StatRef.Current) //³Ê¹« ±æ¾îÁø´Ù?
+    {
         return re switch
         {
             StatRef.Base => t switch
@@ -52,7 +49,6 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
                 StatType.Health => BaseHealth,
                 StatType.HealthRegen => BaseHealthRegen,
                 StatType.Armor => BaseArmor,
-                StatType.DamageReduction => BaseDamageReduction,
                 StatType.AttackDamage => BaseAttackDamage,
                 StatType.Mana => BaseMana,
                 StatType.ManaRegen => BaseManaRegen,
@@ -71,7 +67,6 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
                 StatType.Health => Health,
                 StatType.HealthRegen => HealthRegen,
                 StatType.Armor => Armor,
-                StatType.DamageReduction => DamageReduction,
                 StatType.AttackDamage => AttackDamage,
                 StatType.Mana => Mana,
                 StatType.ManaRegen => ManaRegen,
@@ -80,7 +75,7 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
             },
             _ => 0f,
         };
-    }
+    }*/
     public float GetArmorRatio() //ÇÃ·¹ÀÌ¾î°¡ ÇÇÇØ¸¦ °¡ÇÏ´Â °æ¿ì¿¡¸¸ ¾²ÀÓ
     {
         float TotalAR = 1f;
@@ -102,14 +97,14 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
         }
         if (Health <= 0f) IsDead = true;
     }
-    float DamageReductionCalc(float armor, float armorRatio = 1f, float damageReduction = 0f) //Player°¡ ÇÇÇØ¸¦ ¹Þ´Â °æ¿ì
+    float DamageReductionCalc(float armor, float armorRatio = 1f, float damageRatio = 1f) //Player°¡ ÇÇÇØ¸¦ ¹Þ´Â °æ¿ì
     {
-        return (80 / (80 + armor * armorRatio)) * (1 + damageReduction);
+        return (80 / (80 + armor * armorRatio)) * damageRatio;
     }
     void Damaged(float damage, float armorRatio = 1f, bool isfixed = false)
     {
         if(IsDead || damage <= 0f) return;
-        if(!isfixed) damage *= DamageReductionCalc(Armor, armorRatio, DamageReduction);
+        if (!isfixed) damage *= DamageReductionCalc(Armor, armorRatio, TotalDamageReduction());
         if(SpecialShield > damage)
         {
             SpecialShield -= damage;
@@ -137,8 +132,6 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
             case StatBool.IsDead:
                 IsDead = !IsDead;
                 break;
-            default:
-                break;
         }
     }
     public void AddArmorPen(float percent) => ArmorPenetration.Add(percent);
@@ -146,4 +139,29 @@ public sealed class PlayerStats : MonoBehaviour, IPlayerStats // ÇÃ·¹ÀÌ¾î ½ºÅÈ °
     {
         if(ArmorPenetration.Contains(percent)) ArmorPenetration.Remove(percent);
     }
+    public float TotalArmorPenetration()
+    {
+        float totalAP = 1f;
+        foreach(var ap in ArmorPenetration)
+        {
+            totalAP *= (1 - ap / 100);
+        }
+        return totalAP;
+    }
+    public float TotalDamageReduction()
+    {
+        float totalDR = 1f;
+        foreach(var dr in DamageReduction)
+        {
+            totalDR *= (1 - dr / 100);
+        }
+        return Mathf.Max(0.15f, totalDR);
+    }
+}
+public sealed class ArmorPenPercentMod : IStatModifier
+{
+    public readonly float Percent;  // 0~100
+    public ArmorPenPercentMod(float percent) { Percent = Mathf.Clamp(percent, 0, 100); }
+    public void Apply(PlayerStats s) => s.AddArmorPen(Percent);
+    public void Remove(PlayerStats s) => s.RemoveArmorPen(Percent);
 }

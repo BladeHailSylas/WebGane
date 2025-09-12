@@ -1,5 +1,4 @@
 using UnityEngine;
-using SOInterfaces;
 public sealed class PlayerInstaller : MonoBehaviour
 {
     [SerializeField] private CharacterSpec spec;

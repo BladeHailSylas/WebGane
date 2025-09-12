@@ -1,10 +1,9 @@
 // Enemy에 붙입니다. 아주 단순한 체력/넉백 처리 예시입니다.
 using UnityEngine;
 using ActInterfaces;
-using Unity.Hierarchy;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class EnemyDummy : MonoBehaviour, IVulnerable//, ITargetable //그냥 임시 더미, 절대 이렇게 만들면 안 됨
+public class EnemyDummy : MonoBehaviour, IVulnerable//, ITargetable //그냥 임시 더미, 절대 이렇게 만들면 안 됨(IVulnerable의 구현이 여기서 왜 필요함)
 {
     public float BasicHealth { get; private set; } = 100f;
     public float MaxHealth { get; private set; } = 150f;

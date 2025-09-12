@@ -70,8 +70,31 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
             }
         }
     }
-    /*void FixedUpdate()
+    void OnEnable()
     {
-        Affection(Effects.Haste, 0f, 10f);
-    }*/
+        EventBus.Subscribe<BuffApplyReq>(OnBuffApply);
+        EventBus.Subscribe<BuffRemoveReq>(OnBuffRemove);
+    }
+    void OnDisable()
+    {
+        EventBus.Unsubscribe<BuffApplyReq>(OnBuffApply);
+        EventBus.Unsubscribe<BuffRemoveReq>(OnBuffRemove);
+    }
+
+    void OnBuffApply(BuffApplyReq e)
+    {
+        if (e.Target != transform) return;
+        e.Mod.Apply(this);
+        if (e.Duration > 0) StartCoroutine(CoExpire(e.Mod, e.Duration));
+    }
+    void OnBuffRemove(BuffRemoveReq e)
+    {
+        if (e.Target != transform) return;
+        e.Mod.Remove(this);
+    }
+    IEnumerator CoExpire(IEffectModifier mod, float dur)
+    {
+        yield return new WaitForSeconds(dur);
+        mod.Remove(this);
+    }
 }

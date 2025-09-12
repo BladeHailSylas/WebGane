@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using StatsInterfaces;
+using EffectInterfaces;
 public static class EventBus
 {
     static readonly Dictionary<Type, Delegate> _map = new();
@@ -31,5 +31,5 @@ public static class EventBus
 public readonly struct CastStarted { public readonly Transform Caster; public readonly object Skill; public CastStarted(Transform t, object s) { Caster = t; Skill = s; } }
 public readonly struct CastEnded { public readonly Transform Caster; public readonly object Skill; public CastEnded(Transform t, object s) { Caster = t; Skill = s; } }
 public readonly struct DamageDealt { public readonly Transform Attacker, Target; public readonly float RawDamage; public DamageDealt(Transform a, Transform t, float dmg) { Attacker = a; Target = t; RawDamage = dmg; } }
-public readonly struct BuffApplyReq { public readonly Transform Target; public readonly IStatModifier Mod; public readonly float Duration; public BuffApplyReq(Transform t, IStatModifier m, float dur) { Target = t; Mod = m; Duration = dur; } }
-public readonly struct BuffRemoveReq { public readonly Transform Target; public readonly IStatModifier Mod; public BuffRemoveReq(Transform t, IStatModifier m) { Target = t; Mod = m; } }
+public readonly struct BuffApplyReq { public readonly Transform Target; public readonly IEffectModifier Mod; public readonly float Duration; public BuffApplyReq(Transform t, IEffectModifier m, float dur) { Target = t; Mod = m; Duration = dur; } }
+public readonly struct BuffRemoveReq { public readonly Transform Target; public readonly IEffectModifier Mod; public BuffRemoveReq(Transform t, IEffectModifier m) { Target = t; Mod = m; } }

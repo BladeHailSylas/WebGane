@@ -5,7 +5,7 @@ using UnityEngine;
 public class CharacterSpec : ScriptableObject
 {
     public string displayName;
-    public float baseMaxHP, baseAttack, baseDefense;
+    public float baseHP, baseHPGen, baseDR, baseAttack, baseDefense;
 
     [System.Serializable]
     public struct SkillBinding

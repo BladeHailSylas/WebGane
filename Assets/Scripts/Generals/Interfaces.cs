@@ -23,10 +23,6 @@ namespace EffectInterfaces
             duration = dur; amplifier = amp; effecter = eft;
         }
     }
-    public enum ReduceType
-    {
-        Health = 0, Mana
-    }
     public interface IEffectStats
     {
         Dictionary<Effects, EffectState> EffectList { get; }
@@ -35,14 +31,10 @@ namespace EffectInterfaces
         HashSet<Effects> PositiveEffects { get; }
         HashSet<Effects> NegativeEffects { get; }
     }
-
-    // 예: 방관% 모디파이어 (곱 연산)
-    public sealed class ArmorPenPercentMod : IStatModifier
+    public interface IEffectModifier
     {
-        public readonly float Percent;  // 0~100
-        public ArmorPenPercentMod(float percent) { Percent = Mathf.Clamp(percent, 0, 100); }
-        public void Apply(PlayerStats s) => s.AddArmorPen(Percent);
-        public void Remove(PlayerStats s) => s.RemoveArmorPen(Percent);
+        void Apply(PlayerEffects effects);
+        void Remove(PlayerEffects effects);
     }
 }
 namespace ActInterfaces
@@ -127,11 +119,15 @@ namespace StatsInterfaces
     {
         OnGround, IsDead, IsImmune
     }
+    public enum ReduceType
+    {
+        Health = 0, Mana
+    }
     public interface IStatProvider
     {
         float GetStat(StatType stat, StatRef re = StatRef.Current);
     }
-    public interface IDefensiveStats
+    /*public interface IDefensiveStats
     {
         float BaseHealth { get; }
         float MaxHealth { get; }
@@ -174,7 +170,7 @@ namespace StatsInterfaces
         float BaseVelocity { get; }
         float Velocity { get; }
         float JumpTime { get; }
-    }
+    }*/
     public interface IStatModifier
     {
         void Apply(PlayerStats stats);
