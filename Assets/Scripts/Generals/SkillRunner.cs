@@ -2,6 +2,7 @@
 using SOInterfaces;
 using ActInterfaces;
 using UnityEngine;
+using System.Collections;
 
 // ★ CharacterSpec.FollowUpBinding 사용을 위해 using 추가
 using static CharacterSpec;
@@ -72,7 +73,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
         if (!fu.IsValid(out ISkillMechanic next)) return;
 
         StartCoroutine(Co());
-        System.Collections.IEnumerator Co()
+        IEnumerator Co()
         {
             if (fu.respectBusyCooldown && (busy || cd > 0f)) yield break;
             if (fu.delay > 0f) yield return new WaitForSeconds(fu.delay);

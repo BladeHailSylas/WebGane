@@ -1,6 +1,5 @@
 using SOInterfaces;
 using UnityEngine;
-using System.Collections.Generic;
 
 [System.Serializable]
 public class MeleeParams : ISkillParam, IHasCooldown

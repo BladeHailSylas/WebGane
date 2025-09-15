@@ -62,7 +62,7 @@ namespace ActInterfaces
     {
         void Attack(float attackDamage);
         //
-        //void Drain(float amount);
+        //void Drain(float amount); // 피흡, 생명력 흡수 스테이터스가 없을 경우에는?
     }
 
     public interface ICastable : IActivatable // 기술 캐스트
