@@ -9,7 +9,9 @@
 // 2) "요청(Request)"과 "사실 알림(Event)"을 명확히 구분.
 // 3) Unity 수명 고려: Transform/Object 참조는 연출/편의 목적에 한정하고, 필요 시 Id/Meta를 병행 제공.
 // 4) 타입이 곧 채널: EventBus<T> 키는 T 타입이므로, 구독/발행의 결합은 타입 시그니처로 관리.
-
+// 알 수 없는 것:
+// 플레이어 캐릭터 선택 시에도 event를 사용해야 하는지 모르겠음
+// 스테이터스 
 #nullable enable
 using SOInterfaces;
 using UnityEngine;
@@ -48,7 +50,7 @@ public readonly struct GameEventMeta
 /// <summary>
 /// GameEventMeta 생성을 표준화하는 간단 팩토리.
 /// - 일관된 증가 시퀀스/시간 스냅샷을 부여.
-/// - <see cref=\"Create\"/> 하나만 쓰면 메타가 균일해집니다.
+/// - <see cref="Create"/> 하나만 쓰면 메타가 균일해집니다.
 /// </summary>
 public static class GameEventMetaFactory
 {
@@ -130,9 +132,10 @@ public readonly struct CastEnded
 
 /// <summary>
 /// [Event] 피해가 "적용된" 사실 알림(로그/연출/UI용).
-/// - RawDamage: 계산 전 원값(로그/분석 용)
-/// - FinalDamage: 실제 적용 값(HP 차감량)
-/// - DamageType: 일반/비례/고정 등 도메인 타입
+/// - RawDamage: 기본 피해량
+/// - FinalDamage: 실제 가하는 피해량(피해량 증감의 효과를 받는)
+/// - ArmorPenetration: 총 방어 관통 계수(곱연산, <see cref="PlayerStats.TotalArmorPenetration()"/> 참조)
+/// - DamageType(<see cref="EDamageType"/>): 일반(Normal)/비례(Percentaged)/고정(Fixed)
 /// - HitPoint/HitNormal: 연출/넉백 방향 계산 근거
 /// </summary>
 public readonly struct DamageDealt
@@ -142,47 +145,47 @@ public readonly struct DamageDealt
     public readonly Transform Target;
     public readonly float RawDamage;
     public readonly float FinalDamage;
+    public readonly float ArmorPenetration;
     public readonly EDamageType DamageType;
-    public readonly bool IsCrit;
     public readonly Vector2 HitPoint;
     public readonly Vector2 HitNormal;
 
     public DamageDealt(
         GameEventMeta meta, Transform attacker, Transform target,
-        float rawDamage, float finalDamage, EDamageType damageType,
-        bool isCrit, Vector2 hitPoint, Vector2 hitNormal)
+        float rawDamage, float finalDamage, float armorPenetration, EDamageType damageType,
+        Vector2 hitPoint, Vector2 hitNormal)
     {
         Meta = meta;
         Attacker = attacker;
         Target = target;
         RawDamage = rawDamage;
         FinalDamage = finalDamage;
+        ArmorPenetration = armorPenetration;
         DamageType = damageType;
-        IsCrit = isCrit;
         HitPoint = hitPoint;
         HitNormal = hitNormal;
     }
 
     public override string ToString()
-        => $"DamageDealt {FinalDamage} ({DamageType}, crit={IsCrit}) {Attacker.name}→{Target.name}";
+        => $"DamageDealt {FinalDamage} ({DamageType}) {Attacker.name}→{Target.name}";
 }
 
-/// <summary>피해 유형.</summary>
-public enum EDamageType { Normal, Percentaged, True }
+/// <summary>피해 유형: 일반 피해 Normal, 비례 피해 Percentaged(최대 체력의 1% 등), 고정 피해 Fixed(피해량 변동이 없음, 그것이 고정이니까 음)</summary>
+public enum EDamageType { Normal, Percentaged, Fixed }
 
 #endregion
 
 #region ===== 버프/이펙트: 요청(Request) & 제거(Remove) =====
 // EventBus에서 "요청" 페이로드는 시스템(버프 매니저 등)에게 동작을 의뢰합니다.
 // - ApplyReq: 적용 요청(성공/실패 여부는 별도 응답 이벤트로 설계해도 됨)
-// - RemoveReq: 제거 요청
+// - RemoveReq: 제거 요청(제거는 PlayerEffects에서 따로 수행해도 될지 모르겠음)
 // ※ 요청을 "사실 알림"과 섞지 말고 분리하면 흐름 추적이 쉽습니다.
 
 /// <summary>
 /// [Request] 버프(스탯) 적용 요청.
 /// - Target: 누구에게 적용?
 /// - Mod: 어떤 스탯 변경?
-/// - Duration: -1 or ≤ 0 이면 무한
+/// - Duration: float.PositiveInfinity일 경우에만 무한(음수는 버그의 우려가 있음)
 /// - Tag: 중복 정책을 위한 태그(옵션; 동일 태그는 갱신/대체 등 정책에 활용)
 /// </summary>
 public readonly struct BuffApplyReq

@@ -26,10 +26,10 @@ public class HomingProjectileMovement : MonoBehaviour
 
     void Update()
     {
-        float dt = Time.deltaTime;
+        float dt = Time.deltaTime; //시간 재기, IExpirable을 붙여야 할까
         life += dt; if (life > P.maxLife) { Destroy(gameObject); return; }
 
-        // 가속
+        // 가속, 최저 속력 보정 필요?
         speed = Mathf.Max(0f, speed + P.acceleration * dt);
 
         // 타깃 유효성 확인 + 재타깃팅
@@ -76,7 +76,12 @@ public class HomingProjectileMovement : MonoBehaviour
         transform.position += (Vector3)(dir * d);
         traveled += d;
     }
-
+    /// <summary>
+    /// 타깃이 사라졌을 경우 대상을 다시 타깃하는 메서드,
+    /// "필드의 대상을 추적" 하는 경우, 대상이 필드에서 사라지면(순간이동 등) 무효가 되므로 NO,
+    /// 한편 "대상을 절대 추적" 하는 경우 로직을 수정해야 됨(대상을 식별할 수 있는 무언가가 필요)
+    /// 지금은 가장 가까운 적을 타깃하지만, 그것이 내가 처음에 지목한 대상과 같은 엔터티가 아닐 수 있음(그리고 아마 아닐 것)
+    /// </summary>
     void TryRetarget()
     {
         // 간단: 주변 원형 탐색 후 가장 가까운 적 타깃
@@ -89,7 +94,12 @@ public class HomingProjectileMovement : MonoBehaviour
         }
         if (bestT) target = bestT;
     }
-
+    /// <summary>
+    /// 스프라이트 생성, 그런데 무슨 하얀 네모가 나와서 그냥 임시로 써야 함,
+    /// 투사체가 사라질 때 Callback이 존재하는 경우도 있고 해서 투사체는 Prefab이 필요할 듯,
+    /// 물론 그 Prefab을 어떻게 만드느냐는 또 다른 문제
+    /// </summary>
+    /// <returns></returns>
     Sprite GenerateDotSprite()
     {
         int s = 8; var tex = new Texture2D(s, s, TextureFormat.RGBA32, false);

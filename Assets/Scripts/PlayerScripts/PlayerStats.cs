@@ -23,8 +23,8 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에
     public float Mana { get; private set; }
     public float BaseManaRegen { get; private set; }
     public float ManaRegen { get; private set; }
-    public float BaseVelocity { get; private set; } = 8f;
-    public float Velocity { get; private set; } = 8f;
+    public float BaseSpeed { get; private set; } = 8f;
+    public float Speed { get; private set; } = 8f;
     public float JumpTime { get; private set; }
     public bool OnGround { get; private set; }
     public bool IsDead { get; private set; }
@@ -44,7 +44,7 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에
     {
         return (80 / (80 + armor * armorRatio)) * damageRatio;
     }
-    void Damaged(float damage, float armorRatio = 1f, bool isfixed = false)
+    void Damaged(float damage, float armorRatio = 1f, bool isfixed = false) //비례 피해를 여기서 계산해야 되나 << 그럴 거 같지 않음
     {
         if (IsDead || damage <= 0f) return;
         if (!isfixed) damage *= DamageReductionCalc(Armor, armorRatio, TotalDamageReduction());
@@ -70,7 +70,7 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에
         float totalAP = 1f;
         foreach (var ap in ArmorPenetration)
         {
-            totalAP *= (1 - ap / 100); // 단일 AP 비율이 100%를 넘으면 방어력이 마이너스라 피해 배율이 너무 커지므로 그런 일이 절대로 없어야 함
+            totalAP *= (1 - ap / 100); // 단일 AP 비율이 100%를 넘으면 방어력이 마이너스라 피해 배율이 너무 커지므로 그런 일이 없어야 함
         }
         return totalAP;
     }
@@ -79,7 +79,7 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에
         float totalDR = 1f;
         foreach (var dr in DamageReduction)
         {
-            totalDR *= (1 - dr / 100);
+            totalDR *= (1 - dr / 100); //단일 DR 비율이 100%를 넘으면 맞는데 회복함, AP도 100%를 넘으면 안 되지만 DR은 더더욱 단일 비율이 100%을 넘어서는 안 됨(망겜임)
         }
         return Mathf.Max(0.15f, totalDR); //공격자 우선(하게 두되 대안을 주어라) -> 대미지가 들어가게 두되 다른 생존 수단(체력 회복, 보호막 등)으로 원콤이 안 나게 하라
     }

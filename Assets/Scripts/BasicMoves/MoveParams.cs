@@ -1,5 +1,6 @@
 using SOInterfaces;
 using UnityEngine;
+using System.Collections.Generic;
 
 [System.Serializable]
 public class MeleeParams : ISkillParam, IHasCooldown
@@ -42,4 +43,18 @@ public class HomingParams : ISkillParam, IHasCooldown
     [Header("Behavior")]
     public bool retargetOnLost = true;     // 타깃 잃으면 재탐색 시도
     public float retargetRadius = 3f;      // 주변 재탐색 반경
+}
+
+[System.Serializable]
+public class SwitchControllerParams : ISkillParam, IHasCooldown
+{
+    public int startIndex = 0;
+    public bool advanceOnCast = true;  // true: 누를 때마다 다음, false: 직접 외부에서 Advance 호출
+    public bool resetOnCooldownEnd = false; // 필요시 확장
+
+    // ★ 핵심: 내부 스킬의 쿨다운을 여기에 반영해 Runner가 읽도록 함
+    public float Cooldown => runtimeCooldown;
+
+    // 런타임에서 컨트롤러가 값을 채움
+    [System.NonSerialized] public float runtimeCooldown = 0f;
 }

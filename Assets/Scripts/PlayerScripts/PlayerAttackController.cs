@@ -26,7 +26,7 @@ public class PlayerAttackController : MonoBehaviour
         Bind(spec.skill1);
     }
 
-    void Bind(CharacterSpec.SkillBinding b)
+    void Bind(SkillBinding b)
     {
         if (b.mechanic is not ISkillMechanic mech || b.param == null) return;
         if (!mech.ParamType.IsInstanceOfType(b.param))

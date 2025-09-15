@@ -19,7 +19,7 @@ public class HomingProjectileMechanic : SkillMechanicBase<HomingParams>, ITarget
     }
 
     // 실제 로직
-    IEnumerator Cast(Transform owner, Camera cam, HomingParams p, Transform target)
+    IEnumerator Cast(Transform owner, Camera cam, HomingParams p, Transform target) //Camera cam은 어디에 쓰는 것? 카메라 워크에 필요?
     {
         Debug.Log("Homing Missile Casted with target");
         if (target == null) yield break;
