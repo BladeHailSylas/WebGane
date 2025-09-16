@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9830e15dbecba9c4fa51b4bf96287813, type: 3}
-  m_Name: SwitchMeleeHoming
+  m_Name: SwitchSkill
   m_EditorClassIdentifier: Assembly-CSharp::SwitchSkillMechanic
   steps:
   - mechanic: {fileID: 11400000, guid: fc59fcced4d960944b72d6a0822e45ad, type: 2}

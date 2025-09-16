@@ -1,12 +1,14 @@
-using SOInterfaces;
+ï»¿// MoveParams.cs (REFACTOR/EXTEND)
+using System.Collections.Generic;
 using UnityEngine;
+using SOInterfaces;
 
 [System.Serializable]
-public class MeleeParams : ISkillParam, IHasCooldown
+public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
 {
     [Header("Area")]
     public float radius = 1.6f;
-    [Range(0, 360)] public float angleDeg = 120f;  // 360ÀÌ¸é ¿øÇü
+    [Range(0, 360)] public float angleDeg = 120f;
     public LayerMask enemyMask;
 
     [Header("Damage")]
@@ -15,21 +17,35 @@ public class MeleeParams : ISkillParam, IHasCooldown
     [Header("Timing")]
     public float windup = 0.05f, recover = 0.08f, cooldown = 0.10f;
     public float Cooldown => cooldown;
+
+    // â˜… FollowUp(ì˜ˆ: 2íƒ€)ì„ Paramì— ì§ì ‘ ë‘  â€” í•„ìš” ì‹œ ì¸ìŠ¤í™í„°ì—ì„œ ì„¤ì •
+    public List<MechanicRef> onHit = new();
+    public List<MechanicRef> onExpire = new();
+
+    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+    {
+        var src = hook == AbilityHook.OnHit ? onHit :
+                    hook == AbilityHook.OnExpire ? onExpire : null;
+        if (src == null) yield break;
+        foreach (var mref in src)
+            if (mref.TryBuildOrder(prevTarget, out var order))
+                yield return (order, mref.delay, mref.respectBusyCooldown);
+    }
 }
 
 [System.Serializable]
-public class HomingParams : ISkillParam, IHasCooldown
+public class HomingParams : ISkillParam, IHasCooldown, IFollowUpProvider
 {
     [Header("Projectile")]
-    public float speed = 10f;              // ÃÊ±â ¼Óµµ
-    public float acceleration = 0f;        // ¸ÅÃÊ °¡¼Ó(¼±ÅÃ)
-    public float maxTurnDegPerSec = 360f;  // È¸Àü ÇÑ°è(¡Æ/s) ¡æ ³·Ãâ¼ö·Ï ´À¸®°Ô ±ÁÈû
+    public float speed = 10f;
+    public float acceleration = 0f;
+    public float maxTurnDegPerSec = 360f;
     public float radius = 0.2f;
     public float maxRange = 12f;
-    public float maxLife = 3f;             // ¾ÈÀü ÀåÄ¡(ÃÊ)
+    public float maxLife = 3f;
 
     [Header("Collision")]
-    public LayerMask enemyMask; //LayerMaskÀÇ default¸¦ ¼³Á¤ÇÏ´Â ¹æ¹ı? = LayerMask.GetMask("Foe");?
+    public LayerMask enemyMask;
     public LayerMask blockerMask;
 
     [Header("Damage")]
@@ -40,20 +56,53 @@ public class HomingParams : ISkillParam, IHasCooldown
     public float Cooldown => cooldown;
 
     [Header("Behavior")]
-    public bool retargetOnLost = true;     // Å¸±ê ÀÒÀ¸¸é ÀçÅ½»ö ½Ãµµ
-    public float retargetRadius = 3f;      // ÁÖº¯ ÀçÅ½»ö ¹İ°æ
+    public bool retargetOnLost = true;
+    public float retargetRadius = 3f;
+
+    // â˜… FollowUp ì˜ˆ: ë§ìœ¼ë©´ í­ë°œ, ì†Œë©¸í•˜ë©´ ì”ë¥˜ ë””ë²„í”„â€¦
+    public List<MechanicRef> onHit = new();
+    public List<MechanicRef> onExpire = new();
+
+    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+    {
+        var src = hook == AbilityHook.OnHit ? onHit :
+                    hook == AbilityHook.OnExpire ? onExpire : null;
+        if (src == null) yield break;
+        foreach (var mref in src)
+            if (mref.TryBuildOrder(prevTarget, out var order))
+                yield return (order, mref.delay, mref.respectBusyCooldown);
+    }
 }
 
 [System.Serializable]
-public class SwitchControllerParams : ISkillParam, IHasCooldown
+public class SwitchControllerParams : ISkillParam, ISwitchPolicy
 {
-    public int startIndex = 0;
-    public bool advanceOnCast = true;  // true: ´©¸¦ ¶§¸¶´Ù ´ÙÀ½, false: Á÷Á¢ ¿ÜºÎ¿¡¼­ Advance È£Ãâ
-    public bool resetOnCooldownEnd = false; // ÇÊ¿ä½Ã È®Àå
+    [Tooltip("êµëŒ€ ì‹¤í–‰í•  ê¸°ìˆ  ëª©ë¡(íƒ€ê¹ƒ/ë…¼íƒ€ê¹ƒ í˜¼ì¬ ê°€ëŠ¥)")]
+    public List<MechanicRef> steps = new();
 
-    // ¡Ú ÇÙ½É: ³»ºÎ ½ºÅ³ÀÇ Äğ´Ù¿îÀ» ¿©±â¿¡ ¹İ¿µÇØ Runner°¡ ÀĞµµ·Ï ÇÔ
-    public float Cooldown => runtimeCooldown;
+    [Min(0)] public int startIndex = 0;
+    public bool advanceOnCast = true; // falseë©´ OnHit ë“±ì—ì„œ ìˆ˜ë™ ì „ì§„
 
-    // ·±Å¸ÀÓ¿¡¼­ ÄÁÆ®·Ñ·¯°¡ °ªÀ» Ã¤¿ò
-    [System.NonSerialized] public float runtimeCooldown = 0f;
+    // ëŸ°íƒ€ì„ ì»¤ì„œ(ìºë¦­í„°ë³„ë¡œ SerializeReference Paramì´ ë³´ê´€í•˜ë¯€ë¡œ ì¸ìŠ¤í™í„° ì „ì—­ ì˜í–¥ ì—†ìŒ)
+    [System.NonSerialized] int _idx = -1;
+
+    public bool TrySelect(Transform owner, Camera cam, out CastOrder order)
+    {
+        order = default;
+        if (steps == null || steps.Count == 0) return false;
+
+        if (_idx < 0) _idx = Mathf.Clamp(startIndex, 0, steps.Count - 1);
+        int cur = _idx;
+        if (advanceOnCast) _idx = (_idx + 1) % steps.Count;
+
+        var mref = steps[cur];
+        return mref.TryBuildOrder(prevTarget: null, out order);
+    }
+
+    // í•„ìš”í•˜ë©´ OnHitì—ì„œ ìˆ˜ë™ ì „ì§„í•  ìˆ˜ ìˆë„ë¡ í—¬í¼ ì œê³µ
+    public void AdvanceExplicit()
+    {
+        if (steps == null || steps.Count == 0) return;
+        _idx = (_idx + 1) % steps.Count;
+    }
 }

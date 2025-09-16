@@ -22,108 +22,24 @@ MonoBehaviour:
   baseSpeed: 0
   attack:
     slot: 0
-    mechanic: {fileID: 11400000, guid: 0d90dcc87f0d7ab4cab0b777c39ac931, type: 2}
+    mechanic: {fileID: 11400000, guid: fc59fcced4d960944b72d6a0822e45ad, type: 2}
     param:
-      rid: 830848502686810184
-    onCastStart:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
-    onHit:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
-    onExpire:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
+      rid: 830848524044730502
   skill1:
     slot: 1
     mechanic: {fileID: 11400000, guid: 8eac857f8e9b7ac4e8dfb345295b3ca3, type: 2}
     param:
       rid: 830848387254583378
-    onCastStart:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
-    onHit:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
-    onExpire:
-      mechanic: {fileID: 0}
-      param:
-        rid: 830848502686810183
-      delay: 0
-      passSameTarget: 1
-      respectBusyCooldown: 0
   skill2:
     slot: 2
     mechanic: {fileID: 11400000, guid: 0d90dcc87f0d7ab4cab0b777c39ac931, type: 2}
     param:
-      rid: 830848502686810187
-    onCastStart:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
-    onHit:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
-    onExpire:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
+      rid: 830848524044730504
   ultimate:
     slot: 3
     mechanic: {fileID: 0}
     param:
       rid: -2
-    onCastStart:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
-    onHit:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
-    onExpire:
-      mechanic: {fileID: 0}
-      param:
-        rid: -2
-      delay: 0
-      passSameTarget: 0
-      respectBusyCooldown: 0
   references:
     version: 2
     RefIds:
@@ -150,7 +66,44 @@ MonoBehaviour:
         cooldown: 0.35
         retargetOnLost: 0
         retargetRadius: 3
-    - rid: 830848502686810183
+        onHit: []
+        onExpire: []
+    - rid: 830848524044730502
+      type: {class: MeleeParams, ns: , asm: Assembly-CSharp}
+      data:
+        radius: 1.6
+        angleDeg: 120
+        enemyMask:
+          serializedVersion: 2
+          m_Bits: 0
+        attack: 10
+        apRatio: 0
+        knockback: 6
+        attackPercent: 1
+        windup: 0.05
+        recover: 0.08
+        cooldown: 0.1
+        onHit: []
+        onExpire: []
+    - rid: 830848524044730504
+      type: {class: SwitchControllerParams, ns: , asm: Assembly-CSharp}
+      data:
+        steps:
+        - mechanic: {fileID: 11400000, guid: fc59fcced4d960944b72d6a0822e45ad, type: 2}
+          param:
+            rid: 830848524044730505
+          delay: 0
+          passSameTarget: 0
+          respectBusyCooldown: 0
+        - mechanic: {fileID: 11400000, guid: fc59fcced4d960944b72d6a0822e45ad, type: 2}
+          param:
+            rid: -2
+          delay: 0
+          passSameTarget: 0
+          respectBusyCooldown: 0
+        startIndex: 0
+        advanceOnCast: 1
+    - rid: 830848524044730505
       type: {class: MeleeParams, ns: , asm: Assembly-CSharp}
       data:
         radius: 1.6
@@ -165,15 +118,5 @@ MonoBehaviour:
         windup: 0.05
         recover: 0.08
         cooldown: 0.1
-    - rid: 830848502686810184
-      type: {class: SwitchControllerParams, ns: , asm: Assembly-CSharp}
-      data:
-        startIndex: 0
-        advanceOnCast: 1
-        resetOnCooldownEnd: 0
-    - rid: 830848502686810187
-      type: {class: SwitchControllerParams, ns: , asm: Assembly-CSharp}
-      data:
-        startIndex: 0
-        advanceOnCast: 1
-        resetOnCooldownEnd: 0
+        onHit: []
+        onExpire: []

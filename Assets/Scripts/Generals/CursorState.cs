@@ -1,7 +1,8 @@
 // 커서 상태만 관리하는 초소형 컴포넌트
 using UnityEngine;
 
-public class SwitchCursorState : MonoBehaviour
+public class SwitchCursorState : MonoBehaviour //CursorState가 필요함? 왜?
+
 {
     int _idx = -1;
 

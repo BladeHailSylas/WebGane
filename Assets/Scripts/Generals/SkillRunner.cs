@@ -1,102 +1,91 @@
-// SkillRunner.cs (추가/수정)
+// SkillRunner.cs (REFACTOR)
+using System.Collections;
+using UnityEngine;
 using SOInterfaces;
 using ActInterfaces;
-using UnityEngine;
-using System.Collections;
-
-// ★ CharacterSpec.FollowUpBinding 사용을 위해 using 추가
-using static CharacterSpec;
 
 public class SkillRunner : MonoBehaviour, ISkillRunner
 {
-    ISkillMechanic mech;
-    ISkillParam param;
+    [SerializeField] ISkillMechanic mech;
+    [SerializeReference] ISkillParam param;
+
     Camera cam;
     bool busy; float cd;
 
     public bool IsBusy => busy;
     public bool IsOnCooldown => cd > 0f;
 
-    // ★ 캐릭터별 콤보 바인딩 저장
-    FollowUpBinding _onCastStart, _onHit, _onExpire;
+    void Awake() { cam = Camera.main; }
+    void Update() { if (cd > 0f) cd -= Time.deltaTime; }
 
-    // 기존 Init 확장: 훅별 follow-up을 함께 주입
-    public void Init(ISkillMechanic mechanic, ISkillParam param,
-                    FollowUpBinding onCastStart = default,
-                    FollowUpBinding onHit = default,
-                    FollowUpBinding onExpire = default)
-    {
-        mech = mechanic; this.param = param; cam = Camera.main;
-        _onCastStart = onCastStart; _onHit = onHit; _onExpire = onExpire;
-    }
-
+    // 슬롯의 기본 스킬 시전 (입력에서 호출)
     public void TryCast()
     {
         if (busy || cd > 0f || mech == null || param == null) return;
-        StartCoroutine(CoCast());
+
+        // (A) 스위치 정책이 있으면 먼저 주문서 선택 시도 → 성공하면 그걸 시전
+        if (param is ISwitchPolicy sp && sp.TrySelect(transform, cam, out var switched))
+        {
+            Schedule(switched, 0f, respectBusyCooldown: true);
+            return;
+        }
+
+        // (B) 평소처럼 슬롯의 메커닉을 시전
+        Schedule(new CastOrder(mech, param), 0f, true);
     }
 
-    System.Collections.IEnumerator CoCast()
+    // === 표준 스케줄 API (FollowUp/일반/스위치 모두 동일 경로) ===
+    public void Schedule(CastOrder order, float delay, bool respectBusyCooldown)
+    {
+        StartCoroutine(CoSchedule(order, delay, respectBusyCooldown));
+    }
+
+    IEnumerator CoSchedule(CastOrder order, float delay, bool respect)
+    {
+        if (respect && (busy || cd > 0f)) yield break;
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+        yield return CoCast(order);
+    }
+
+    IEnumerator CoCast(CastOrder order)
     {
         busy = true;
+        BroadcastHook(AbilityHook.OnCastStart, null);
 
-        // ★ 시전 시작 훅 follow-up
-        TryFollowUp(_onCastStart, null, default);
-
-        // 기존 로직 유지 (타깃형/일반 분기)
-        if (mech is ITargetedMechanic tgtMech)
+        // 타깃 분기는 Runner만 담당 (혼재 OK)
+        if (order.Mech is ITargetedMechanic tgt)
         {
-            var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
-            if (provider == null || !provider.TryGetTarget(out Transform target) || target == null)
-            { busy = false; yield break; }
-            yield return tgtMech.Cast(transform, cam, param, target);
+            Transform t = order.TargetOverride;
+            if (t == null)
+            {
+                var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
+                if (provider == null || !provider.TryGetTarget(out t) || t == null) { busy = false; yield break; }
+            }
+            yield return tgt.Cast(transform, cam, order.Param, t);
         }
         else
         {
-            yield return mech.Cast(transform, cam, param);
+            yield return order.Mech.Cast(transform, cam, order.Param);
         }
 
-        if (param is IHasCooldown hasCd) cd = hasCd.Cooldown;
+        if (order.Param is IHasCooldown h) cd = Mathf.Max(cd, h.Cooldown);
+
+        // 시전 완료 후 Hook 공급자들의 FollowUp을 같은 경로로 스케줄해도 됨(원한다면 OnAfterCast 훅 추가)
         busy = false;
     }
 
-    void Update() { if (cd > 0f) cd -= Time.deltaTime; }
+    // === 훅 엔드포인트(메커닉에서 콜백) ===
+    public void NotifyHookOnHit(Transform target, Vector2 point) => BroadcastHook(AbilityHook.OnHit, target);
+    public void NotifyHookOnExpire(Vector2 point) => BroadcastHook(AbilityHook.OnExpire, null);
 
-    // ★ 메커닉에서 훅 통지 시 호출
-    public void NotifyHookOnHit(Transform target, Vector2 point) => TryFollowUp(_onHit, target, point);
-    public void NotifyHookOnExpire(Vector2 point) => TryFollowUp(_onExpire, null, point);
-
-    // ★ follow-up 실행 공통 처리
-    void TryFollowUp(FollowUpBinding fu, Transform tgt, Vector2 hitPoint)
+    void BroadcastHook(AbilityHook hook, Transform prevTarget)
     {
-        if (fu.mechanic is not ISkillMechanic) return;
-        if (!fu.IsValid(out ISkillMechanic next)) return;
-
-        StartCoroutine(Co());
-        IEnumerator Co()
-        {
-            if (fu.respectBusyCooldown && (busy || cd > 0f)) yield break;
-            if (fu.delay > 0f) yield return new WaitForSeconds(fu.delay);
-
-            if (next is ITargetedMechanic tnext)
-            {
-                // 타깃형 follow-up: 이전 타깃 전달 또는 새로 조달
-                Transform pass = fu.passSameTarget ? tgt : null;
-                if (pass == null)
-                {
-                    var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
-                    if (provider == null || !provider.TryGetTarget(out pass) || pass == null) yield break;
-                }
-                yield return tnext.Cast(transform, cam, fu.param, pass);
-            }
-            else
-            {
-                // 일반형 follow-up
-                yield return next.Cast(transform, cam, fu.param);
-            }
-
-            // follow-up 쿨타임 반영(있다면)
-            if (fu.param is IHasCooldown h) cd = Mathf.Max(cd, h.Cooldown);
-        }
+        // Param이 FollowUp 제공 시 → 주문서 수집 → Schedule
+        if (param is IFollowUpProvider p)
+            foreach (var (order, delay, respect) in p.BuildFollowUps(hook, prevTarget))
+                Schedule(order, delay, respect);
     }
+
+    // 바인딩
+    public void Init(ISkillMechanic m, ISkillParam p) { mech = m; param = p; cam = Camera.main; }
 }
