@@ -11,11 +11,11 @@ public class PlayerAttackController : MonoBehaviour
     //public ICharacter Spec { get { return spec; } set { spec = value; } }
 
     [Header("Input")]
-    public InputActionReference attackKey;   // LMB µî
+    public InputActionReference attackKey;   // LMB(+Passive)
     public InputActionReference skill1Key;   // RMB
     public InputActionReference skill2Key;   // SHIFT
     public InputActionReference ultimateKey; // SPACE
-
+                                            //°ø°Ý LMB, Skill1 Shift, Skill2 Space, Ultimate RMB?
     private readonly Dictionary<SkillSlot, ISkillRunner> _runners = new();
 
     readonly Dictionary<SkillSlot, ISkillRunner> runners = new();
@@ -44,13 +44,15 @@ public class PlayerAttackController : MonoBehaviour
         if (attackKey) { attackKey.action.Enable(); attackKey.action.performed += _ => TryCast(SkillSlot.Attack); }
         if (skill1Key) { skill1Key.action.Enable(); skill1Key.action.performed += _ => TryCast(SkillSlot.Skill1); }
         if (skill2Key) { skill2Key.action.Enable(); skill2Key.action.performed += _ => TryCast(SkillSlot.Skill2); }
+        if (ultimateKey) { ultimateKey.action.Enable(); ultimateKey.action.performed += _ => TryCast(SkillSlot.Ultimate); }
     }
     void OnDisable()
     {
         if (attackKey) attackKey.action.performed -= _ => TryCast(SkillSlot.Attack);
         if (skill1Key) skill1Key.action.performed -= _ => TryCast(SkillSlot.Skill1);
         if (skill2Key) skill2Key.action.performed -= _ => TryCast(SkillSlot.Skill2);
-        attackKey?.action.Disable(); skill1Key?.action.Disable();
+        if (ultimateKey) ultimateKey.action.performed -= _ => TryCast(SkillSlot.Ultimate);
+        attackKey?.action.Disable(); skill1Key?.action.Disable(); skill2Key?.action.Disable(); ultimateKey?.action.Disable(); 
     }
 
     void TryCast(SkillSlot slot) { if (runners.TryGetValue(slot, out var r)) r.TryCast(); }

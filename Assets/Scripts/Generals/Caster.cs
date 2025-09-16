@@ -39,10 +39,9 @@ public struct MechanicRef
     public bool passSameTarget;
     public bool respectBusyCooldown;
 
-    public bool TryBuildOrder(Transform prevTarget, out CastOrder order)
+    public readonly bool TryBuildOrder(Transform prevTarget, out CastOrder order)
     {
-        var next = mechanic as ISkillMechanic;
-        if (next == null || param == null || !next.ParamType.IsInstanceOfType(param))
+        if (mechanic is not ISkillMechanic next || param == null || !next.ParamType.IsInstanceOfType(param))
         { order = default; return false; }
 
         order = new CastOrder(next, param, passSameTarget ? prevTarget : null);

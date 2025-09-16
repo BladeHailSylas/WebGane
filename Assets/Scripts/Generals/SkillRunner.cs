@@ -1,8 +1,10 @@
 // SkillRunner.cs (REFACTOR)
+using ActInterfaces;
+using SOInterfaces;
 using System.Collections;
 using UnityEngine;
-using SOInterfaces;
-using ActInterfaces;
+using static EventBus;
+using static GameEventMetaFactory;
 
 public class SkillRunner : MonoBehaviour, ISkillRunner
 {
@@ -51,7 +53,10 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
     {
         busy = true;
         BroadcastHook(AbilityHook.OnCastStart, null);
-
+        var meta = Create(transform, channel: "combat"); // 공통 메타
+        var skillRef = new SkillRef(order.Mech as Object); // SO 참조 기반
+        Transform target = order.TargetOverride;
+        Publish(new CastStarted(meta, skillRef, order.Param, transform, target));
         // 타깃 분기는 Runner만 담당 (혼재 OK)
         if (order.Mech is ITargetedMechanic tgt)
         {
@@ -59,7 +64,11 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
             if (t == null)
             {
                 var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
-                if (provider == null || !provider.TryGetTarget(out t) || t == null) { busy = false; yield break; }
+                if (provider == null || !provider.TryGetTarget(out t) || t == null) 
+                {
+                    Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
+                    busy = false; yield break; 
+                }
             }
             yield return tgt.Cast(transform, cam, order.Param, t);
         }
