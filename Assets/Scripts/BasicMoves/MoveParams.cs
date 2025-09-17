@@ -13,7 +13,7 @@ public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
     public LayerMask enemyMask;
 
     [Header("Damage")]
-    public float attack = 10f, apRatio = 0f, knockback = 6f, attackPercent = 1.0f;
+    public float attack = 10f, apRatio = 0f, knockback = 0f, attackPercent = 1.0f;
 
     [Header("Timing")]
     public float windup = 0.05f, recover = 0.08f, cooldown = 0.10f;
@@ -50,7 +50,7 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
     public LayerMask blockerMask;
 
     [Header("Damage")]
-    public float damage = 8f, apRatio = 0f, knockback = 5f;
+    public float damage = 8f, apRatio = 0f, knockback = 0f;
 
     [Header("Timing")]
     public float cooldown = 0.35f;
@@ -77,6 +77,60 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
         foreach (var mref in src)
             if (mref.TryBuildOrder(prevTarget, out var order))
                 yield return (order, mref.delay, mref.respectBusyCooldown);
+    }
+}
+[System.Serializable]
+public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData, IAnchorClearance
+{
+    [Header("Targeting (Runner가 해석)")]
+    [SerializeField] TargetMode _mode = TargetMode.FixedForward;
+    [SerializeField] float _fallbackRange = 4f;
+    [SerializeField] Vector2 _localOffset = Vector2.zero;
+    [SerializeField] LayerMask _wallsMask;
+
+    public TargetMode mode => _mode;
+    public float fallbackRange => _fallbackRange;
+    public Vector2 localOffset => _localOffset;
+    public LayerMask wallsMask => _wallsMask;
+
+    [Header("Motion")]
+    public float duration = 0.18f;           // 총 대시 시간
+    public AnimationCurve speedCurve = AnimationCurve.Linear(0, 1, 1, 1);
+    public bool stopOnWall = true;           // 벽 충돌 시 즉시 종료
+
+    [Header("Collision Volume")]
+    public float radius = 0.5f;              // 내 몸의 반경(적/벽 체크 모두에 사용)
+    public float skin = 0.05f;               // 충돌면 살짝 넘기는 여유
+
+    // IAnchorClearance
+    public float collisionRadius => radius;
+    public float anchorSkin => Mathf.Max(0.01f, skin);
+
+    [Header("Combat During Dash")]
+    public bool dealDamage = true;           // 대시 중 피해를 줄 것인지
+    public bool canPenetrate = true;         // 적을 관통할지
+    public LayerMask enemyMask;
+    public float damage = 8f;
+    public float apRatio = 0f;
+    public float knockback = 6f;
+
+    [Header("I-Frame/Status")]
+    public bool grantIFrame = true;
+    public float iFrameDuration = 0.18f;     // 보통 duration과 동일
+
+    [Header("Timing")]
+    public float cooldown = 0.35f;
+    public float Cooldown => cooldown;
+
+    [Header("FollowUps")]
+    public List<MechanicRef> onExpire = new(); // 대시 종료 후 후속(예: 원형 베기)
+
+    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+    {
+        if (hook != AbilityHook.OnExpire || onExpire == null) yield break;
+        foreach (var m in onExpire)
+            if (m.TryBuildOrder(null, out var order))
+                yield return (order, m.delay, m.respectBusyCooldown);
     }
 }
 

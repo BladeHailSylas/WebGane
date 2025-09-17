@@ -112,7 +112,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
                 {
                     // ---- 비타깃: 목적지를 벽 앞까지 보정 후 앵커 생성 ----
                     Vector3 clamped = ResolveReachablePoint2D(transform.position, desired, walls, rad, skin);
-
+                    Debug.Log($"anchor has generated at {clamped.x} + {clamped.y}");
                     // 너무 가까워 방향 벡터가 0이 되는 것을 방지
                     Vector2 dir = (Vector2)(clamped - transform.position);
                     if (dir.sqrMagnitude < 0.0001f)

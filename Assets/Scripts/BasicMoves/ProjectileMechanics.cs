@@ -21,7 +21,7 @@ public class ProjectileMechanics : SkillMechanicBase<MissileParams>, ITargetedMe
     // 실제 로직
     IEnumerator Cast(Transform owner, Camera cam, MissileParams p, Transform target) //Camera cam은 어디에 쓰는 것? 카메라 워크에 필요?
     {
-        Debug.Log("Homing Missile Casted with target");
+        Debug.Log($"Homing Missile Casted with target {target.name}");
         if (target == null) yield break;
 
         var go = new GameObject("HomingProjectile");

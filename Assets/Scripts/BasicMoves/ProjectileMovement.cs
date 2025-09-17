@@ -1,6 +1,7 @@
 using UnityEngine;
 using ActInterfaces;
 using System;
+using System.Collections.Generic;
 
 public class ProjectileMovement : MonoBehaviour, IExpirable
 {
@@ -10,6 +11,10 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
     float speed, traveled, life;
     public float Lifespan => life;
 
+    // ★ 이미 맞춘 콜라이더 재타격 방지
+    readonly HashSet<int> _hitIds = new();
+    const float SKIN = 0.01f; // 충돌면을 살짝 넘어가도록
+
     public void Init(MissileParams p, Transform owner, Transform target)
     {
         P = p; this.owner = owner; this.target = target;
@@ -18,9 +23,7 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
         dir = (tgt - start).normalized;
         speed = P.speed;
 
-        // (테스트용 시각화) 점 스프라이트
-        var sr = gameObject.AddComponent<SpriteRenderer>(); //Prefab을 쓰고 싶다면 어떻게 해야 하는가? HomingParams에서 Prefab을 참조하고 여기서 호출?
-
+        var sr = gameObject.AddComponent<SpriteRenderer>();
         sr.sprite = GenerateDotSprite();
         sr.sortingOrder = 1000;
         transform.localScale = Vector3.one * (P.radius * 2f);
@@ -28,53 +31,89 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
 
     void Update()
     {
-        float dt = Time.deltaTime; //시간 재기, IExpirable을 붙여야 할까
+        float dt = Time.deltaTime;
         life += dt; if (life > P.maxLife) { Expire(); }
 
-        // 가속, 최저 속력 보정 필요?
+        // 가속
         speed = Mathf.Max(0f, speed + P.acceleration * dt);
 
         // 타깃 유효성 확인 + 재타깃팅
         if (target == null && P.retargetOnLost)
             TryRetarget();
 
-        // 원하는 방향
         Vector2 pos = transform.position;
+
+        // 원하는 방향(유도)
         Vector2 desired = target ? ((Vector2)target.position - pos).normalized : dir;
-
-        // 회전 제한(°/s → rad/s)
         float maxTurnRad = P.maxTurnDegPerSec * Mathf.Deg2Rad * dt;
-        Vector2 newDir = Vector3.RotateTowards(dir, desired, maxTurnRad, 0f);
-        dir = newDir.normalized;
+        dir = Vector3.RotateTowards(dir, desired, maxTurnRad, 0f).normalized;
 
-        // 이동 전 충돌 검사
-        float step = speed * dt;
-        var hitWall = Physics2D.CircleCast(pos, P.radius, dir, step, P.blockerMask);
-        if (hitWall.collider)
-        {
-            Move(hitWall.distance);
-            Destroy(gameObject); return;
-        }
+        // === 이동/충돌(여러 번) 처리 ===
+        float remaining = speed * dt;
 
-        var hitEnemy = Physics2D.CircleCast(pos, P.radius, dir, step, P.enemyMask);
-        if (hitEnemy.collider)
+        while (remaining > 0f)
         {
-            Move(hitEnemy.distance);
-            var c = hitEnemy.collider;
-            if (c.TryGetComponent(out IVulnerable v))
-                v.TakeDamage(P.damage, P.apRatio);
-            if (c.attachedRigidbody)
-                c.attachedRigidbody.AddForce(dir * P.knockback, ForceMode2D.Impulse);
-            if (!P.CanPenetrate || c.transform == target) 
+            pos = transform.position;
+
+            // 1) 벽 체크
+            var wallHit = Physics2D.CircleCast(pos, P.radius, dir, remaining, P.blockerMask);
+            if (wallHit.collider)
             {
-                Debug.Log("Try to pen");
-                Destroy(gameObject); return;
+                // 벽까지 이동 후 소멸
+                Move(wallHit.distance);
+                Expire();
+                return;
             }
+
+            // 2) 적 체크
+            var enemyHit = Physics2D.CircleCast(pos, P.radius, dir, remaining, P.enemyMask);
+            if (enemyHit.collider)
+            {
+                var c = enemyHit.collider;
+
+                // 같은 콜라이더 중복 타격 방지
+                int id = c.GetInstanceID();
+                if (!_hitIds.Contains(id))
+                {
+                    // 충돌점까지 이동
+                    Move(enemyHit.distance);
+
+                    // 피해/넉백 적용
+                    if (c.TryGetComponent(out IVulnerable v))
+                        v.TakeDamage(P.damage, P.apRatio);
+                    if (c.attachedRigidbody)
+                        c.attachedRigidbody.AddForce(dir * P.knockback, ForceMode2D.Impulse);
+
+                    _hitIds.Add(id); // 기록
+
+                    // 관통 불가이거나(=명중 즉시 소멸) / 타깃 그 자체면 소멸
+                    if (!P.CanPenetrate || (target != null && c.transform == target))
+                    {
+                        Expire();
+                        return;
+                    }
+                }
+                else
+                {
+                    // 이미 맞춘 대상이면 충돌점까지는 굳이 안 멈추고 통과 처리
+                    Move(enemyHit.distance);
+                }
+
+                // 충돌면을 살짝 넘어가 다음 캐스트에서 같은 면에 걸리지 않게
+                Move(SKIN);
+
+                // 잔여 거리 갱신
+                remaining -= enemyHit.distance + SKIN;
+                continue; // 다음 충돌/이동 처리
+            }
+
+            // 3) 충돌 없으면 남은 거리만큼 이동하고 종료
+            Move(remaining);
+            remaining = 0f;
         }
 
-        // 이동/사거리 체크
-        Move(step);
-        if (traveled >= P.maxRange) Destroy(gameObject);
+        // 사거리 체크
+        if (traveled >= P.maxRange) Expire();
     }
 
     void Move(float d)
@@ -82,15 +121,9 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
         transform.position += (Vector3)(dir * d);
         traveled += d;
     }
-    /// <summary>
-    /// 타깃이 사라졌을 경우 대상을 다시 타깃하는 메서드,
-    /// "필드의 대상을 추적" 하는 경우, 대상이 필드에서 사라지면(순간이동 등) 무효가 되므로 NO,
-    /// 한편 "대상을 절대 추적" 하는 경우 로직을 수정해야 됨(대상을 식별할 수 있는 무언가가 필요)
-    /// 지금은 가장 가까운 적을 타깃하지만, 그것이 내가 처음에 지목한 대상과 같은 엔터티가 아닐 수 있음(그리고 아마 아닐 것)
-    /// </summary>
+
     void TryRetarget()
     {
-        // 간단: 주변 원형 탐색 후 가장 가까운 적 타깃
         var hits = Physics2D.OverlapCircleAll(transform.position, P.retargetRadius, P.enemyMask);
         float best = float.PositiveInfinity; Transform bestT = null;
         foreach (var h in hits)
@@ -100,12 +133,7 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
         }
         if (bestT) target = bestT;
     }
-    /// <summary>
-    /// 스프라이트 생성, 그런데 무슨 하얀 네모가 나와서 그냥 임시로 써야 함,
-    /// 투사체가 사라질 때 Callback이 존재하는 경우도 있고 해서 투사체는 Prefab이 필요할 듯,
-    /// 물론 그 Prefab을 어떻게 만드느냐는 또 다른 문젠데 일단 필요성은 인식했음
-    /// </summary>
-    /// <returns></returns>
+
     Sprite GenerateDotSprite()
     {
         int s = 8; var tex = new Texture2D(s, s, TextureFormat.RGBA32, false);
@@ -113,10 +141,10 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
         tex.SetPixels32(col); tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), s);
     }
-    public void Expire() //"투사체를 제거한다" 의 효과로 호출할 수 있음
+
+    public void Expire()
     {
-        //Expire 시에 해야 할 것이 있다면 여기에서
+        //제거될 때 뭔가 해야 한다?
         Destroy(gameObject);
-        return;
     }
 }
