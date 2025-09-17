@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using SOInterfaces;
+using UnityEditor;
 
 [System.Serializable]
 public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
@@ -34,7 +35,7 @@ public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
 }
 
 [System.Serializable]
-public class HomingParams : ISkillParam, IHasCooldown, IFollowUpProvider
+public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData
 {
     [Header("Projectile")]
     public float speed = 10f;
@@ -58,6 +59,11 @@ public class HomingParams : ISkillParam, IHasCooldown, IFollowUpProvider
     [Header("Behavior")]
     public bool retargetOnLost = true;
     public float retargetRadius = 3f;
+    [Header("Targeter")]
+    public TargetMode mode; public float fallback; public Vector2 local; public float col; public float skin; public bool canpen;
+    public TargetMode Mode => mode; public float FallbackRange => fallback; public Vector2 LocalOffset => local; public LayerMask WallsMask => blockerMask;
+    public float CollisionRadius => col; public float AnchorSkin => skin; public bool CanPenetrate => canpen;
+
 
     // ★ FollowUp 예: 맞으면 폭발, 소멸하면 잔류 디버프…
     public List<MechanicRef> onHit = new();

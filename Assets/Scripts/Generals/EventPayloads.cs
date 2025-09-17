@@ -126,6 +126,33 @@ public readonly struct CastEnded
     public override string ToString() => $"CastEnded[{Skill}] by {Caster.name}, interrupted={Interrupted}";
 }
 
+/// <summary>
+/// [Event] 타깃 확정 알림, 
+/// </summary>
+public readonly struct TargetAcquired
+{
+    public readonly GameEventMeta Meta;
+    public readonly SkillRef Skill;
+    public readonly Transform Caster;
+    public readonly Transform Target;
+    public TargetAcquired(GameEventMeta meta, SkillRef skill, Transform caster, Transform target)
+    {
+        Meta = meta; Skill = skill; Caster = caster; Target = target;
+    }
+    public override string ToString() => $"TargetAcquired[{Target.name}] by {Caster.name} to activate {Skill}";
+}
+public readonly struct TargetNotFound
+{
+    public readonly GameEventMeta Meta;
+    public readonly SkillRef Skill;
+    public readonly Transform Caster;
+    public TargetNotFound(GameEventMeta meta, SkillRef skill, Transform caster)
+    {
+        Meta = meta; Skill = skill; Caster = caster;
+    }
+    public override string ToString() => $"TargetNotFound by {Caster.name} to activate {Skill}";
+}
+
 #endregion
 
 #region ===== 전투: 사실 알림(Event) =====

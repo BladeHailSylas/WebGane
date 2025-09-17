@@ -4,6 +4,7 @@ using UnityEngine;
 using EffectInterfaces;
 using StatsInterfaces;
 
+#region ===== Effect =====
 namespace EffectInterfaces
 {
     public enum Effects
@@ -37,6 +38,9 @@ namespace EffectInterfaces
         void Remove(PlayerEffects effects);
     }
 }
+#endregion
+
+#region ===== Act =====
 namespace ActInterfaces
 {
     public interface IVulnerable //피해를 받아 죽을 수 있음
@@ -101,6 +105,9 @@ namespace ActInterfaces
         bool TryGetTarget(out Transform target); // 잠금 대상이 없으면 false
     }
 }
+#endregion
+
+#region ===== Stats =====
 namespace StatsInterfaces
 {
     public enum StatType
@@ -178,6 +185,9 @@ namespace StatsInterfaces
         void Remove(PlayerStats stats);
     }
 }
+#endregion
+
+#region ===== SO =====
 namespace SOInterfaces
 {
     public enum SkillSlot { Attack, Skill1, Skill2, Ultimate }
@@ -219,5 +229,17 @@ namespace SOInterfaces
         
         public abstract IEnumerator Cast(Transform owner, Camera cam, TParam param);
     }
+    public enum TargetMode { AcquireEnemy, CursorWorld, FixedForward, FixedOffset }
 
+    public interface ITargetingData
+    {
+        TargetMode Mode { get; }
+        float FallbackRange { get; }  // FixedForward 거리
+        Vector2 LocalOffset { get; }  // FixedOffset
+        LayerMask WallsMask { get; }  // 벽/장애물
+        float CollisionRadius { get; } // 스킬 충돌 반경(없으면 0)
+        float AnchorSkin { get; }     // 벽 앞 여유(0.03~0.08)
+        bool CanPenetrate { get; } // 논타깃: 적중 시에도 종료되지 않는가, 타깃: 대상에게 적중하기 전까지 종료되지 않는가
+    }
 }
+#endregion

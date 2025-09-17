@@ -1,14 +1,16 @@
 using UnityEngine;
 using ActInterfaces;
+using System;
 
-public class HomingProjectileMovement : MonoBehaviour
+public class ProjectileMovement : MonoBehaviour, IExpirable
 {
-    HomingParams P;
+    MissileParams P;
     Transform owner, target;
     Vector2 dir;
     float speed, traveled, life;
+    public float Lifespan => life;
 
-    public void Init(HomingParams p, Transform owner, Transform target)
+    public void Init(MissileParams p, Transform owner, Transform target)
     {
         P = p; this.owner = owner; this.target = target;
         Vector2 start = owner.position;
@@ -27,7 +29,7 @@ public class HomingProjectileMovement : MonoBehaviour
     void Update()
     {
         float dt = Time.deltaTime; //시간 재기, IExpirable을 붙여야 할까
-        life += dt; if (life > P.maxLife) { Destroy(gameObject); return; }
+        life += dt; if (life > P.maxLife) { Expire(); }
 
         // 가속, 최저 속력 보정 필요?
         speed = Mathf.Max(0f, speed + P.acceleration * dt);
@@ -63,7 +65,11 @@ public class HomingProjectileMovement : MonoBehaviour
                 v.TakeDamage(P.damage, P.apRatio);
             if (c.attachedRigidbody)
                 c.attachedRigidbody.AddForce(dir * P.knockback, ForceMode2D.Impulse);
-            Destroy(gameObject); return;
+            if (!P.CanPenetrate || c.transform == target) 
+            {
+                Debug.Log("Try to pen");
+                Destroy(gameObject); return;
+            }
         }
 
         // 이동/사거리 체크
@@ -97,7 +103,7 @@ public class HomingProjectileMovement : MonoBehaviour
     /// <summary>
     /// 스프라이트 생성, 그런데 무슨 하얀 네모가 나와서 그냥 임시로 써야 함,
     /// 투사체가 사라질 때 Callback이 존재하는 경우도 있고 해서 투사체는 Prefab이 필요할 듯,
-    /// 물론 그 Prefab을 어떻게 만드느냐는 또 다른 문제
+    /// 물론 그 Prefab을 어떻게 만드느냐는 또 다른 문젠데 일단 필요성은 인식했음
     /// </summary>
     /// <returns></returns>
     Sprite GenerateDotSprite()
@@ -106,5 +112,11 @@ public class HomingProjectileMovement : MonoBehaviour
         var col = new Color32[s * s]; for (int i = 0; i < col.Length; i++) col[i] = new Color32(255, 255, 255, 255);
         tex.SetPixels32(col); tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), s);
+    }
+    public void Expire() //"투사체를 제거한다" 의 효과로 호출할 수 있음
+    {
+        //Expire 시에 해야 할 것이 있다면 여기에서
+        Destroy(gameObject);
+        return;
     }
 }
