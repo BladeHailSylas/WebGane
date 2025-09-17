@@ -1,4 +1,5 @@
 using UnityEngine;
+using ActInterfaces;
 
 public static class TargetAnchorUtil2D
 {
@@ -59,41 +60,41 @@ public static class TargetAnchorUtil2D
         return true;
     }
     ///<summary> 유틸: 마우스 월드 좌표 (2D 기준, Z=owner의 Z로 고정) </summary>
-    public static Vector3 GetCursorWorld2D(Camera cam, Transform owner)
+    public static Vector3 CursorWorld2D(Camera cam, Transform owner, float depthFallback)
     {
         var sp = Input.mousePosition;
-        // 카메라에서 owner까지의 깊이를 사용
         float depth = Mathf.Abs(cam.transform.position.z - owner.position.z);
+        if (depth < 0.01f) depth = depthFallback;
         var w = cam.ScreenToWorldPoint(new Vector3(sp.x, sp.y, depth));
         w.z = owner.position.z;
         return w;
     }
-    public static Vector3 ResolveReachablePoint2D(
-    Vector3 origin, Vector3 desired, LayerMask wallsMask, float radius, float skin)
+    public static Vector2 GetMoveDirOrFacing(Transform t)
     {
-        Vector2 from = origin; Vector2 to = desired;
-        Vector2 dir = to - from; float dist = dir.magnitude;
+        // 플레이어 입력 소스가 있다면 거기서 “최근 이동 벡터”를 받아오세요.
+        // 없으면 정면을 기본으로.
+        var input = t.GetComponent<IMovable>() ?? t.GetComponentInChildren<IMovable>(); // 프로젝트별 인터페이스
+        if (input == null) Debug.Log("Have ☆ Children?");
+        Vector2 mv = input != null ? input.LastMoveVector : Vector2.zero;
+        if (mv.sqrMagnitude < 0.01f) mv = (Vector2)t.right;
+        return mv.normalized;
+    }
+
+    public static Vector3 ResolveReachablePoint2D(Vector3 origin, Vector3 desired, LayerMask walls, float radius, float skin)
+    {
+        Vector2 from = origin, to = desired, dir = to - from; float dist = dir.magnitude;
         if (dist <= Mathf.Epsilon) return origin;
         dir /= dist; skin = Mathf.Max(0f, skin);
 
         if (radius > 0f)
         {
-            var hit = Physics2D.CircleCast(from, radius, dir, dist, wallsMask);
-            if (hit.collider != null)
-            {
-                float back = Mathf.Min(skin, hit.distance);
-                // 법선 방향으로 빼도 좋음: hit.point - hit.normal * skin
-                return hit.point - dir * back;
-            }
+            var hit = Physics2D.CircleCast(from, radius, dir, dist, walls);
+            if (hit.collider) { float back = Mathf.Min(skin, hit.distance); return hit.point - dir * back; }
         }
         else
         {
-            var hit = Physics2D.Raycast(from, dir, dist, wallsMask);
-            if (hit.collider != null)
-            {
-                float back = Mathf.Min(skin, hit.distance);
-                return hit.point - dir * back;
-            }
+            var hit = Physics2D.Raycast(from, dir, dist, walls);
+            if (hit.collider) { float back = Mathf.Min(skin, hit.distance); return hit.point - dir * back; }
         }
         return desired;
     }

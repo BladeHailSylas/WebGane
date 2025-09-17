@@ -12,7 +12,6 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 {
     [SerializeField] ISkillMechanic mech;
     [SerializeReference] ISkillParam param;
-
     Camera cam;
     bool busy; float cd;
 
@@ -46,9 +45,15 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 
     IEnumerator CoSchedule(CastOrder order, float delay, bool respect)
     {
-        if (respect && (busy || cd > 0f)) yield break;
-        if (delay > 0f) yield return new WaitForSeconds(delay);
-        yield return CoCast(order);
+        if (respect)
+        {
+            while (busy || cd > 0f)
+            {
+                yield return null;
+            }
+            if (delay > 0f) yield return new WaitForSeconds(delay);
+            yield return CoCast(order);
+        }
     }
 
     IEnumerator CoCast(CastOrder order)
@@ -62,35 +67,52 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
         // 타깃 분기는 Runner만 담당 (혼재 OK)
         if (order.Mech is ITargetedMechanic tgt)
         {
+            /*
+            //타깃 획득 로직
+            var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
+                    if (provider == null || !provider.TryGetTarget(out t) || t == null)
+                    {
+                        Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
+                        busy = false; yield break;
+                    }
+                    // 실패 시: 이벤트 TargetNotFound + 종료 (현 시스템과 일관) :contentReference[oaicite:3]{index=3}
+                    // (비타깃인데 적이 가까이 있어도 '무시'해야 하므로 needEnemy=false 로 분기됩니다)
+             */
             Transform t = order.TargetOverride;
 
             if (t == null)
             {
+                Vector3 desired = default;
                 bool needEnemy = true;
-                Vector3 desired = Vector3.zero;
-                LayerMask walls = 0; float rad = 0f; float skin = 0.05f;
+                float rad = 0f, skin = 0.05f;
+                LayerMask walls = 0;
 
                 if (order.Param is ITargetingData td)
                 {
-                    walls = td.WallsMask; rad = td.CollisionRadius; skin = Mathf.Max(0.01f, td.AnchorSkin);
+                    walls = td.WallsMask;
+                    rad = td.CollisionRadius;
+                    skin = Mathf.Max(0.01f, td.AnchorSkin);
 
                     switch (td.Mode)
                     {
-                        case TargetMode.AcquireEnemy:
+                        case TargetMode.TowardsEnemy:
                             needEnemy = true;
                             break;
 
-                        case TargetMode.CursorWorld:
+                        case TargetMode.TowardsCursor:
                             needEnemy = false;
-                            desired = GetCursorWorld2D(cam, transform);
+                            desired = CursorWorld2D(cam, transform, depthFallback: 10f);
+                            // 원점→커서 방향으로 fallbackRange만큼만
+                            //desired = transform.position + (desired - transform.position).normalized * Mathf.Max(0f, td.FallbackRange);
                             break;
 
-                        case TargetMode.FixedForward:
+                        case TargetMode.TowardsMovement:
                             needEnemy = false;
-                            desired = transform.position + transform.right * Mathf.Max(0f, td.FallbackRange);
+                            var mv = GetMoveDirOrFacing(transform); // 아래 헬퍼 참고
+                            desired = transform.position + (Vector3)(mv * Mathf.Max(0f, td.FallbackRange));
                             break;
 
-                        case TargetMode.FixedOffset:
+                        case TargetMode.TowardsOffset:
                             needEnemy = false;
                             desired = transform.TransformPoint((Vector3)td.LocalOffset);
                             break;
@@ -99,6 +121,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 
                 if (needEnemy)
                 {
+                    //타깃 획득 로직
                     var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
                     if (provider == null || !provider.TryGetTarget(out t) || t == null)
                     {
@@ -110,19 +133,18 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
                 }
                 else
                 {
-                    // ---- 비타깃: 목적지를 벽 앞까지 보정 후 앵커 생성 ----
-                    Vector3 clamped = ResolveReachablePoint2D(transform.position, desired, walls, rad, skin);
-                    Debug.Log($"anchor has generated at {clamped.x} + {clamped.y}");
-                    // 너무 가까워 방향 벡터가 0이 되는 것을 방지
-                    Vector2 dir = (Vector2)(clamped - transform.position);
-                    if (dir.sqrMagnitude < 0.0001f)
-                    {
-                        // 마우스가 거의 제자리면 정면으로 최소 거리만큼 밀어줌
-                        Vector2 safeDir = (Vector2)transform.right;
-                        clamped = transform.position + (Vector3)(safeDir * Mathf.Max(0.5f, rad + skin));
-                    }
+                    // 1) 벽 앞까지 보정
+                    var clamped = ResolveReachablePoint2D(transform.position, desired, walls, rad, skin);
 
+                    // 2) 너무 가까운 점 방지(방향 0되는 것 방지)
+                    var v = (clamped - transform.position);
+                    if (v.sqrMagnitude < 0.0001f)
+                        clamped = transform.position + transform.right * Mathf.Max(0.5f, rad + skin);
+
+                    // 3) 앵커 생성
                     t = TargetAnchorPool.Acquire(clamped);
+                    // 캐스트가 끝나면 Release/파괴는 메커닉이 아니라 Runner가 책임지는 편이 안정적
+                    // (캐스트 종료 시점에서 Release 해 주세요)
                 }
             }
             Publish(new TargetAcquired(meta, skillRef, transform, t));

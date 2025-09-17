@@ -91,6 +91,7 @@ namespace ActInterfaces
 
     public interface IMovable
     {
+        Vector2 LastMoveVector { get; }
         void Move(Vector2 direction, Rigidbody2D rb, float velocity);
         void Jump(float time, float wait = 1f);
     }
@@ -229,16 +230,19 @@ namespace SOInterfaces
         
         public abstract IEnumerator Cast(Transform owner, Camera cam, TParam param);
     }
-    public enum TargetMode { AcquireEnemy, CursorWorld, FixedForward, FixedOffset }
-
-    public interface ITargetingData
+    public enum TargetMode { TowardsEnemy, TowardsCursor, TowardsMovement, TowardsOffset }
+    
+    public interface IAnchorClearance
+    {
+        LayerMask WallsMask { get; }  // 벽/장애물
+        float CollisionRadius { get; } // 스킬 충돌 반경(없으면 0)
+        float AnchorSkin { get; }     // 벽 앞 여유(0.03~0.08)
+    }
+    public interface ITargetingData : IAnchorClearance
     {
         TargetMode Mode { get; }
         float FallbackRange { get; }  // FixedForward 거리
         Vector2 LocalOffset { get; }  // FixedOffset
-        LayerMask WallsMask { get; }  // 벽/장애물
-        float CollisionRadius { get; } // 스킬 충돌 반경(없으면 0)
-        float AnchorSkin { get; }     // 벽 앞 여유(0.03~0.08)
         bool CanPenetrate { get; } // 논타깃: 적중 시에도 종료되지 않는가, 타깃: 대상에게 적중하기 전까지 종료되지 않는가
     }
 }

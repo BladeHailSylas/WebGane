@@ -83,15 +83,17 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
 public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData, IAnchorClearance
 {
     [Header("Targeting (Runner가 해석)")]
-    [SerializeField] TargetMode _mode = TargetMode.FixedForward;
+    [SerializeField] TargetMode _mode = TargetMode.TowardsMovement;
     [SerializeField] float _fallbackRange = 4f;
     [SerializeField] Vector2 _localOffset = Vector2.zero;
     [SerializeField] LayerMask _wallsMask;
+    [SerializeField] bool _canpen;
 
-    public TargetMode mode => _mode;
-    public float fallbackRange => _fallbackRange;
-    public Vector2 localOffset => _localOffset;
-    public LayerMask wallsMask => _wallsMask;
+    public TargetMode Mode => _mode;
+    public float FallbackRange => _fallbackRange;
+    public Vector2 LocalOffset => _localOffset;
+    public LayerMask WallsMask => _wallsMask;
+    public bool CanPenetrate => _canpen;
 
     [Header("Motion")]
     public float duration = 0.18f;           // 총 대시 시간
@@ -103,8 +105,8 @@ public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargeti
     public float skin = 0.05f;               // 충돌면 살짝 넘기는 여유
 
     // IAnchorClearance
-    public float collisionRadius => radius;
-    public float anchorSkin => Mathf.Max(0.01f, skin);
+    public float CollisionRadius => radius;
+    public float AnchorSkin => Mathf.Max(0.01f, skin);
 
     [Header("Combat During Dash")]
     public bool dealDamage = true;           // 대시 중 피해를 줄 것인지

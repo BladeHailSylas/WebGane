@@ -14,7 +14,7 @@ public class ProjectileMechanics : SkillMechanicBase<MissileParams>, ITargetedMe
     // 일반 진입점은 사용 안 함(필요하면 커서 방향 기본 발사로 대체 가능)
     public override IEnumerator Cast(Transform owner, Camera cam, MissileParams p)
     {
-        Debug.Log("Homing Missile Casted Without any target"); //사실상 log가 안 나와야 함. 이게 나오면 SkillRunner가 이상하다는 증거
+        Debug.Log("Homing Missile Casted Without any target"); //사실상 이 log는 안 나와야 함. 이게 나오면 SkillRunner가 이상하다는 증거
         yield break; 
     }
 
