@@ -1,8 +1,6 @@
-// SkillRunner.cs (REFACTOR)
 using ActInterfaces;
-using SOInterfaces;
+using SkillInterfaces;
 using System.Collections;
-using UnityEditor.UIElements;
 using UnityEngine;
 using static EventBus;
 using static GameEventMetaFactory;
@@ -45,39 +43,26 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 
     IEnumerator CoSchedule(CastOrder order, float delay, bool respect)
     {
-        if (respect)
-        {
-            while (busy || cd > 0f)
-            {
-                yield return null;
-            }
-            if (delay > 0f) yield return new WaitForSeconds(delay);
-            yield return CoCast(order);
-        }
+        // [RULE: FollowUpWait] 바쁨/쿨다운이면 드롭하지 말고 ‘대기 후 실행’ (콤보 일관)
+        while (respect && (busy || cd > 0f)) yield return null;
+
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+        yield return CoCast(order);
     }
 
     IEnumerator CoCast(CastOrder order)
     {
         busy = true;
-        BroadcastHook(AbilityHook.OnCastStart, null);
-        var meta = Create(transform, channel: "combat"); // 공통 메타
-        var skillRef = new SkillRef(order.Mech as Object); // SO 참조 기반
+
+        // [RULE: Events] 시작 이벤트는 Runner 단일 경로에서 발행
+        var meta = Create(transform, channel: "combat");
+        var skillRef = new SkillRef(order.Mech as Object);
         Transform target = order.TargetOverride;
         Publish(new CastStarted(meta, skillRef, order.Param, transform, target));
-        // 타깃 분기는 Runner만 담당 (혼재 OK)
+
         if (order.Mech is ITargetedMechanic tgt)
         {
-            /*
-            //타깃 획득 로직
-            var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
-                    if (provider == null || !provider.TryGetTarget(out t) || t == null)
-                    {
-                        Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
-                        busy = false; yield break;
-                    }
-                    // 실패 시: 이벤트 TargetNotFound + 종료 (현 시스템과 일관) :contentReference[oaicite:3]{index=3}
-                    // (비타깃인데 적이 가까이 있어도 '무시'해야 하므로 needEnemy=false 로 분기됩니다)
-             */
+            bool createdAnchor = false;   // [RULE: AnchorLifecycle] Runner가 만든 앵커는 Runner가 책임지고 정리
             Transform t = order.TargetOverride;
 
             if (t == null)
@@ -96,79 +81,94 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
                     switch (td.Mode)
                     {
                         case TargetMode.TowardsEnemy:
+                            // [RULE: TargetedSelect] 최대 사거리 내의 적을 대상으로 지정(실패시 중단)
                             needEnemy = true;
                             break;
 
                         case TargetMode.TowardsCursor:
+                            // [RULE: NonTargetedCursor] 커서 방향 앵커 생성
                             needEnemy = false;
-                            desired = CursorWorld2D(cam, transform, depthFallback: 10f);
-                            // 원점→커서 방향으로 fallbackRange만큼만
-                            //desired = transform.position + (desired - transform.position).normalized * Mathf.Max(0f, td.FallbackRange);
+                            var cursor = CursorWorld2D(cam, transform, depthFallback: 10f);
+                            desired = transform.position
+                                    + (cursor - transform.position).normalized * Mathf.Max(0f, td.FallbackRange);
                             break;
 
                         case TargetMode.TowardsMovement:
+                            // [RULE: NonTargetedMoveDir] 최근 이동 방향으로 앵커 생성
                             needEnemy = false;
-                            var mv = GetMoveDirOrFacing(transform); // 아래 헬퍼 참고
+                            var mv = GetMoveDirOrFacing(transform);
                             desired = transform.position + (Vector3)(mv * Mathf.Max(0f, td.FallbackRange));
                             break;
 
                         case TargetMode.TowardsOffset:
+                            // [RULE: NonTargetedOffset] 로컬 오프셋으로 앵커 생성
                             needEnemy = false;
                             desired = transform.TransformPoint((Vector3)td.LocalOffset);
                             break;
+
+                        /*case TargetMode.FixedForward:
+                            // [RULE: NonTargetedFixedForward] 정면 고정 거리 앵커 생성
+                            needEnemy = false;
+                            desired = transform.position + transform.right * Mathf.Max(0f, td.FallbackRange);
+                            break;*/
                     }
                 }
 
                 if (needEnemy)
                 {
-                    //타깃 획득 로직
+                    // [RULE: TargetedSelect] 타깃 획득 실패 → 즉시 종료 + 이벤트
                     var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
                     if (provider == null || !provider.TryGetTarget(out t) || t == null)
                     {
+                        Publish(new TargetNotFound(meta, skillRef, transform)); // 선택: 페이로드가 있다면
                         Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
                         busy = false; yield break;
                     }
-                    // 실패 시: 이벤트 TargetNotFound + 종료 (현 시스템과 일관) :contentReference[oaicite:3]{index=3}
-                    // (비타깃인데 적이 가까이 있어도 '무시'해야 하므로 needEnemy=false 로 분기됩니다)
                 }
                 else
                 {
-                    // 1) 벽 앞까지 보정
+                    // [RULE: AnchorClamp] 벽 앞까지 보정 + 최소거리 보장
                     var clamped = ResolveReachablePoint2D(transform.position, desired, walls, rad, skin);
-
-                    // 2) 너무 가까운 점 방지(방향 0되는 것 방지)
                     var v = (clamped - transform.position);
                     if (v.sqrMagnitude < 0.0001f)
                         clamped = transform.position + transform.right * Mathf.Max(0.5f, rad + skin);
 
-                    // 3) 앵커 생성
+                    // [RULE: AnchorCreate] 앵커 생성은 Runner 책임
                     t = TargetAnchorPool.Acquire(clamped);
-                    // 캐스트가 끝나면 Release/파괴는 메커닉이 아니라 Runner가 책임지는 편이 안정적
-                    // (캐스트 종료 시점에서 Release 해 주세요)
+                    createdAnchor = true;
                 }
             }
-            Publish(new TargetAcquired(meta, skillRef, transform, t));
+
+            Publish(new TargetAcquired(meta, skillRef, transform, t)); // 선택: 타깃 성공 이벤트
+
             // 타깃(적 또는 앵커)을 향해 캐스트
             yield return tgt.Cast(transform, cam, order.Param, t);
+
+            // [RULE: AnchorLifecycle] 캐스트 종료 후 Runner가 앵커 정리
+            if (createdAnchor) TargetAnchorPool.Release(t);
         }
         else
         {
+            // 논타깃 메커닉
             yield return order.Mech.Cast(transform, cam, order.Param);
         }
 
         if (order.Param is IHasCooldown h) cd = Mathf.Max(cd, h.Cooldown);
+
+        // [RULE: Events] 종료 이벤트는 Runner 단일 경로에서 발행
         Publish(new CastEnded(meta, skillRef, transform, false));
-        // 시전 완료 후 Hook 공급자들의 FollowUp을 같은 경로로 스케줄해도 됨(원한다면 OnAfterCast 훅 추가)
+
         busy = false;
     }
 
     // === 훅 엔드포인트(메커닉에서 콜백) ===
     public void NotifyHookOnHit(Transform target, Vector2 point) => BroadcastHook(AbilityHook.OnHit, target);
     public void NotifyHookOnExpire(Vector2 point) => BroadcastHook(AbilityHook.OnExpire, null);
+    public void NotifyHookOnExpire() => BroadcastHook(AbilityHook.OnExpire, null);
 
     void BroadcastHook(AbilityHook hook, Transform prevTarget)
     {
-        // Param이 FollowUp 제공 시 → 주문서 수집 → Schedule
+        // [RULE: FollowUpProvider] FollowUp은 Param에서 선언적으로 가져와 동일 경로로 Schedule
         if (param is IFollowUpProvider p)
             foreach (var (order, delay, respect) in p.BuildFollowUps(hook, prevTarget))
                 Schedule(order, delay, respect);

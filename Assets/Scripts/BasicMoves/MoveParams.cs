@@ -1,7 +1,7 @@
 ﻿// MoveParams.cs (REFACTOR/EXTEND)
 using System.Collections.Generic;
 using UnityEngine;
-using SOInterfaces;
+using SkillInterfaces;
 using UnityEditor;
 
 [System.Serializable]
@@ -80,62 +80,114 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
     }
 }
 [System.Serializable]
-public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData, IAnchorClearance
+public class DashParams :
+    ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData, IAnchorClearance
 {
-    [Header("Targeting (Runner가 해석)")]
+    // ── Targeting (Runner가 해석) ──────────────────────────────────────────
+    [Header("Targeting (interpreted by Runner)")]
+    [Tooltip("대상/조준 정책")]
     [SerializeField] TargetMode _mode = TargetMode.TowardsMovement;
-    [SerializeField] float _fallbackRange = 4f;
+
+    [Tooltip("비타깃(정면/커서/이동방향/오프셋)일 때 이동할 기준 거리")]
+    [Min(0)][SerializeField] float _fallbackRange = 4f;
+
+    [Tooltip("TowardsOffset 모드에서 사용할 로컬 오프셋")]
     [SerializeField] Vector2 _localOffset = Vector2.zero;
+
+    [Tooltip("앵커 보정(벽 차단)용 레이어 마스크")]
     [SerializeField] LayerMask _wallsMask;
-    [SerializeField] bool _canpen;
 
-    public TargetMode Mode => _mode;
-    public float FallbackRange => _fallbackRange;
+    [Tooltip("적 관통 허용(적은 대시를 멈추지 않음). 타깃 그 자체는 예외.")]
+    [SerializeField] bool _canPenetrate = true;
+
+    // ITargetingData
+    public TargetMode Mode => _mode;                 // [RULE: Targeted/NonTargeted]
+    public float FallbackRange => _fallbackRange;        // [RULE: DistanceBudget, FixedSpeed]
     public Vector2 LocalOffset => _localOffset;
-    public LayerMask WallsMask => _wallsMask;
-    public bool CanPenetrate => _canpen;
+    public LayerMask WallsMask => _wallsMask;            // [RULE: AnchorClamp]
+    public bool CanPenetrate => _canPenetrate;         // [RULE: PenetrationPolicy]
 
+    // ── Motion ──────────────────────────────────────────────────────────────
     [Header("Motion")]
-    public float duration = 0.18f;           // 총 대시 시간
-    public AnimationCurve speedCurve = AnimationCurve.Linear(0, 1, 1, 1);
-    public bool stopOnWall = true;           // 벽 충돌 시 즉시 종료
+    [Tooltip("대시 총 시간(속도 커브의 시간 기준)")]
+    [Min(0.01f)] public float duration = 0.18f;
 
+    [Tooltip("0→1 시간에 대한 속도 배율 커브(예산 소모는 Runner/메커닉에서 보정)")]
+    public AnimationCurve speedCurve = AnimationCurve.Linear(0, 1, 1, 1);
+
+    [Tooltip("벽 충돌 시 즉시 종료(거짓이면 이후 확장: 슬라이드 등)")]
+    public bool stopOnWall = true; // [RULE: WallStopsDash]
+
+    // ── Collision Volume(본체 충돌 형상) ────────────────────────────────────
     [Header("Collision Volume")]
-    public float radius = 0.5f;              // 내 몸의 반경(적/벽 체크 모두에 사용)
-    public float skin = 0.05f;               // 충돌면 살짝 넘기는 여유
+    [Tooltip("대시 중 본체 서클 캐스트 반경(벽/적 판정 공통)")]
+    [Min(0.01f)] public float radius = 0.5f;               // [RULE: CollisionOrder]
+
+    [Tooltip("충돌면을 살짝 넘기는 여유 거리(면 재포착/끼임 방지)")]
+    [Range(0.01f, 0.2f)] public float skin = 0.05f;        // [RULE: SKIN]
 
     // IAnchorClearance
-    public float CollisionRadius => radius;
-    public float AnchorSkin => Mathf.Max(0.01f, skin);
+    public float CollisionRadius => radius;                // [RULE: AnchorClamp]
+    public float AnchorSkin => Mathf.Max(0.01f, skin);// [RULE: AnchorClamp]
 
+    // ── Combat During Dash ─────────────────────────────────────────────────
     [Header("Combat During Dash")]
-    public bool dealDamage = true;           // 대시 중 피해를 줄 것인지
-    public bool canPenetrate = true;         // 적을 관통할지
+    [Tooltip("대시 경로에서 적을 가격할지 여부")]
+    public bool dealDamage = true;                          // [RULE: DealDamage]
+
+    [Tooltip("대시 중 적 판정 레이어")]
     public LayerMask enemyMask;
+
+    [Tooltip("대시 1회 가격 피해량(스탯 시스템이 따로 있으면 그쪽과 합산)")]
     public float damage = 8f;
+
+    [Tooltip("AP 비율")]
     public float apRatio = 0f;
-    public float knockback = 6f;
 
-    [Header("I-Frame/Status")]
+    [Tooltip("넉백 강도(Impulse)")]
+    public float knockback = 0f;
+
+    // ── I-Frame / Status ───────────────────────────────────────────────────
+    [Header("I-Frame / Status")]
+    [Tooltip("대시 시작 시 무적 프레임 부여")]
     public bool grantIFrame = true;
-    public float iFrameDuration = 0.18f;     // 보통 duration과 동일
 
+    [Tooltip("무적 지속(보통 duration과 동일)")]
+    [Min(0)] public float iFrameDuration = 0.18f;          // [RULE: IFrame]
+
+    // ── Timing ─────────────────────────────────────────────────────────────
     [Header("Timing")]
-    public float cooldown = 0.35f;
+    [Tooltip("시전 쿨다운(후속기 포함, Runner에서 최종 반영)")]
+    [Min(0)] public float cooldown = 0.35f;
     public float Cooldown => cooldown;
 
-    [Header("FollowUps")]
-    public List<MechanicRef> onExpire = new(); // 대시 종료 후 후속(예: 원형 베기)
+    // ── FollowUps(대시 종료 후) ────────────────────────────────────────────
+    [Header("FollowUps (OnExpire)")]
+    [Tooltip("대시 종료 시 자동 시전할 후속 기술 목록(예: 원형 베기)")]
+    public List<MechanicRef> onExpire = new();              // [RULE: FollowUpHook]
 
     public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
     {
         if (hook != AbilityHook.OnExpire || onExpire == null) yield break;
         foreach (var m in onExpire)
             if (m.TryBuildOrder(null, out var order))
-                yield return (order, m.delay, m.respectBusyCooldown);
+                yield return (order, m.delay, m.respectBusyCooldown); // [RULE: FollowUpWait]
     }
-}
 
+    // ── Validation / UX ────────────────────────────────────────────────────
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        // [RULE: SafetyClamp] 파라미터 방어적 정규화
+        duration = Mathf.Max(0.01f, duration);
+        radius = Mathf.Max(0.01f, radius);
+        skin = Mathf.Clamp(skin, 0.01f, 0.2f);
+        iFrameDuration = Mathf.Max(0f, iFrameDuration);
+        cooldown = Mathf.Max(0f, cooldown);
+        _fallbackRange = Mathf.Max(0f, _fallbackRange);
+    }
+#endif
+}
 [System.Serializable]
 public class SwitchControllerParams : ISkillParam, ISwitchPolicy
 {

@@ -1,8 +1,8 @@
-﻿// Casting.cs
+﻿// Caster.cs
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using SOInterfaces;
+using SkillInterfaces;
 
 public enum AbilityHook { OnCastStart, OnHit, OnExpire }
 

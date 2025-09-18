@@ -1,6 +1,6 @@
 using System.Collections;
 using UnityEngine;
-using SOInterfaces;
+using SkillInterfaces;
 
 [CreateAssetMenu(menuName = "Mechanics/Switch Controller")]
 public class SwitchSkillMechanic : SkillMechanicBase<SwitchControllerParams>
