@@ -1,6 +1,6 @@
 // SkillRunner.cs (REFACTOR)
 using ActInterfaces;
-using SOInterfaces;
+using SkillInterfaces;
 using System.Collections;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -96,25 +96,39 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
                     switch (td.Mode)
                     {
                         case TargetMode.TowardsEnemy:
-                            needEnemy = true;
-                            break;
+                            { 
+                                needEnemy = true;
+                                break;
+                            }
 
                         case TargetMode.TowardsCursor:
-                            needEnemy = false;
-                            var cursor = CursorWorld2D(cam, transform, depthFallback: 10f);
-                            desired = transform.position + (cursor - transform.position).normalized * Mathf.Max(0f, td.FallbackRange);
-                            break;
+                            {
+                                needEnemy = false;
+                                var cursor = CursorWorld2D(cam, transform, depthFallback: 10f);
+                                desired = transform.position + (cursor - transform.position).normalized * Mathf.Max(0f, td.FallbackRange);
+                                break;
+                            }
 
                         case TargetMode.TowardsMovement:
-                            needEnemy = false;
-                            var mv = GetMoveDirOrFacing(transform); // 아래 헬퍼 참고
-                            desired = transform.position + (Vector3)(mv * Mathf.Max(0f, td.FallbackRange));
-                            break;
+                            {
+                                needEnemy = false;
+                                // 정면 대체 없는 취득 → 0이면 시전 실패
+                                if (!TryGetMoveDir(transform, out var mv))
+                                {
+                                    Publish(new TargetNotFound(meta, skillRef, transform));   // 선택 이벤트
+                                    Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
+                                    busy = false; yield break;
+                                }
+                                desired = transform.position + (Vector3)(mv * Mathf.Max(0f, td.FallbackRange));
+                                break;
+                            }
 
                         case TargetMode.TowardsOffset:
-                            needEnemy = false;
-                            desired = transform.TransformPoint((Vector3)td.LocalOffset);
-                            break;
+                            {
+                                needEnemy = false;
+                                desired = transform.TransformPoint((Vector3)td.LocalOffset);
+                                break;
+                            }
                     }
                 }
 
@@ -132,18 +146,20 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
                 }
                 else
                 {
-                    // 1) 벽 앞까지 보정
                     var clamped = ResolveReachablePoint2D(transform.position, desired, walls, rad, skin);
 
-                    // 2) 너무 가까운 점 방지(방향 0되는 것 방지)
+                    // 2) 너무 가까운 점(거의 제자리) → '강제로 정면' 금지, 안전하게 시전 중단
                     var v = (clamped - transform.position);
                     if (v.sqrMagnitude < 0.0001f)
-                        clamped = transform.position + transform.right * Mathf.Max(0.5f, rad + skin);
+                    {
+                        Publish(new TargetNotFound(meta, skillRef, transform));      // 선택
+                        Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
+                        busy = false; yield break;
+                    }
 
-                    // 3) 앵커 생성
+                    // 3) 앵커 생성/수명주기 유지
                     t = TargetAnchorPool.Acquire(clamped);
-                    // 캐스트가 끝나면 Release/파괴는 메커닉이 아니라 Runner가 책임지는 편이 안정적
-                    // (캐스트 종료 시점에서 Release 해 주세요)
+                    //createdAnchor = true;
                 }
             }
             Publish(new TargetAcquired(meta, skillRef, transform, t));

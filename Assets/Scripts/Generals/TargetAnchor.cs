@@ -19,6 +19,9 @@ public static class TargetAnchorPool
         t.SetParent(root, false);
         t.position = pos;
         t.gameObject.SetActive(true);
+        //Display(for debug)
+        /*if (!t.GetComponent<TargetAnchorDebug>())
+            t.gameObject.AddComponent<TargetAnchorDebug>();*/
         return t;
     }
 

@@ -1,7 +1,7 @@
 ﻿// MoveParams.cs (REFACTOR/EXTEND)
 using System.Collections.Generic;
 using UnityEngine;
-using SOInterfaces;
+using SkillInterfaces;
 using UnityEditor;
 
 [System.Serializable]

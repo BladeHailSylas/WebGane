@@ -72,29 +72,56 @@ public static class TargetAnchorUtil2D
     public static Vector2 GetMoveDirOrFacing(Transform t)
     {
         // 플레이어 입력 소스가 있다면 거기서 “최근 이동 벡터”를 받아오세요.
-        // 없으면 정면을 기본으로.
+        // 이동 벡터가 작으면 아예 0으로 판정
         var input = t.GetComponent<IMovable>() ?? t.GetComponentInChildren<IMovable>(); // 프로젝트별 인터페이스
         if (input == null) Debug.Log("Have ☆ Children?");
         Vector2 mv = input != null ? input.LastMoveVector : Vector2.zero;
-        if (mv.sqrMagnitude < 0.01f) mv = (Vector2)t.right;
+        if (mv.sqrMagnitude < 0.01f) mv = Vector2.zero;
         return mv.normalized;
     }
-
-    public static Vector3 ResolveReachablePoint2D(Vector3 origin, Vector3 desired, LayerMask walls, float radius, float skin)
+    public static bool TryGetMoveDir(Transform t, out Vector2 dir, float eps = 0.01f)
     {
-        Vector2 from = origin, to = desired, dir = to - from; float dist = dir.magnitude;
+        dir = Vector2.zero;
+        var m = t.GetComponent<IMovable>() ?? t.GetComponentInChildren<IMovable>();
+        if (m == null) return false;
+        var mv = m.LastMoveVector;      // 실제 최근 이동 벡터
+        if (mv.sqrMagnitude < eps * eps) return false; // 0 → 실패로 돌려줌
+        dir = mv.normalized;
+        return true;
+    }
+    public static Vector3 ResolveReachablePoint2D(
+    Vector3 origin, Vector3 desired, LayerMask walls, float radius, float skin)
+    {
+        Vector2 from = origin, to = desired;
+        Vector2 dir = to - from; float dist = dir.magnitude;
         if (dist <= Mathf.Epsilon) return origin;
-        dir /= dist; skin = Mathf.Max(0f, skin);
+        dir /= dist;
+
+        skin = Mathf.Max(0f, skin);
+        float eps = 0.03f;                       // 소량 여유
+        float minSep = Mathf.Max(skin, radius + eps); // 최소 분리거리
 
         if (radius > 0f)
         {
             var hit = Physics2D.CircleCast(from, radius, dir, dist, walls);
-            if (hit.collider) { float back = Mathf.Min(skin, hit.distance); return hit.point - dir * back; }
+            if (hit.collider)
+            {
+                // 히트 지점에서 '거리만큼 뒤'가 아니라, 최소 분리(minSep)를 보장
+                var p = hit.point - dir * Mathf.Min(hit.distance, minSep);
+                // 법선 바깥쪽으로 소량 가산(0.5~1cm) → 실제 분리감 확보
+                p += (Vector2)hit.normal * 0.01f;
+                return p;
+            }
         }
         else
         {
             var hit = Physics2D.Raycast(from, dir, dist, walls);
-            if (hit.collider) { float back = Mathf.Min(skin, hit.distance); return hit.point - dir * back; }
+            if (hit.collider)
+            {
+                var p = hit.point - dir * Mathf.Min(hit.distance, minSep);
+                p += (Vector2)hit.normal * 0.01f;
+                return p;
+            }
         }
         return desired;
     }

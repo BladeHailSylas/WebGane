@@ -84,16 +84,19 @@ namespace ActInterfaces
         void Toggle();
     }
 
-    public interface IKnockbackable
+    public interface IPullable
     {
         void ApplyKnockback(Vector2 direction, float force);
     }
-
+    public interface ISweepable
+    {
+        MoveResult SweepMove(Vector2 vec);
+    }
     public interface IMovable
     {
         Vector2 LastMoveVector { get; }
         void Move(Vector2 direction, Rigidbody2D rb, float velocity);
-        void Jump(float time, float wait = 1f);
+        //void Jump(float time, float wait = 1f);
     }
 
     public interface IAffectable
@@ -188,8 +191,8 @@ namespace StatsInterfaces
 }
 #endregion
 
-#region ===== SO =====
-namespace SOInterfaces
+#region ===== Skill =====
+namespace SkillInterfaces
 {
     public enum SkillSlot { Attack, Skill1, Skill2, Ultimate }
     public interface ISkillParam { }                    // 파라미터 마커

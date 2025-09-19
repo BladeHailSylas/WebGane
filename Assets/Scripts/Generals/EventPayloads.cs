@@ -13,7 +13,7 @@
 // 플레이어 캐릭터 선택 시에도 event를 사용해야 하는지 모르겠음
 // 스테이터스 
 #nullable enable
-using SOInterfaces;
+using SkillInterfaces;
 using UnityEngine;
 
 #region ===== 공통 메타데이터 =====

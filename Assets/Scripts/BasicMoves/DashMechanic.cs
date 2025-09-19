@@ -2,36 +2,32 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using SOInterfaces;
 using static EventBus;
 using static GameEventMetaFactory;
 
 [CreateAssetMenu(menuName = "Mechanics/Dash")]
 public class DashMechanic : SkillMechanicBase<DashParams>, ITargetedMechanic
 {
-    const float SKIN = 0.01f; // 충돌면을 살짝 넘기는 여유
-    public override IEnumerator Cast(Transform owner, Camera cam, DashParams param)
-    {
-        Debug.Log("NO\nDash has been casted without target");
-        throw new System.NotImplementedException();
-    }
+    public override IEnumerator Cast(Transform owner, Camera cam, DashParams p)
+    { Debug.LogError("Dash requires a target Transform"); yield break; }
+
     public IEnumerator Cast(Transform owner, Camera cam, ISkillParam param, Transform target)
-    {
-        return Cast(owner, cam, (DashParams)param, target);
-    }
+        => Cast(owner, cam, (DashParams)param, target);
+
     IEnumerator Cast(Transform owner, Camera cam, DashParams p, Transform target)
     {
         if (!target) yield break;
+
         var motor = owner.GetComponent<KinematicMotor2D>();
         if (!motor) yield break;
+
+        var sensor = owner.GetComponentInChildren<PlayerSensor2D>(); // 센서가 없으면 null 허용
 
         // (선택) 무적
         if (p.grantIFrame && p.iFrameDuration > 0f)
         {
-            //Publish(new EffectApplyReq(Create(owner, "combat"), owner, new IFrameEffect(), p.iFrameDuration));
+            // Publish(new EffectApplyReq(Create(owner,"combat"), owner, new IFrameEffect(), p.iFrameDuration));
         }
-        var rb = owner.GetComponent<Rigidbody2D>();
-        Vector2 startPos = owner.position;
 
         // === 거리 예산 고정 ===
         Vector2 start = owner.position;
@@ -41,47 +37,50 @@ public class DashMechanic : SkillMechanicBase<DashParams>, ITargetedMechanic
         float desiredDist = p.FallbackRange > 0 ? Mathf.Min(directDist, p.FallbackRange) : directDist;
         float remaining = desiredDist;
 
-        // === 정책 스코프: 벽은 항상 차단, 적 차단 여부는 CanPenetrate에 따름, 슬라이드 허용 ===
+        // === 정책 스코프 ===
         var basePolicy = motor.CurrentPolicy;
         var dashPolicy = basePolicy;
         dashPolicy.wallsMask = p.WallsMask;
         dashPolicy.enemyMask = p.enemyMask;
-        dashPolicy.enemyAsBlocker = !p.CanPenetrate;     // 비관통 대시만 적을 차단
+        dashPolicy.enemyAsBlocker = !p.CanPenetrate; // 비관통만 적 차단
         dashPolicy.radius = p.radius;
         dashPolicy.skin = Mathf.Max(0.01f, p.skin);
-        dashPolicy.allowWallSlide = false;//p.allowSlideOnWalls; // ★DashParams에 bool allowSlideOnWalls 추가 권장(없다면 true로 가정)
+        dashPolicy.allowWallSlide = true; // 센서 상태로 프레임별로 갱신 예정
 
-        while (elapsed < totalTime)
+        using (motor.With(dashPolicy))
         {
-            // 시작 겹침 해소(임의 +X 금지 → 명확한 대시 방향 사용)
-            motor.BeginFrameDepenetrate(dir0);
-
             var hitIds = new HashSet<int>();
+
             float elapsed = 0f;
             float total = Mathf.Max(0.01f, p.duration);
 
-            // 속도(거리/시간) * 커브
-            float speed = (p.FallbackRange > 0f ? p.FallbackRange : toTarget.magnitude) / totalTime;
-            float step = speed * p.speedCurve.Evaluate(Mathf.Clamp01(elapsed / totalTime)) * dt;
-
-            float remaining = step;
             while (remaining > 0f)
             {
-                // === 속도 곡선은 '예산 분할'에만 쓰고, 벽 근접 감속은 없음 ===
+                // --- 센서 상태로 프리셋/겹침 청소 ---
+                var s = sensor ? sensor.GetState() : default;
+                if (sensor) dashPolicy.allowWallSlide = s.nearWall; // 벽 임박 시 슬라이드 허용
+                // 스코프 내에서 갱신 반영
+                using (motor.With(dashPolicy))
+                {
+                    if (sensor && s.intruding && s.mtvDir != Vector2.zero)
+                        motor.BeginFrameDepenetrate(s.mtvDir);
+                }
+
+                // --- 예산 분배: 감속 금지, step만큼 시도 ---
                 float tNorm = Mathf.Clamp01(elapsed / total);
                 float nominalSpeed = (desiredDist / total) * p.speedCurve.Evaluate(tNorm);
                 float stepDist = Mathf.Min(remaining, nominalSpeed * Time.deltaTime);
 
-                // 타깃형: 종착점은 고정, 중간에 벽으로 절단/슬라이드 가능
+                // --- 목표 방향 ---
                 Vector2 pos = owner.position;
-                Vector2 toTarget = ((Vector2)target.position - pos);
-                Vector2 dir = toTarget.sqrMagnitude > 1e-4f ? toTarget.normalized : dir0;
+                Vector2 aim = ((Vector2)target.position - pos);
+                Vector2 dir = aim.sqrMagnitude > 1e-4f ? aim.normalized : dir0;
 
-                // === 단일 스윕(모터 내부에서 필요 시 슬라이드 처리) ===
+                // --- 단일 스윕(모터가 같은 프레임에 슬라이드 반복 처리) ---
                 var res = motor.SweepMove(dir * stepDist);
                 remaining -= res.actualDelta.magnitude;
 
-                // === 히트 처리(관통 여부와 무관) ===
+                // --- 히트(관통 여부 무관) ---
                 if (p.dealDamage && p.enemyMask.value != 0)
                 {
                     var hits = Physics2D.OverlapCircleAll(owner.position, p.radius, p.enemyMask);
@@ -104,30 +103,31 @@ public class DashMechanic : SkillMechanicBase<DashParams>, ITargetedMechanic
                     }
                 }
 
-                // === 종료 조건 ===
-                if (res.hitWall) break;                         // 벽으로 절단(슬라이드 후에도 더 못가면 종료)
-                if (elapsed >= total) break;                         // 시간 만료
-                if (target.TryGetComponent<Collider2D>(out var _))
+                // --- 종료 조건 ---
+                if (res.hitWall) break; // 슬라이드 후에도 못 가면 종료
+
+                if (target.GetComponent<Collider2D>() != null)
                 {
                     float arrive = p.radius + p.skin;
                     if (((Vector2)target.position - (Vector2)owner.position).sqrMagnitude <= arrive * arrive)
-                        break;                                           // 타깃에 충분히 근접
+                        break;
                 }
 
                 elapsed += Time.deltaTime;
+                if (elapsed >= total) break;
+
                 yield return null;
+            }
+
+            // 관통 대시였다면, 종료 프레임에 겹침 청소 한 번 더(적 포함 상황 대비)
+            if (sensor)
+            {
+                var sEnd = sensor.GetState();
+                if (sEnd.intruding && sEnd.mtvDir != Vector2.zero)
+                    motor.BeginFrameDepenetrate(sEnd.mtvDir);
             }
         }
 
         owner.GetComponent<SkillRunner>()?.NotifyHookOnExpire((Vector2)owner.position);
-        yield break;
-    }
-
-    private static void Move(Transform owner, Rigidbody2D rb, Vector2 dir, float d)
-    {
-        if (d <= 0f) return;
-        Vector3 delta = (Vector3)(dir * d);
-        if (rb) rb.MovePosition((Vector2)owner.position + (Vector2)delta);
-        else owner.position += delta;
     }
 }
