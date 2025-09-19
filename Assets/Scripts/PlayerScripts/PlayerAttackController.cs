@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
-using SkillInterfaces;
+using SOInterfaces;
 
 public class PlayerAttackController : MonoBehaviour
 {

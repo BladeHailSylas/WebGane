@@ -2,14 +2,14 @@
 using ActInterfaces;
 using UnityEngine;
 using EffectInterfaces;
-public class PlayerActController : MonoBehaviour, IVulnerable, IPullable //IAffectable //이게 Controller의 역할을 수행하게 될 듯
+public class PlayerActController : MonoBehaviour, IVulnerable, IKnockbackable //IAffectable //이게 Controller의 역할을 수행하게 될 듯
 {
     [SerializeField] PlayerStats stats;
     [SerializeField] PlayerLocomotion locomotion;
     [SerializeField] PlayerEffects effects;
     //Movable
     private Rigidbody2D rig;
-    bool warned = false; //제거 필요
+
     void Awake()
     {
         rig = GetComponent<Rigidbody2D>();
@@ -18,11 +18,7 @@ public class PlayerActController : MonoBehaviour, IVulnerable, IPullable //IAffe
     {
         if(move != null && effects.IsMovable) 
         {
-            if(!warned)
-            {
-                warned = true;
-                Debug.LogWarning("You are using fixed value instead of reference of stats");
-            }
+            Debug.Log("You are using fixed value instead of reference of stats");
             locomotion.Move(move, rig, 8f); //임시로 상수를 사용, 나중에 수정 필요
         }
     }

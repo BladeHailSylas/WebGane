@@ -1,4 +1,4 @@
-using SkillInterfaces;
+using SOInterfaces;
 using UnityEngine;
 using System.Collections;
 
