@@ -101,9 +101,8 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 
                         case TargetMode.TowardsCursor:
                             needEnemy = false;
-                            desired = CursorWorld2D(cam, transform, depthFallback: 10f);
-                            // 원점→커서 방향으로 fallbackRange만큼만
-                            //desired = transform.position + (desired - transform.position).normalized * Mathf.Max(0f, td.FallbackRange);
+                            var cursor = CursorWorld2D(cam, transform, depthFallback: 10f);
+                            desired = transform.position + (cursor - transform.position).normalized * Mathf.Max(0f, td.FallbackRange);
                             break;
 
                         case TargetMode.TowardsMovement:

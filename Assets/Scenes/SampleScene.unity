@@ -716,6 +716,95 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &726525830
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 726525831}
+  - component: {fileID: 726525833}
+  - component: {fileID: 726525832}
+  m_Layer: 6
+  m_Name: KillerQueen
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &726525831
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 726525830}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1725135780}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &726525832
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 726525830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53b3912e9a1580d499f650bfca289827, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WallBlockerTest
+  walls:
+    serializedVersion: 2
+    m_Bits: 8
+  enemy:
+    serializedVersion: 2
+    m_Bits: 128
+  rig: {fileID: 1725135779}
+  _canPen: 1
+--- !u!58 &726525833
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 726525830}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_Radius: 0.5
 --- !u!1 &766404440
 GameObject:
   m_ObjectHideFlags: 0
@@ -761,7 +850,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InputBinder
   playerControl: {fileID: 1725135782}
-  attackController: {fileID: 190525853}
+  attackController: {fileID: 1725135783}
 --- !u!1 &793188088
 GameObject:
   m_ObjectHideFlags: 0
@@ -1851,7 +1940,10 @@ GameObject:
   - component: {fileID: 1725135780}
   - component: {fileID: 1725135779}
   - component: {fileID: 1725135781}
+  - component: {fileID: 1725135785}
   - component: {fileID: 1725135782}
+  - component: {fileID: 1725135783}
+  - component: {fileID: 1725135784}
   m_Layer: 6
   m_Name: Player
   m_TagString: BlueTeam
@@ -1867,9 +1959,9 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1725135777}
-  m_BodyType: 0
+  m_BodyType: 1
   m_Simulated: 1
-  m_UseFullKinematicContacts: 0
+  m_UseFullKinematicContacts: 1
   m_UseAutoMass: 1
   m_Mass: 0.44178647
   m_LinearDamping: 0
@@ -1904,7 +1996,9 @@ Transform:
   - {fileID: 1759644520}
   - {fileID: 565241914}
   - {fileID: 855105503}
-  - {fileID: 190525852}
+  - {fileID: 115066193}
+  - {fileID: 1580612234}
+  - {fileID: 726525831}
   m_Father: {fileID: 1047292428}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!58 &1725135781
@@ -1958,6 +2052,81 @@ MonoBehaviour:
   stats: {fileID: 1759644521}
   locomotion: {fileID: 565241915}
   effects: {fileID: 881497802}
+--- !u!114 &1725135783
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1725135777}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42d40be1ed1730546a2eb5f03cf64046, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAttackController
+  spec: {fileID: 11400000, guid: d39f3125f1da80b4fa78df2fd03d8bbd, type: 2}
+  attackKey: {fileID: 1120369429361536294, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  skill1Key: {fileID: -7471211009204490832, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  skill2Key: {fileID: 2411907206095950430, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  ultimateKey: {fileID: 1781555164194001046, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+--- !u!114 &1725135784
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1725135777}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f94fd30e2cfdae7418892b578a9cd2c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KinematicMotor2D
+  defaultPolicy:
+    wallsMask:
+      serializedVersion: 2
+      m_Bits: 8
+    enemyMask:
+      serializedVersion: 2
+      m_Bits: 128
+    enemyAsBlocker: 1
+    radius: 0.5
+    skin: 0.05
+--- !u!58 &1725135785
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1725135777}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_Radius: 0.625
 --- !u!1 &1752660213
 GameObject:
   m_ObjectHideFlags: 0
@@ -2138,8 +2307,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a1316b19a8b5fc4eaacca9708197bbd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInstaller
-  spec: {fileID: 11400000, guid: 2eb95ad36a427914fa7c07254788e448, type: 2}
-  controller: {fileID: 190525853}
+  spec: {fileID: 11400000, guid: d39f3125f1da80b4fa78df2fd03d8bbd, type: 2}
+  controller: {fileID: 1725135783}
 --- !u!1 &1977203929
 GameObject:
   m_ObjectHideFlags: 0

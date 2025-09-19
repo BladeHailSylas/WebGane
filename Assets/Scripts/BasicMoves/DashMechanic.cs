@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using SkillInterfaces;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using SOInterfaces;
@@ -20,7 +21,11 @@ public class DashMechanic : SkillMechanicBase<DashParams>, ITargetedMechanic
     }
     IEnumerator Cast(Transform owner, Camera cam, DashParams p, Transform target)
     {
-        // (선택) 대시 시작 시 I-Frame 요청 — 효과/스탯 시스템이 처리
+        if (!target) yield break;
+        var motor = owner.GetComponent<KinematicMotor2D>();
+        if (!motor) yield break;
+
+        // (선택) 무적
         if (p.grantIFrame && p.iFrameDuration > 0f)
         {
             //Publish(new EffectApplyReq(Create(owner, "combat"), owner, new IFrameEffect(), p.iFrameDuration));
@@ -28,32 +33,32 @@ public class DashMechanic : SkillMechanicBase<DashParams>, ITargetedMechanic
         var rb = owner.GetComponent<Rigidbody2D>();
         Vector2 startPos = owner.position;
 
-        // 대시 총거리: Runner가 TargetMode.FixedForward인 경우 보통 fallbackRange를 목적지까지로 쓰지만,
-        // 메커닉은 '타깃 Transform'만 받고 움직입니다. 목적지까지 직선거리로 대략 보정.
-        //target = ResolveTarget(owner); // Runner가 넘긴 target(실제 적 또는 앵커) -> 필요가 없음
-        if (target == null) yield break;
+        // === 거리 예산 고정 ===
+        Vector2 start = owner.position;
+        Vector2 toTarget0 = (Vector2)target.position - start;
+        Vector2 dir0 = toTarget0.sqrMagnitude > 1e-4f ? toTarget0.normalized : (Vector2)owner.right;
+        float directDist = toTarget0.magnitude;
+        float desiredDist = p.FallbackRange > 0 ? Mathf.Min(directDist, p.FallbackRange) : directDist;
+        float remaining = desiredDist;
 
-        float totalTime = Mathf.Max(0.01f, p.duration);
-        float elapsed = 0f;
-        float traveled = 0f;
-
-        // “타깃형: 타깃 소실 시 종료” 플래그
-        bool targetIsEnemy = target.GetComponent<Collider2D>() != null;
-
-        var hitIds = new HashSet<int>(); // 관통 중복 타격 방지
+        // === 정책 스코프: 벽은 항상 차단, 적 차단 여부는 CanPenetrate에 따름, 슬라이드 허용 ===
+        var basePolicy = motor.CurrentPolicy;
+        var dashPolicy = basePolicy;
+        dashPolicy.wallsMask = p.WallsMask;
+        dashPolicy.enemyMask = p.enemyMask;
+        dashPolicy.enemyAsBlocker = !p.CanPenetrate;     // 비관통 대시만 적을 차단
+        dashPolicy.radius = p.radius;
+        dashPolicy.skin = Mathf.Max(0.01f, p.skin);
+        dashPolicy.allowWallSlide = false;//p.allowSlideOnWalls; // ★DashParams에 bool allowSlideOnWalls 추가 권장(없다면 true로 가정)
 
         while (elapsed < totalTime)
         {
-            float dt = Time.deltaTime;
-            elapsed += dt;
+            // 시작 겹침 해소(임의 +X 금지 → 명확한 대시 방향 사용)
+            motor.BeginFrameDepenetrate(dir0);
 
-            // 현재 위치/목표 계산
-            Vector2 pos = owner.position;
-            Vector2 toTarget = (Vector2)target.position - pos;
-
-            // 타깃 소실(타깃형) → 종료
-            if (targetIsEnemy && target == null)
-                break;
+            var hitIds = new HashSet<int>();
+            float elapsed = 0f;
+            float total = Mathf.Max(0.01f, p.duration);
 
             // 속도(거리/시간) * 커브
             float speed = (p.FallbackRange > 0f ? p.FallbackRange : toTarget.magnitude) / totalTime;
@@ -62,100 +67,58 @@ public class DashMechanic : SkillMechanicBase<DashParams>, ITargetedMechanic
             float remaining = step;
             while (remaining > 0f)
             {
-                pos = owner.position;
-                Vector2 dir = toTarget.sqrMagnitude > 0.0001f ? toTarget.normalized : (Vector2)owner.right;
+                // === 속도 곡선은 '예산 분할'에만 쓰고, 벽 근접 감속은 없음 ===
+                float tNorm = Mathf.Clamp01(elapsed / total);
+                float nominalSpeed = (desiredDist / total) * p.speedCurve.Evaluate(tNorm);
+                float stepDist = Mathf.Min(remaining, nominalSpeed * Time.deltaTime);
 
-                // 1) 벽 검사
-                var wallHit = Physics2D.CircleCast(pos, p.radius, dir, remaining, p.WallsMask);
-                if (wallHit.collider)
+                // 타깃형: 종착점은 고정, 중간에 벽으로 절단/슬라이드 가능
+                Vector2 pos = owner.position;
+                Vector2 toTarget = ((Vector2)target.position - pos);
+                Vector2 dir = toTarget.sqrMagnitude > 1e-4f ? toTarget.normalized : dir0;
+
+                // === 단일 스윕(모터 내부에서 필요 시 슬라이드 처리) ===
+                var res = motor.SweepMove(dir * stepDist);
+                remaining -= res.actualDelta.magnitude;
+
+                // === 히트 처리(관통 여부와 무관) ===
+                if (p.dealDamage && p.enemyMask.value != 0)
                 {
-                    // 벽까지 이동
-                    Move(owner, rb, dir, wallHit.distance);
-                    traveled += wallHit.distance;
-
-                    // 벽이면 종료(옵션에 따라 슬라이드 등 확장 가능)
-                    if (p.stopOnWall) goto DashEnd;
-                    // stopOnWall=false면, 접선 방향으로 재계산 등 확장 가능(여기서는 간단 종료)
-                    goto DashEnd;
-                }
-
-                // 2) 적 검사
-                var enemyHit = Physics2D.CircleCast(pos, p.radius, dir, remaining, p.enemyMask);
-                bool enemyProcessed = false;
-
-                if (enemyHit.collider)
-                {
-                    var c = enemyHit.collider;
-                    int id = c.GetInstanceID();
-                    // 같은 콜라이더 중복 타격 방지
-                    if (!hitIds.Contains(id))
+                    var hits = Physics2D.OverlapCircleAll(owner.position, p.radius, p.enemyMask);
+                    foreach (var c in hits)
                     {
-                        // 충돌점까지 이동
-                        Move(owner, rb, dir, enemyHit.distance);
-                        traveled += enemyHit.distance;
-
-                        // 피해/넉백 적용
-                        if (p.dealDamage)
+                        int id = c.GetInstanceID();
+                        if (hitIds.Contains(id)) continue;
+                        if (c.TryGetComponent(out ActInterfaces.IVulnerable v))
                         {
-                            if (c.TryGetComponent(out ActInterfaces.IVulnerable v))
-                                v.TakeDamage(p.damage, p.apRatio);
-                            if (c.attachedRigidbody)
-                                c.attachedRigidbody.AddForce(dir * p.knockback, ForceMode2D.Impulse);
-
-                            // (선택) DamageDealt 이벤트 발행
-                            Publish(new DamageDealt(Create(owner, "combat"),
-                                owner, c.transform, p.damage, p.damage, 0f, EDamageType.Normal,
-                                (Vector2)owner.position, dir));
+                            v.TakeDamage(p.damage, p.apRatio);
+                            if (c.attachedRigidbody && p.knockback != 0f)
+                            {
+                                var kdir = (Vector2)(c.transform.position - owner.position).normalized;
+                                c.attachedRigidbody.AddForce(kdir * p.knockback, ForceMode2D.Impulse);
+                            }
+                            hitIds.Add(id);
+                            Publish(new DamageDealt(Create(owner, "combat"), owner, c.transform,
+                                    p.damage, p.damage, 0f, EDamageType.Normal, owner.position, dir));
                         }
-
-                        hitIds.Add(id);
-                        enemyProcessed = true;
-
-                        // Targeted: 대상과 충돌 시 종료(관통 옵션 무시)
-                        if (targetIsEnemy && c.transform == target)
-                            goto DashEnd;
-
-                        // 관통 불가면 종료
-                        if (!p.canPenetrate)
-                            goto DashEnd;
-
-                        // 관통이면 SKIN만큼 더 나아가 재충돌 방지
-                        Move(owner, rb, dir, SKIN);
-                        traveled += SKIN;
-                        remaining -= enemyHit.distance + SKIN;
-                        continue; // 다음 충돌/이동 처리
                     }
                 }
 
-                // 3) 충돌이 없거나 이미 친 적이면 남은 거리 이동
-                Move(owner, rb, (toTarget.sqrMagnitude > 0.0001f ? toTarget.normalized : (Vector2)owner.right), remaining);
-                traveled += remaining;
-                remaining = 0f;
+                // === 종료 조건 ===
+                if (res.hitWall) break;                         // 벽으로 절단(슬라이드 후에도 더 못가면 종료)
+                if (elapsed >= total) break;                         // 시간 만료
+                if (target.TryGetComponent<Collider2D>(out var _))
+                {
+                    float arrive = p.radius + p.skin;
+                    if (((Vector2)target.position - (Vector2)owner.position).sqrMagnitude <= arrive * arrive)
+                        break;                                           // 타깃에 충분히 근접
+                }
+
+                elapsed += Time.deltaTime;
+                yield return null;
             }
-
-            // Non-targeted: 앵커(Transform) 도달 판단(충분히 가까우면 종료)
-            if (!targetIsEnemy)
-            {
-                if (((Vector2)target.position - (Vector2)owner.position).sqrMagnitude <= (p.radius + p.skin) * (p.radius + p.skin))
-                    break;
-            }
-
-            // Targeted: 타깃과 거의 겹치면 종료(거리 임계)
-            else
-            {
-                if (((Vector2)target.position - (Vector2)owner.position).sqrMagnitude <= (p.radius + p.skin) * (p.radius + p.skin))
-                    break;
-            }
-
-            // 최대 대시 거리(고정 거리) 소진 시 종료
-            if (p.FallbackRange > 0f && (owner.position - (Vector3)startPos).sqrMagnitude >= p.FallbackRange * p.FallbackRange)
-                break;
-
-            yield return null;
         }
 
-    DashEnd:
-        // 종료 훅: Runner가 OnExpire 훅을 받아 FollowUp을 스케줄합니다.
         owner.GetComponent<SkillRunner>()?.NotifyHookOnExpire((Vector2)owner.position);
         yield break;
     }
