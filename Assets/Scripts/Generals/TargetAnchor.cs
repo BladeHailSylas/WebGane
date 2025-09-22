@@ -20,8 +20,8 @@ public static class TargetAnchorPool
         t.position = pos;
         t.gameObject.SetActive(true);
         //Display(for debug)
-        /*if (!t.GetComponent<TargetAnchorDebug>())
-            t.gameObject.AddComponent<TargetAnchorDebug>();*/
+        if (!t.GetComponent<TargetAnchorDebug>())
+            t.gameObject.AddComponent<TargetAnchorDebug>();
         return t;
     }
 

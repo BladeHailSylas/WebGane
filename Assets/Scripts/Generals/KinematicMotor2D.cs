@@ -30,7 +30,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
     {
         wallsMask = 0,
         enemyMask = 0,
-        enemyAsBlocker = false,   // 일반 이동은 적을 '벽'으로 보지 않음(정지 방지)
+        enemyAsBlocker = true,   // 일반 이동은 적을 '벽'으로 보지 않음(정지 방지) -> 적을 뚫고 지나간다는 말이냐?
         radius = 0.5f,
         skin = 0.05f,
         allowWallSlide = true
@@ -38,7 +38,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 
     Rigidbody2D rb;
     CollisionPolicy current;
-    public Vector2 LastMoveVector { get; private set; } = Vector2.zero;
+    public Vector2 LastMoveVector { get; private set; }
 
     void Awake()
     {
@@ -89,6 +89,13 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
     /// </summary>
     public MoveResult SweepMove(Vector2 desiredDelta)
     {
+        //Debug Options
+        //Debug.Log($"[Motor] frame={Time.frameCount} enemyAsBlocker={current.enemyAsBlocker} " + $"delta={desiredDelta} r={current.radius} skin={current.skin}");
+        var ow = Physics2D.OverlapCircleAll(transform.position, current.radius, current.wallsMask);
+        var oe = Physics2D.OverlapCircleAll(transform.position, current.radius, current.enemyMask);
+        if (ow.Length > 0 || oe.Length > 0)
+            Debug.Log($"[Motor] OVERLAP walls={ow.Length} enemies={oe.Length}");
+        //Please remove after debugging
         MoveResult result = default;
         if (desiredDelta.sqrMagnitude <= 0f) return result;
 
@@ -160,6 +167,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 
         result.actualDelta = (Vector2)transform.position - startPos;
         LastMoveVector = result.actualDelta;
+        //Debug.Log($"{LastMoveVector.normalized} or {result.actualDelta.normalized}, your mutual!");
         return result;
     }
 

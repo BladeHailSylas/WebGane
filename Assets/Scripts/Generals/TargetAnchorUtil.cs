@@ -75,7 +75,7 @@ public static class TargetAnchorUtil2D
         // 이동 벡터가 작으면 아예 0으로 판정
         var input = t.GetComponent<IMovable>() ?? t.GetComponentInChildren<IMovable>(); // 프로젝트별 인터페이스
         if (input == null) Debug.Log("Have ☆ Children?");
-        Vector2 mv = input != null ? input.LastMoveVector : Vector2.zero;
+        Vector2 mv = input != null ? input.LastMoveDir : Vector2.zero;
         if (mv.sqrMagnitude < 0.01f) mv = Vector2.zero;
         return mv.normalized;
     }
@@ -83,9 +83,16 @@ public static class TargetAnchorUtil2D
     {
         dir = Vector2.zero;
         var m = t.GetComponent<IMovable>() ?? t.GetComponentInChildren<IMovable>();
-        if (m == null) return false;
-        var mv = m.LastMoveVector;      // 실제 최근 이동 벡터
-        if (mv.sqrMagnitude < eps * eps) return false; // 0 → 실패로 돌려줌
+        if (m == null)
+        {
+            Debug.Log("Have ☆ Children?");
+            return false;
+        }
+        var mv = m.LastMoveDir;      // 실제 최근 이동 벡터
+        /*if (mv.sqrMagnitude < eps * eps) {
+            Debug.Log("Not Gandhi");
+            return false; 
+        } // 0 → 실패로 돌려줌*/
         dir = mv.normalized;
         return true;
     }

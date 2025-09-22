@@ -60,7 +60,7 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
     public bool retargetOnLost = true;
     public float retargetRadius = 3f;
     [Header("Targeter")]
-    public TargetMode mode; public float fallback; public Vector2 local; public float col; public float skin; public bool canpen;
+    public TargetMode mode; public float fallback = 10f; public Vector2 local; public float col; public float skin; public bool canpen;
     public TargetMode Mode => mode; public float FallbackRange => fallback; public Vector2 LocalOffset => local; public LayerMask WallsMask => blockerMask;
     public float CollisionRadius => col; public float AnchorSkin => skin; public bool CanPenetrate => canpen;
 

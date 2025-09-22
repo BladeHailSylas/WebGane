@@ -14,7 +14,7 @@ public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
     //[SerializeField] SkillRunner skillRunner;  // 스킬 진행 중 기본 이동 억제용 (Dash 등)  // :contentReference[oaicite:6]{index=6}*/
 
     [Header("Move")]
-    [SerializeField] float moveSpeed = 8f;     // TODO: stats로 치환 예정
+    [SerializeField] float moveSpeed = 32f;     // TODO: stats로 치환 예정
     Vector2 _moveInput;                        // 입력 버퍼(이벤트 → 프레임 단일 처리)
 
     void Awake()
@@ -23,7 +23,12 @@ public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
     }
 
     // 입력 이벤트에서 방향만 갱신(즉시 이동 금지)
-    public void MakeMove(Vector2 move) => _moveInput = move;
+    public void MakeMove(Vector2 move)
+    {
+        Debug.Log($"[MakeMove] frame={Time.frameCount} move={move}");
+        _moveInput = move;
+        //locomotion.Move(move, rig, moveSpeed);
+    }
 
     void Update()
     {

@@ -4,7 +4,7 @@ using UnityEngine;
 public class PlayerLocomotion : MonoBehaviour, IMovable, IPullable
 {
     [SerializeField] private Rigidbody2D rb;          // Kinematic 본체
-    public Vector2 LastMoveVector { get; private set; }
+    public Vector2 LastMoveDir { get; private set; }
 
     // Knockback은 Kinematic에서 물리속도가 아닌 "추가 변위"로 처리
     Vector2 _knockbackBudget;                         // 이번 프레임에 소비할 추가 변위(월드 좌표)
@@ -18,7 +18,7 @@ public class PlayerLocomotion : MonoBehaviour, IMovable, IPullable
     {
         // 방향 정규화 및 델타 산출
         Vector2 dir = direction.sqrMagnitude > 1e-4f ? direction.normalized : Vector2.zero;
-        Vector2 delta = dir * Mathf.Max(0f, velocity) * Time.deltaTime;
+        Vector2 delta = Mathf.Max(0f, velocity) * Time.deltaTime * dir;
 
         // Knockback 추가 변위는 같은 프레임에 소비 후 0으로
         if (_knockbackBudget.sqrMagnitude > 0f)
@@ -36,7 +36,7 @@ public class PlayerLocomotion : MonoBehaviour, IMovable, IPullable
         var res = motor.SweepMove(delta);
 
         // 마지막 실제 이동 벡터 기록(원한다면 실제 속도 등 2차 파생 가능)
-        LastMoveVector = res.actualDelta;
+        LastMoveDir = direction;//motor.LastMoveVector;
     }
 
     /// <summary>

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EffectInterfaces;
-using StatsInterfaces;
 
 #region ===== Effect =====
 namespace EffectInterfaces
@@ -94,7 +93,7 @@ namespace ActInterfaces
     }
     public interface IMovable
     {
-        Vector2 LastMoveVector { get; }
+        Vector2 LastMoveDir { get; }
         void Move(Vector2 direction, Rigidbody2D rb, float velocity);
         //void Jump(float time, float wait = 1f);
     }
