@@ -25,7 +25,7 @@ public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
     // 입력 이벤트에서 방향만 갱신(즉시 이동 금지)
     public void MakeMove(Vector2 move)
     {
-        Debug.Log($"[MakeMove] frame={Time.frameCount} move={move}");
+        //Debug.Log($"[MakeMove] frame={Time.frameCount} move={move}");
         _moveInput = move;
         //locomotion.Move(move, rig, moveSpeed);
     }

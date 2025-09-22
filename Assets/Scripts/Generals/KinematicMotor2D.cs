@@ -33,7 +33,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
         enemyMask = 0,
         enemyAsBlocker = true,
         radius = 0.5f,
-        skin = 0.05f,
+        skin = 0.1f,
         allowWallSlide = true
     };
 
@@ -62,7 +62,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
     public void BeginFrameDepenetrate(Vector2 _ignored)
     {
         if (!col) return;
-        float worstPen = 0f;          // 가장 깊은(가장 음수) 침투량
+        float worstPen = 0.15f;          // 가장 깊은(가장 음수) 침투량 -> 침투 시에도 worstPen이 0 밑으로 내려가지 않음(대략 0.15 미만), 수치 조정으로 해결
         Vector2 mtv = Vector2.zero;   // 밖으로 나갈 방향(최대 침투의 법선)
 
         // 벽 + (정책에 따라) 적 모두 스캔
@@ -73,30 +73,29 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
             if (!other) continue;
             var d = Physics2D.Distance(col, other);
             // d.distance < 0 이면 침투 중, d.normal: myCol에서 바깥으로 향하는 법선
-            if (d.distance < worstPen)
+            if (d.distance <= worstPen)
             {
                 worstPen = d.distance;
                 mtv = d.normal; // 밖으로
             }
-			Debug.Log($"Try to escape towards {d.normal}");
 		}
-        if (worstPen < 0f && mtv != Vector2.zero)
+        if (worstPen <= 0.15f && mtv != Vector2.zero)
         {
-            float moveOut = (-worstPen) + Mathf.Max(0.01f, current.skin);
+            float moveOut = Mathf.Max(0.01f, current.skin);// + worstPen; // -> worstPen이 들어가면 떨림이 너무 심함
             MoveDiscrete(mtv.normalized * moveOut);
-        }
+			//Debug.LogError($"HELP! {worstPen} {current.skin} {moveOut}");
+		}
     }
     public MoveResult SweepMove(Vector2 desiredDelta)
     {
 		var ow = Physics2D.OverlapCircleAll(transform.position, current.radius, current.wallsMask);
 		var oe = Physics2D.OverlapCircleAll(transform.position, current.radius, current.enemyMask);
-		//if (ow.Length > 0 || oe.Length > 0) Debug.LogWarning($"[Motor] HELP! walls={ow.Length} enemies={oe.Length}");
 		var result = new MoveResult { actualDelta = Vector2.zero };
         if (desiredDelta.sqrMagnitude <= 0f) return result;
 
         // (A) 프레임 시작 겹침은 여기서도 한 번 더 안전하게 치운다
-        BeginFrameDepenetrate(Vector2.zero);
-        Debug.Log("After call Depen");
+        if(ow.Length > 0.25f || oe.Length > 0.25f) BeginFrameDepenetrate(Vector2.zero);
+        //Debug.Log("After call Depen");
 
         Vector2 origin = transform.position;
         float remaining = desiredDelta.magnitude;
@@ -112,7 +111,10 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
             if (wallHit.collider)
             {
                 float toHit = wallHit.distance;
-                if (toHit > 0f) MoveDiscrete(wishDir * toHit);
+                if (toHit > 0f)
+                {
+                    MoveDiscrete(wishDir * toHit);
+                }
 
                 result.hitWall = true;
                 result.hitTransform = wallHit.transform;
@@ -120,16 +122,17 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                 remaining -= Mathf.Max(0f, toHit);
 
                 // 접선 슬라이드: v' = v - n * (v·n)
+                // 법선은? 법선을 0으로 하면 좋지 않을까
                 Vector2 n = wallHit.normal;
                 Vector2 v = wishDir * remaining;
                 Vector2 tangential = v - Vector2.Dot(v, n) * n;
-                if (tangential.sqrMagnitude > 1e-6f)
+                if (tangential.sqrMagnitude >= 1e-6f )
                 {
                     wishDir = tangential.normalized;
                     remaining = tangential.magnitude;
                     continue; // 같은 프레임에 재시도
                 }
-                //remaining = 0f; // 더 못 감
+                remaining = 0f; // 더 못 감
                 break;
             }
 
