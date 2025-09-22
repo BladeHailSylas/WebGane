@@ -17,6 +17,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 
     public bool IsBusy => busy;
     public bool IsOnCooldown => cd > 0f;
+    bool createdAnchor = false;
 
     void Awake() { cam = Camera.main; }
     void Update() { if (cd > 0f) cd -= Time.deltaTime; }
@@ -162,13 +163,13 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 
                     // 3) 앵커 생성/수명주기 유지
                     t = TargetAnchorPool.Acquire(clamped);
-                    //createdAnchor = true;
+                    createdAnchor = true;
                 }
             }
             Publish(new TargetAcquired(meta, skillRef, transform, t));
             // 타깃(적 또는 앵커)을 향해 캐스트
             yield return tgt.Cast(transform, cam, order.Param, t);
-            Destroy(t.gameObject);
+            if(createdAnchor) TargetAnchorPool.Release(t);
         }
         else
         {

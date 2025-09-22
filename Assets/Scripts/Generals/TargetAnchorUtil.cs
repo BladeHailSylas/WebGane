@@ -3,11 +3,6 @@ using ActInterfaces;
 
 public static class TargetAnchorUtil2D
 {
-    /// <summary>
-    /// ¿øÁ¡(origin)¿¡¼­ ¸ñÇ¥Á¡(desired)·Î °¡´Â °æ·Î¿¡ º®ÀÌ ÀÖÀ¸¸é,
-    /// Ã¹ Ãæµ¹Á¡ Á÷Àü(skin)À¸·Î ¸ñÀûÁö¸¦ ´ç±â°í, ¾øÀ¸¸é desired¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
-    /// radius>0ÀÌ¸é CircleCast·Î, 0ÀÌ¸é Raycast·Î °Ë»çÇÕ´Ï´Ù.
-    /// </summary>
     public static Vector3 ResolveReachablePoint(
         Vector3 origin,
         Vector3 desired,
@@ -26,11 +21,11 @@ public static class TargetAnchorUtil2D
 
         if (radius > 0f)
         {
-            // Ä³¸¯ÅÍ/Åõ»çÃ¼ ¹İ°æÀ» °í·ÁÇØ Åë·Î°¡ ¸·È÷¸é Á¶±â Â÷´Ü
+            
             var hit = Physics2D.CircleCast(from, radius, dir, dist, wallsMask);
             if (hit.collider != null)
             {
-                // Ãæµ¹Á¡ Á÷ÀüÀ¸·Î ´ç±è
+                
                 float back = Mathf.Min(skin, hit.distance);
                 return hit.point - dir * back;
             }
@@ -44,22 +39,15 @@ public static class TargetAnchorUtil2D
                 return hit.point - dir * back;
             }
         }
-
-        // ¸·È÷Áö ¾Ê¾ÒÀ¸¸é ¿ø·¡ ¸ñÇ¥Á¡ Çã¿ë
         return desired;
     }
 
-    /// <summary>
-    /// ¸ñÀûÁö°¡ º® ³»ºÎ/±³Â÷ »óÅÂÀÎÁö ÃÖÁ¾ °ËÁõ. º®°ú °ãÄ¡¸é false.
-    /// </summary>
     public static bool IsPointFree(Vector3 pos, float radius, LayerMask wallsMask)
     {
         if (radius > 0f)
             return Physics2D.OverlapCircle(pos, radius, wallsMask) == null;
-        // Á¡ »ùÇÃÀº ´ë°³ ¾ÈÀüÇÏÁö¸¸, ÇÊ¿ä ½Ã ÀÛÀº ¹İ°æÀ¸·Îµµ Ã¼Å© °¡´É
         return true;
     }
-    ///<summary> À¯Æ¿: ¸¶¿ì½º ¿ùµå ÁÂÇ¥ (2D ±âÁØ, Z=ownerÀÇ Z·Î °íÁ¤) </summary>
     public static Vector3 CursorWorld2D(Camera cam, Transform owner, float depthFallback)
     {
         var sp = Input.mousePosition;
@@ -71,10 +59,8 @@ public static class TargetAnchorUtil2D
     }
     public static Vector2 GetMoveDirOrFacing(Transform t)
     {
-        // ÇÃ·¹ÀÌ¾î ÀÔ·Â ¼Ò½º°¡ ÀÖ´Ù¸é °Å±â¼­ ¡°ÃÖ±Ù ÀÌµ¿ º¤ÅÍ¡±¸¦ ¹Ş¾Æ¿À¼¼¿ä.
-        // ÀÌµ¿ º¤ÅÍ°¡ ÀÛÀ¸¸é ¾Æ¿¹ 0À¸·Î ÆÇÁ¤
-        var input = t.GetComponent<IMovable>() ?? t.GetComponentInChildren<IMovable>(); // ÇÁ·ÎÁ§Æ®º° ÀÎÅÍÆäÀÌ½º
-        if (input == null) Debug.Log("Have ¡Ù Children?");
+        var input = t.GetComponent<IMovable>() ?? t.GetComponentInChildren<IMovable>();
+        if (input == null) Debug.Log("Have ï¿½ï¿½ Children?");
         Vector2 mv = input != null ? input.LastMoveDir : Vector2.zero;
         if (mv.sqrMagnitude < 0.01f) mv = Vector2.zero;
         return mv.normalized;
@@ -83,40 +69,28 @@ public static class TargetAnchorUtil2D
     {
         dir = Vector2.zero;
         var m = t.GetComponent<IMovable>() ?? t.GetComponentInChildren<IMovable>();
-        if (m == null)
-        {
-            Debug.Log("Have ¡Ù Children?");
-            return false;
-        }
-        var mv = m.LastMoveDir;      // ½ÇÁ¦ ÃÖ±Ù ÀÌµ¿ º¤ÅÍ
-        /*if (mv.sqrMagnitude < eps * eps) {
-            Debug.Log("Not Gandhi");
-            return false; 
-        } // 0 ¡æ ½ÇÆĞ·Î µ¹·ÁÁÜ*/
+        if (m == null) return false;
+        var mv = m.LastMoveDir;
+        if (mv.sqrMagnitude < eps * eps) return false;
         dir = mv.normalized;
         return true;
     }
-    public static Vector3 ResolveReachablePoint2D(
-    Vector3 origin, Vector3 desired, LayerMask walls, float radius, float skin)
+    public static Vector3 ResolveReachablePoint2D(Vector3 origin, Vector3 desired, LayerMask walls, float radius, float skin)
     {
-        Vector2 from = origin, to = desired;
-        Vector2 dir = to - from; float dist = dir.magnitude;
+        Vector2 from = origin, to = desired, dir = to - from; float dist = dir.magnitude;
         if (dist <= Mathf.Epsilon) return origin;
-        dir /= dist;
+        dir /= dist; skin = Mathf.Max(0f, skin);
 
-        skin = Mathf.Max(0f, skin);
-        float eps = 0.03f;                       // ¼Ò·® ¿©À¯
-        float minSep = Mathf.Max(skin, radius + eps); // ÃÖ¼Ò ºĞ¸®°Å¸®
+        float eps = 0.03f;
+        float minSep = Mathf.Max(skin, radius + eps); // â˜… ìµœì†Œ ë¶„ë¦¬ê±°ë¦¬ ë³´ì¥
 
         if (radius > 0f)
         {
             var hit = Physics2D.CircleCast(from, radius, dir, dist, walls);
             if (hit.collider)
             {
-                // È÷Æ® ÁöÁ¡¿¡¼­ '°Å¸®¸¸Å­ µÚ'°¡ ¾Æ´Ï¶ó, ÃÖ¼Ò ºĞ¸®(minSep)¸¦ º¸Àå
                 var p = hit.point - dir * Mathf.Min(hit.distance, minSep);
-                // ¹ı¼± ¹Ù±ùÂÊÀ¸·Î ¼Ò·® °¡»ê(0.5~1cm) ¡æ ½ÇÁ¦ ºĞ¸®°¨ È®º¸
-                p += (Vector2)hit.normal * 0.01f;
+                p += (Vector2)hit.normal * 0.01f; // â˜… ë²•ì„  ë°”ê¹¥ ì†ŒëŸ‰ ì˜¤í”„ì…‹
                 return p;
             }
         }

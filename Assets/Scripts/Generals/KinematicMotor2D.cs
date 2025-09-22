@@ -5,12 +5,12 @@ using ActInterfaces;
 [Serializable]
 public struct CollisionPolicy
 {
-    public LayerMask wallsMask;      // Ç×»ó Â÷´Ü
-    public LayerMask enemyMask;      // Àû ·¹ÀÌ¾î
-    public bool enemyAsBlocker;      // true: ÀûÀ» 'º®Ã³·³' Â÷´Ü
-    public float radius;             // º»Ã¼ ¹İ°æ
-    public float skin;               // ¸é ÀçÆ÷Âø ¹æÁö ¿©À¯
-    public bool allowWallSlide;      // º® Á¢ÃË ½Ã °°Àº ÇÁ·¹ÀÓ¿¡ Á¢¼± ½½¶óÀÌµå Çã¿ë
+    public LayerMask wallsMask;    
+    public LayerMask enemyMask;  
+    public bool enemyAsBlocker;    
+    public float radius;            
+    public float skin;               
+    public bool allowWallSlide;      
 }
 
 public struct MoveResult
@@ -23,6 +23,7 @@ public struct MoveResult
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Collider2D))]
 public class KinematicMotor2D : MonoBehaviour, ISweepable
 {
     [Header("Defaults")]
@@ -30,13 +31,14 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
     {
         wallsMask = 0,
         enemyMask = 0,
-        enemyAsBlocker = true,   // ÀÏ¹İ ÀÌµ¿Àº ÀûÀ» 'º®'À¸·Î º¸Áö ¾ÊÀ½(Á¤Áö ¹æÁö) -> ÀûÀ» ¶Õ°í Áö³ª°£´Ù´Â ¸»ÀÌ³Ä?
+        enemyAsBlocker = true,
         radius = 0.5f,
         skin = 0.05f,
         allowWallSlide = true
     };
 
     Rigidbody2D rb;
+    Collider2D col;
     CollisionPolicy current;
     public Vector2 LastMoveVector { get; private set; }
 
@@ -46,6 +48,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
         rb.bodyType = RigidbodyType2D.Kinematic;
         rb.gravityScale = 0f;
         current = defaultPolicy;
+        col = rb.GetComponent<Collider2D>();
     }
 
     public IDisposable With(in CollisionPolicy overridePolicy)
@@ -55,62 +58,56 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
         return new Scope(() => current = prev);
     }
     sealed class Scope : IDisposable { readonly Action onDispose; public Scope(Action a) { onDispose = a; } public void Dispose() { onDispose?.Invoke(); } }
-
-    /// <summary>
-    /// ÇÁ·¹ÀÓ ½ÃÀÛ °ãÄ§ Å»Ãâ(¼¾¼­°¡ Á¦°øÇÑ MTV ¹æÇâÀ» »ç¿ë).
-    /// - ÀÓÀÇ +X/ÀÇµµ ¹æÇâ '¹Ğ±â'¸¦ ¾ø¾Ö, ¾ãÀº º® ¹İ´ëÆíÀ¸·Î ºüÁ®³ª°¡´Â ¹®Á¦¸¦ Â÷´Ü.
-    /// - °Å¸®(Ä§Åõ·®)´Â ColliderDistance »ùÇÃ·Î ÃßÁ¤ ÈÄ '°ãÄ§·® + skin' ¸¸Å­¸¸ ÀÌÅ».
-    /// </summary>
-    public void BeginFrameDepenetrate(Vector2 mtvDir)
+    // [RULE: Depenetrate/MTV] ì‹œì‘ ê²¹ì¹¨ íƒˆì¶œ(ë²½+ì  ëª¨ë‘, ìµœì†Œ ì´íƒˆ ë²¡í„°)
+    public void BeginFrameDepenetrate(Vector2 _ignored)
     {
-        if (mtvDir.sqrMagnitude <= 1e-6f) return;
+        if (!col) return;
+        float worstPen = 0f;          // ê°€ì¥ ê¹Šì€(ê°€ì¥ ìŒìˆ˜) ì¹¨íˆ¬ëŸ‰
+        Vector2 mtv = Vector2.zero;   // ë°–ìœ¼ë¡œ ë‚˜ê°ˆ ë°©í–¥(ìµœëŒ€ ì¹¨íˆ¬ì˜ ë²•ì„ )
 
-        // °ãÄ§ ÈÄº¸ ¼öÁı
-        var cols = Physics2D.OverlapCircleAll(transform.position, current.radius, current.wallsMask);
-        float worstPenetration = 0f; // À½¼öÀÏ¼ö·Ï ±íÀº Ä§Åõ(Àı´ë°ª ÃÖ´ë)
-
-        foreach (var c in cols)
+        // ë²½ + (ì •ì±…ì— ë”°ë¼) ì  ëª¨ë‘ ìŠ¤ìº”
+        int mask = current.wallsMask | current.enemyMask;
+        var overlapped = Physics2D.OverlapCircleAll(transform.position, current.radius, mask);
+        foreach (var other in overlapped)
         {
-            var dist = Physics2D.Distance(c, GetComponent<Collider2D>()); // c(º®) vs ³ª(º»Ã¼) ¼ø¼­ ÁÖÀÇ
-            if (dist.distance < worstPenetration) worstPenetration = dist.distance; // °¡Àå À½¼ö(°¡Àå ±íÀº Ä§Åõ)
-        }
-
-        if (worstPenetration < 0f)
+            if (!other) continue;
+            var d = Physics2D.Distance(col, other);
+            // d.distance < 0 ì´ë©´ ì¹¨íˆ¬ ì¤‘, d.normal: myColì—ì„œ ë°”ê¹¥ìœ¼ë¡œ í–¥í•˜ëŠ” ë²•ì„ 
+            if (d.distance < worstPen)
+            {
+                worstPen = d.distance;
+                mtv = d.normal; // ë°–ìœ¼ë¡œ
+            }
+			Debug.Log($"Try to escape towards {d.normal}");
+		}
+        if (worstPen < 0f && mtv != Vector2.zero)
         {
-            float moveOut = (-worstPenetration) + Mathf.Max(0.01f, current.skin);
-            MoveDiscrete(mtvDir.normalized * moveOut);
+            float moveOut = (-worstPen) + Mathf.Max(0.01f, current.skin);
+            MoveDiscrete(mtv.normalized * moveOut);
         }
     }
-
-    /// <summary>
-    /// Ãæµ¹-¾ÈÀü ÀÌµ¿(´ÜÀÏ °ü¹®).
-    /// - º®¿¡ ´êÀ¸¸é '°¨¼Ó'ÀÌ ¾Æ´Ï¶ó 'Àı´Ü or °°Àº ÇÁ·¹ÀÓ ½½¶óÀÌµå'¸¸ ¼öÇà.
-    /// - ½½¶óÀÌµå´Â ÀÛÀº ¹İº¹(2~3È¸)À¸·Î ³²Àº ¿¹»êÀ» °°Àº ÇÁ·¹ÀÓ¿¡ ÃÖ´ëÇÑ ¼ÒÁø.
-    /// </summary>
     public MoveResult SweepMove(Vector2 desiredDelta)
     {
-        //Debug Options
-        //Debug.Log($"[Motor] frame={Time.frameCount} enemyAsBlocker={current.enemyAsBlocker} " + $"delta={desiredDelta} r={current.radius} skin={current.skin}");
-        var ow = Physics2D.OverlapCircleAll(transform.position, current.radius, current.wallsMask);
-        var oe = Physics2D.OverlapCircleAll(transform.position, current.radius, current.enemyMask);
-        if (ow.Length > 0 || oe.Length > 0)
-            Debug.Log($"[Motor] OVERLAP walls={ow.Length} enemies={oe.Length}");
-        //Please remove after debugging
-        MoveResult result = default;
+		var ow = Physics2D.OverlapCircleAll(transform.position, current.radius, current.wallsMask);
+		var oe = Physics2D.OverlapCircleAll(transform.position, current.radius, current.enemyMask);
+		//if (ow.Length > 0 || oe.Length > 0) Debug.LogWarning($"[Motor] HELP! walls={ow.Length} enemies={oe.Length}");
+		var result = new MoveResult { actualDelta = Vector2.zero };
         if (desiredDelta.sqrMagnitude <= 0f) return result;
 
-        Vector2 startPos = transform.position;
+        // (A) í”„ë ˆì„ ì‹œì‘ ê²¹ì¹¨ì€ ì—¬ê¸°ì„œë„ í•œ ë²ˆ ë” ì•ˆì „í•˜ê²Œ ì¹˜ìš´ë‹¤
+        BeginFrameDepenetrate(Vector2.zero);
+        Debug.Log("After call Depen");
+
+        Vector2 origin = transform.position;
         float remaining = desiredDelta.magnitude;
         Vector2 wishDir = desiredDelta.normalized;
 
-        int iterations = 0;
         const int kMaxSlideIters = 3;
+        int iters = 0;
 
-        while (remaining > 1e-5f && iterations < kMaxSlideIters)
+        while (remaining > 1e-5f && iters++ < kMaxSlideIters)
         {
-            iterations++;
-
-            // 1) º® ¿ì¼±
+            // 1) ë²½ ìš°ì„ 
             var wallHit = Physics2D.CircleCast((Vector2)transform.position, current.radius, wishDir, remaining, current.wallsMask);
             if (wallHit.collider)
             {
@@ -120,30 +117,23 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                 result.hitWall = true;
                 result.hitTransform = wallHit.transform;
                 result.hitNormal = wallHit.normal;
-
                 remaining -= Mathf.Max(0f, toHit);
 
-                if (current.allowWallSlide)
+                // ì ‘ì„  ìŠ¬ë¼ì´ë“œ: v' = v - n * (vÂ·n)
+                Vector2 n = wallHit.normal;
+                Vector2 v = wishDir * remaining;
+                Vector2 tangential = v - Vector2.Dot(v, n) * n;
+                if (tangential.sqrMagnitude > 1e-6f)
                 {
-                    // Á¢¼± ¼ººĞ ÃßÃâ: t = v - n*(v¡¤n)
-                    Vector2 n = wallHit.normal;
-                    Vector2 v = wishDir * remaining;
-                    Vector2 tangential = v - Vector2.Dot(v, n) * n;
-
-                    if (tangential.sqrMagnitude > 1e-6f)
-                    {
-                        wishDir = tangential.normalized;
-                        remaining = tangential.magnitude;
-                        continue; // °°Àº ÇÁ·¹ÀÓ¿¡ Á¢¼±À¸·Î Àç½Ãµµ
-                    }
+                    wishDir = tangential.normalized;
+                    remaining = tangential.magnitude;
+                    continue; // ê°™ì€ í”„ë ˆì„ì— ì¬ì‹œë„
                 }
-
-                // ½½¶óÀÌµå ¸øÇÏ¸é ±× ÇÁ·¹ÀÓ Àı´Ü
-                remaining = 0f;
+                //remaining = 0f; // ë” ëª» ê°
                 break;
             }
 
-            // 2) Àû Â÷´Ü(Á¤Ã¥)
+            // 2) ì  ì°¨ë‹¨(ê¸°ë³¸ê°’ true). â€œê²¹ì¹˜ê¸° ê¸ˆì§€â€ ì •ì±… ìœ ì§€
             if (current.enemyAsBlocker && current.enemyMask.value != 0)
             {
                 var enemyHit = Physics2D.CircleCast((Vector2)transform.position, current.radius, wishDir, remaining, current.enemyMask);
@@ -154,20 +144,18 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                     result.hitEnemy = true;
                     result.hitTransform = enemyHit.transform;
                     result.hitNormal = enemyHit.normal;
-                    remaining -= Mathf.Max(0f, toHit);
-                    remaining = 0f; // ÀûÀº ½½¶óÀÌµå ´ë»ó ¾Æ´Ô(Á¤Ã¥¿¡ µû¶ó ÇÊ¿ä ½Ã È®Àå)
+                    remaining = 0f; // ì ì€ ìŠ¬ë¼ì´ë“œ ëŒ€ìƒ ì•„ë‹˜
                     break;
                 }
             }
 
-            // 3) Ãæµ¹ ¾øÀ½ ¡æ ³²Àº °Å¸® ÀüºÎ ÀÌµ¿
+            // 3) ì¶©ëŒ ì—†ìŒ â†’ ë‚¨ì€ ê±°ë¦¬ ì „ë¶€ ì´ë™
             MoveDiscrete(wishDir * remaining);
             remaining = 0f;
         }
 
-        result.actualDelta = (Vector2)transform.position - startPos;
-        LastMoveVector = result.actualDelta;
-        //Debug.Log($"{LastMoveVector.normalized} or {result.actualDelta.normalized}, your mutual!");
+        result.actualDelta = (Vector2)transform.position - origin;
+        LastMoveVector = result.actualDelta; // â˜… íˆíŠ¸/ë¹„íˆíŠ¸ ëª¨ë“  ê²½ë¡œì—ì„œ ê°±ì‹ 
         return result;
     }
 
