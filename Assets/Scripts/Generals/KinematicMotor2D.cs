@@ -62,7 +62,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
     public void BeginFrameDepenetrate(Vector2 _ignored)
     {
 		if (!col) return;
-        float worstPen = 0.15f;          // 가장 깊은(가장 음수) 침투량 -> 침투 시에도 worstPen이 0 밑으로 내려가지 않음(대략 0.15 미만), 수치 조정으로 해결
+        float worstPen = 0f;          // 가장 깊은(가장 음수) 침투량 -> 침투 시에도 worstPen이 0 밑으로 내려가지 않음(대략 0.15 미만), 수치 조정으로 해결
         Vector2 mtv = Vector2.zero;   // 밖으로 나갈 방향(최대 침투의 법선)
 
         // 벽 + (정책에 따라) 적 모두 스캔
@@ -79,11 +79,11 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                 mtv = d.normal; // 밖으로
             }
 		}
-        if (worstPen < 0.15f && mtv != Vector2.zero)
+        if (worstPen < 0f && mtv != Vector2.zero)
         {
 			float moveOut = Mathf.Max(0.01f, current.skin + Mathf.Abs(worstPen));// - worstPen; // -> worstPen이 들어가면 떨림이 너무 심함
             MoveDiscrete(mtv.normalized * moveOut);
-			Debug.LogError($"HELP! {worstPen} {current.skin} {moveOut}");
+			//Debug.LogError($"HELP! {worstPen} {current.skin} {moveOut}");
 		}
     }
     public MoveResult SweepMove(Vector2 desiredDelta)
@@ -116,7 +116,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 			{
 				if (hit.collider)
 				{
-					Debug.LogWarning($"Wall {hit.transform.name}");
+					//Debug.LogWarning($"Wall {hit.transform.name}");
 					// --- 이동하지 않는다. 법선 성분만 무효화하고 방향/잔여만 재설정 ---
 					result.hitWall = true;
 					result.hitTransform = hit.transform;
@@ -141,8 +141,8 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 				{
 					if (hit.collider)
 					{
-						Debug.LogWarning($"Enemy {hit.transform.name}");
-						if(wallHit.Length > 0) Debug.LogError($"Enemy after wall; Beware");
+						//Debug.LogWarning($"Enemy {hit.transform.name}");
+						//if(wallHit.Length > 0) Debug.LogError($"Enemy after wall; Beware");
 						// --- 이동하지 않는다. 법선 성분만 무효화하고 방향/잔여만 재설정 ---
 						result.hitWall = true;
 						result.hitTransform = hit.transform;
@@ -171,7 +171,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 				break;
 			}
 			// 3) 충돌 없음 → 남은 거리 전부 이동
-			Debug.Log(wishDir * remaining);
+			//Debug.Log(wishDir * remaining);
 			MoveDiscrete(wishDir * remaining);
             remaining = 0f;
         }

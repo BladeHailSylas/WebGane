@@ -5,7 +5,10 @@ public static class TargetAnchorPool
 {
     static readonly Stack<Transform> pool = new();
     static Transform root;
-
+	public static bool IsAnchor(Transform target)
+	{
+		return pool.Contains(target);
+	}
     public static Transform Acquire(Vector3 pos)
     {
         if (!root)
@@ -27,7 +30,7 @@ public static class TargetAnchorPool
 
     public static void Release(Transform t)
     {
-        if (!t) return;
+        if (!t || !IsAnchor(t)) return;
         t.gameObject.SetActive(false);
         t.SetParent(root, false);
         pool.Push(t);

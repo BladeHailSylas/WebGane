@@ -30,7 +30,7 @@ public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
         //locomotion.Move(move, rig, moveSpeed);
     }
 
-    void Update()
+    void FixedUpdate()
     {
         // 스킬(대시 등) 진행 중엔 기본 이동을 잠시 억제해 프레임 이중 스윕을 차단
         //if (skillRunner && skillRunner.IsBusy) return;             // :contentReference[oaicite:7]{index=7}

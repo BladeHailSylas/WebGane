@@ -61,7 +61,7 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
             {
                 // 벽까지 이동 후 소멸
                 Move(wallHit.distance);
-                Expire();
+                Expire(target);
                 return;
             }
 
@@ -89,7 +89,7 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
                     // 관통 불가이거나(=명중 즉시 소멸) / 타깃 그 자체면 소멸
                     if (!P.CanPenetrate || (target != null && c.transform == target))
                     {
-                        Expire();
+                        Expire(target);
                         return;
                     }
                 }
@@ -113,7 +113,7 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
         }
 
         // 사거리 체크
-        if (traveled >= P.maxRange) Expire();
+        if (traveled >= P.maxRange) Expire(target);
     }
 
     void Move(float d)
@@ -144,7 +144,12 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
 
     public void Expire()
     {
-        //제거될 때 뭔가 해야 한다?
+		//제거될 때 뭔가 해야 한다?
         Destroy(gameObject);
     }
+	public void Expire(Transform target)
+	{
+		TargetAnchorPool.Release(target);
+		Destroy(gameObject);
+	}
 }
