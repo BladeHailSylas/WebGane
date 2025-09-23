@@ -90,7 +90,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 
                 if (order.Param is ITargetingData td)
                 {
-                    Debug.Log("Hello again");
+                    //Debug.Log("Hello again");
                     walls = td.WallsMask;
                     rad = td.CollisionRadius;
                     skin = Mathf.Max(0.01f, td.AnchorSkin);
@@ -115,15 +115,14 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
                             {
                                 needEnemy = false;
                                 // 정면 대체 없는 취득 → 0이면 시전 실패
-                                if (!TryGetMoveDir(transform, out var mv))
+                                if (!TryGetMoveDir(transform, out var moveDir))
                                 {
                                     Debug.LogWarning("HELP!");
                                     Publish(new TargetNotFound(meta, skillRef, transform));   // 선택 이벤트
                                     Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
                                     busy = false; yield break;
                                 }
-                                desired = transform.position + (Vector3)(mv * Mathf.Max(0f, td.FallbackRange));
-                                Debug.Log($"Succeeded movement cast: Movement {mv.normalized}");
+                                desired = transform.position + (Vector3)(moveDir * Mathf.Max(0f, td.FallbackRange));
                                 break;
                             }
 
@@ -169,7 +168,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
             Publish(new TargetAcquired(meta, skillRef, transform, t));
             // 타깃(적 또는 앵커)을 향해 캐스트
             yield return tgt.Cast(transform, cam, order.Param, t);
-            if(createdAnchor) TargetAnchorPool.Release(t);
+            //if(createdAnchor) TargetAnchorPool.Release(t);
         }
         else
         {

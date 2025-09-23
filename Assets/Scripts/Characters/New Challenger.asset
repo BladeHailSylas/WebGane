@@ -81,10 +81,10 @@ MonoBehaviour:
         apRatio: 0
         knockback: 0
         cooldown: 0.35
-        retargetOnLost: 1
+        retargetOnLost: 0
         retargetRadius: 3
         mode: 1
-        fallback: 0
+        fallback: 10
         local: {x: 0, y: 0}
         col: 0
         skin: 0

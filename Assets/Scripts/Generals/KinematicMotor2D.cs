@@ -93,8 +93,11 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 		var result = new MoveResult { actualDelta = Vector2.zero };
         if (desiredDelta.sqrMagnitude <= 0f) return result;
 
-        // (A) 프레임 시작 겹침은 여기서도 한 번 더 안전하게 치운다
-        if(ow.Length > 0.25f || oe.Length > 0.25f) BeginFrameDepenetrate(Vector2.zero);
+		// (A) 프레임 시작 겹침은 여기서도 한 번 더 안전하게 치운다
+		if (ow.Length > 0.25f || oe.Length > 0.25f)
+		{
+			//BeginFrameDepenetrate(Vector2.zero); //Overlap이 좀 심할 경우에 호출하기 -> 일단 비활성화
+		}
         //Debug.Log("After call Depen");
 
         Vector2 origin = transform.position;
@@ -106,38 +109,44 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 
         while (remaining > 1e-5f && iters++ < kMaxSlideIters)
         {
-            // 1) 벽 우선
-            var wallHit = Physics2D.CircleCast((Vector2)transform.position, current.radius, wishDir, remaining, current.wallsMask);
-            if (wallHit.collider)
-            {
-                float toHit = wallHit.distance;
-                if (toHit > 0f)
-                {
-                    MoveDiscrete(wishDir * toHit);
-                }
+			// 1) 벽 우선
+			Vector2 vfinal = wishDir * remaining;
+			var wallHit = Physics2D.CircleCastAll((Vector2)transform.position, current.radius, wishDir, remaining, current.wallsMask);
+            foreach(RaycastHit2D hit in wallHit)
+			{
+				if (hit.collider)
+				{
+					// --- 이동하지 않는다. 법선 성분만 무효화하고 방향/잔여만 재설정 ---
+					result.hitWall = true;
+					result.hitTransform = hit.transform;
+					result.hitNormal = hit.normal;
 
-                result.hitWall = true;
-                result.hitTransform = wallHit.transform;
-                result.hitNormal = wallHit.normal;
-                remaining -= Mathf.Max(0f, toHit);
+					Vector2 n = hit.normal;
+					Vector2 v = vfinal;
+					float dot = Vector2.Dot(v, n);
+					var hitPt = hit.point;
+					if (Mathf.Abs(dot) > 0f)
+					{
+						v -= dot * n;            // v' = v - max(0,dot) * n
+						vfinal = v;
+					}
 
-                // 접선 슬라이드: v' = v - n * (v·n)
-                // 법선은? 법선을 0으로 하면 좋지 않을까
-                Vector2 n = wallHit.normal;
-                Vector2 v = wishDir * remaining;
-                Vector2 tangential = v - Vector2.Dot(v, n) * n;
-                if (tangential.sqrMagnitude >= 1e-6f )
-                {
-                    wishDir = tangential.normalized;
-                    remaining = tangential.magnitude;
-                    continue; // 같은 프레임에 재시도
-                }
-                remaining = 0f; // 더 못 감
-                break;
-            }
+				}
+			}
+			if (vfinal.sqrMagnitude > 1e-6f)            // 접선(or 바깥) 성분이 남아 있으면 계속
+			{
+				wishDir = vfinal.normalized;
+				remaining = vfinal.magnitude;
+				//continue;                           // 같은 프레임 내 다음 캐스트로
+			}
+			// 더 진행할 수 없으면 그 프레임 종료
+			else
+			{
+				break;
+			}
 
-            // 2) 적 차단(기본값 true). “겹치기 금지” 정책 유지
-            if (current.enemyAsBlocker && current.enemyMask.value != 0)
+			// 2) 적 차단(기본값 true). “겹치기 금지” 정책 유지
+			if (current.enemyAsBlocker && current.enemyMask.value != 0)
             {
                 var enemyHit = Physics2D.CircleCast((Vector2)transform.position, current.radius, wishDir, remaining, current.enemyMask);
                 if (enemyHit.collider)
@@ -147,11 +156,10 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                     result.hitEnemy = true;
                     result.hitTransform = enemyHit.transform;
                     result.hitNormal = enemyHit.normal;
-                    remaining = 0f; // 적은 슬라이드 대상 아님
+                    //remaining = 0f; // 적은 슬라이드 대상 아님
                     break;
                 }
             }
-
             // 3) 충돌 없음 → 남은 거리 전부 이동
             MoveDiscrete(wishDir * remaining);
             remaining = 0f;
