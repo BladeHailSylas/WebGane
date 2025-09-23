@@ -61,7 +61,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
     // [RULE: Depenetrate/MTV] 시작 겹침 탈출(벽+적 모두, 최소 이탈 벡터)
     public void BeginFrameDepenetrate(Vector2 _ignored)
     {
-        if (!col) return;
+		/*if (!col) return;
         float worstPen = 0.15f;          // 가장 깊은(가장 음수) 침투량 -> 침투 시에도 worstPen이 0 밑으로 내려가지 않음(대략 0.15 미만), 수치 조정으로 해결
         Vector2 mtv = Vector2.zero;   // 밖으로 나갈 방향(최대 침투의 법선)
 
@@ -79,12 +79,13 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                 mtv = d.normal; // 밖으로
             }
 		}
-        if (worstPen <= 0.15f && mtv != Vector2.zero)
+        if (worstPen < 0.15f && mtv != Vector2.zero)
         {
-            float moveOut = Mathf.Max(0.01f, current.skin);// + worstPen; // -> worstPen이 들어가면 떨림이 너무 심함
+			float moveOut = Mathf.Max(0.01f, current.skin + Mathf.Abs(worstPen) + current.radius);// - worstPen; // -> worstPen이 들어가면 떨림이 너무 심함
             MoveDiscrete(mtv.normalized * moveOut);
-			//Debug.LogError($"HELP! {worstPen} {current.skin} {moveOut}");
-		}
+			Debug.LogError($"HELP! {worstPen} {current.skin} {moveOut}");
+		}*/
+		Debug.LogError("Help!");
     }
     public MoveResult SweepMove(Vector2 desiredDelta)
     {
@@ -94,9 +95,9 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
         if (desiredDelta.sqrMagnitude <= 0f) return result;
 
 		// (A) 프레임 시작 겹침은 여기서도 한 번 더 안전하게 치운다
-		if (ow.Length > 0.25f || oe.Length > 0.25f)
+		if (ow.Length > 0 || oe.Length > 0)
 		{
-			//BeginFrameDepenetrate(Vector2.zero); //Overlap이 좀 심할 경우에 호출하기 -> 일단 비활성화
+			BeginFrameDepenetrate(Vector2.zero); //Overlap이 좀 심할 경우에 호출하기 -> 일단 비활성화
 		}
         //Debug.Log("After call Depen");
 
@@ -119,18 +120,41 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 					// --- 이동하지 않는다. 법선 성분만 무효화하고 방향/잔여만 재설정 ---
 					result.hitWall = true;
 					result.hitTransform = hit.transform;
-					result.hitNormal = hit.normal;
+					result.hitNormal = hit.normal.normalized;
 
-					Vector2 n = hit.normal;
+					Vector2 n = hit.normal.normalized;
 					Vector2 v = vfinal;
 					float dot = Vector2.Dot(v, n);
 					var hitPt = hit.point;
-					if (Mathf.Abs(dot) > 0f)
+					if (Mathf.Abs(dot) > 0f) //Abs?
 					{
 						v -= dot * n;            // v' = v - max(0,dot) * n
 						vfinal = v;
 					}
-
+				}
+			}
+			// 2) 적 차단(기본값 true). “겹치기 금지” 정책 유지
+			if (current.enemyAsBlocker && current.enemyMask.value != 0)
+            {
+				var enemyHit = Physics2D.CircleCastAll((Vector2)transform.position, current.radius, wishDir, remaining, current.enemyMask);
+				foreach (RaycastHit2D hit in enemyHit)
+				{
+					if (hit.collider)
+					{
+						// --- 이동하지 않는다. 법선 성분만 무효화하고 방향/잔여만 재설정 ---
+						result.hitWall = true;
+						result.hitTransform = hit.transform;
+						result.hitNormal = hit.normal.normalized;
+						Vector2 n = hit.normal.normalized;
+						Vector2 v = vfinal;
+						float dot = Vector2.Dot(v, n);
+						var hitPt = hit.point;
+						if (Mathf.Abs(dot) > 0f && vfinal != Vector2.zero) //Abs?
+						{
+							v -= dot * n;            // v' = v - max(0,dot) * n
+							vfinal = v;
+						}
+					}
 				}
 			}
 			if (vfinal.sqrMagnitude > 1e-6f)            // 접선(or 바깥) 성분이 남아 있으면 계속
@@ -144,24 +168,8 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 			{
 				break;
 			}
-
-			// 2) 적 차단(기본값 true). “겹치기 금지” 정책 유지
-			if (current.enemyAsBlocker && current.enemyMask.value != 0)
-            {
-                var enemyHit = Physics2D.CircleCast((Vector2)transform.position, current.radius, wishDir, remaining, current.enemyMask);
-                if (enemyHit.collider)
-                {
-                    float toHit = enemyHit.distance;
-                    if (toHit > 0f) MoveDiscrete(wishDir * toHit);
-                    result.hitEnemy = true;
-                    result.hitTransform = enemyHit.transform;
-                    result.hitNormal = enemyHit.normal;
-                    //remaining = 0f; // 적은 슬라이드 대상 아님
-                    break;
-                }
-            }
-            // 3) 충돌 없음 → 남은 거리 전부 이동
-            MoveDiscrete(wishDir * remaining);
+			// 3) 충돌 없음 → 남은 거리 전부 이동
+			MoveDiscrete(wishDir * remaining);
             remaining = 0f;
         }
 
