@@ -3,6 +3,7 @@ using StatsInterfaces;
 using System.Collections;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
 {
     [SerializeField] PlayerStats stats;
@@ -14,7 +15,7 @@ public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
     //[SerializeField] SkillRunner skillRunner;  // 스킬 진행 중 기본 이동 억제용 (Dash 등)  // :contentReference[oaicite:6]{index=6}*/
 
     [Header("Move")]
-    [SerializeField] float moveSpeed = 32f;     // TODO: stats로 치환 예정
+    [SerializeField] float moveSpeed = 8f;     // TODO: stats로 치환 예정
     Vector2 _moveInput;                        // 입력 버퍼(이벤트 → 프레임 단일 처리)
 
     void Awake()
