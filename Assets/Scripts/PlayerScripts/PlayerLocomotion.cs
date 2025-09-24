@@ -30,7 +30,7 @@ public class PlayerLocomotion : MonoBehaviour, IMovable, IPullable
 		// 의도 방향을 선호 방향으로 하여 겹침 청소(모서리 락 방지)  // :contentReference[oaicite:12]{index=12}
 		var motor = GetComponentInParent<KinematicMotor2D>();
 		if (!motor) return;
-        motor.BeginFrameDepenetrate(dir);
+        //motor.RemoveComponent();
 
         // 단일 스윕 이동(충돌로 절단/슬라이드는 Motor 정책에 따름)      // :contentReference[oaicite:13]{index=13}
         var res = motor.SweepMove(delta);

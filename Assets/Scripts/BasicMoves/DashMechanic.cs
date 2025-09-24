@@ -62,8 +62,7 @@ public class DashMechanic : SkillMechanicBase<DashParams>, ITargetedMechanic
                 // 스코프 내에서 갱신 반영
                 using (motor.With(dashPolicy))
                 {
-                    if (sensor && s.intruding && s.mtvDir != Vector2.zero)
-                        motor.BeginFrameDepenetrate(s.mtvDir);
+                    //if (sensor && s.intruding && s.mtvDir != Vector2.zero) motor.RemoveComponent();
                 }
 
                 // --- 예산 분배: 감속 금지, step만큼 시도 ---
@@ -123,8 +122,7 @@ public class DashMechanic : SkillMechanicBase<DashParams>, ITargetedMechanic
             if (sensor)
             {
                 var sEnd = sensor.GetState();
-                if (sEnd.intruding && sEnd.mtvDir != Vector2.zero)
-                    motor.BeginFrameDepenetrate(sEnd.mtvDir);
+                //if (sEnd.intruding && sEnd.mtvDir != Vector2.zero) motor.RemoveComponent();
             }
         }
 

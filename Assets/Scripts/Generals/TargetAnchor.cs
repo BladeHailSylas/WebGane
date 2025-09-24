@@ -30,7 +30,7 @@ public static class TargetAnchorPool
 
     public static void Release(Transform t)
     {
-        if (!t || !IsAnchor(t)) return;
+        if (!t || pool.Contains(t)) return;
         t.gameObject.SetActive(false);
         t.SetParent(root, false);
         pool.Push(t);
