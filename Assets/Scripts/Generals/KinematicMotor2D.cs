@@ -248,7 +248,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 
 		// 2) 반복 보정 파라미터(요구사항 고정값 반영)
 		int maxIterations = 4;
-		float skin = 0.125f; // 2^-5
+		float skin = 0.125f;
 		float minEps = 0.001f;
 		float maxTotal = 0.5f;
 

@@ -27,7 +27,8 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
     {
         if (busy || cd > 0f || mech == null || param == null) return;
 
-        // (A) 스위치 정책이 있으면 먼저 주문서 선택 시도 → 성공하면 그걸 시전
+        // (A) 스위치 정책이 있으면 먼저 주문서 선택 시도 → 성공하면 그걸 시전 <= 사실 필요가 없다, Switch Skill은 외부적으로 아무 기능이 없어 그냥 시전하게 두어도 되거든
+		//SkillRunner와 MoveParams도 갈아엎을 때가 왔다, AI에게 의존하지 않는 능력이 필요
         if (param is ISwitchPolicy sp && sp.TrySelect(transform, cam, out var switched))
         {
             Schedule(switched, 0f, respectBusyCooldown: true);
@@ -64,22 +65,12 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
         var meta = Create(transform, channel: "combat"); // 공통 메타
         var skillRef = new SkillRef(order.Mech as Object); // SO 참조 기반
         Transform target = order.TargetOverride;
-        Publish(new CastStarted(meta, skillRef, order.Param, transform, target));
+		Transform t = null;
+		Publish(new CastStarted(meta, skillRef, order.Param, transform, target));
         // 타깃 분기는 Runner만 담당 (혼재 OK)
         if (order.Mech is ITargetedMechanic tgt)
         {
-            /*
-            //타깃 획득 로직
-            var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
-                    if (provider == null || !provider.TryGetTarget(out t) || t == null)
-                    {
-                        Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
-                        busy = false; yield break;
-                    }
-                    // 실패 시: 이벤트 TargetNotFound + 종료 (현 시스템과 일관) :contentReference[oaicite:3]{index=3}
-                    // (비타깃인데 적이 가까이 있어도 '무시'해야 하므로 needEnemy=false 로 분기됩니다)
-             */
-            Transform t = order.TargetOverride;
+            t = order.TargetOverride;
 
             if (t == null)
             {
@@ -177,6 +168,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 
         if (order.Param is IHasCooldown h) cd = Mathf.Max(cd, h.Cooldown);
         Publish(new CastEnded(meta, skillRef, transform, false));
+		if (createdAnchor) TargetAnchorPool.Release(t);
         // 시전 완료 후 Hook 공급자들의 FollowUp을 같은 경로로 스케줄해도 됨(원한다면 OnAfterCast 훅 추가)
         busy = false;
     }

@@ -234,7 +234,6 @@ GameObject:
   - component: {fileID: 198943028}
   - component: {fileID: 198943030}
   - component: {fileID: 198943029}
-  - component: {fileID: 198943031}
   m_Layer: 3
   m_Name: RWall
   m_TagString: Walls
@@ -361,21 +360,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &198943031
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 198943027}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8d5d7c2ebdcbe944797379ab5ce21338, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WallsPushEntity
-  playerMask:
-    serializedVersion: 2
-    m_Bits: 64
 --- !u!1 &200111307
 GameObject:
   m_ObjectHideFlags: 0
@@ -1627,7 +1611,6 @@ GameObject:
   - component: {fileID: 1073953846}
   - component: {fileID: 1073953848}
   - component: {fileID: 1073953847}
-  - component: {fileID: 1073953849}
   m_Layer: 3
   m_Name: LWall
   m_TagString: Walls
@@ -1754,21 +1737,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &1073953849
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1073953845}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8d5d7c2ebdcbe944797379ab5ce21338, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WallsPushEntity
-  playerMask:
-    serializedVersion: 2
-    m_Bits: 64
 --- !u!1 &1250342250
 GameObject:
   m_ObjectHideFlags: 0
@@ -1922,12 +1890,12 @@ GameObject:
   - component: {fileID: 1263823746}
   - component: {fileID: 1263823745}
   m_Layer: 6
-  m_Name: CollisionSensor
+  m_Name: CollisionNegator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1263823744
 Transform:
   m_ObjectHideFlags: 0

@@ -134,6 +134,7 @@ public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargeti
             if (m.TryBuildOrder(null, out var order))
                 yield return (order, m.delay, m.respectBusyCooldown);
     }
+
 }
 
 [System.Serializable]

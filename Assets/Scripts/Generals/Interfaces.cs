@@ -89,7 +89,8 @@ namespace ActInterfaces
     }
     public interface ISweepable
     {
-        MoveResult SweepMove(Vector2 vec);
+		Vector2 DepenVector(LayerMask blockersMask, int maxIterations = 4, float skin = 0.03125F, float minEps = 0.001F, float maxTotal = 0.5F);
+		MoveResult SweepMove(Vector2 vec);
     }
     public interface IMovable
     {
