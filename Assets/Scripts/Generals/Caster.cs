@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using SkillInterfaces;
 
-public enum AbilityHook { OnCastStart, OnHit, OnExpire }
+public enum AbilityHook { OnCastStart, OnHit, OnCastEnd }
 
 /// 실행 주문서: 무엇을(메커닉/파라미터), 대상 오버라이드(옵션)
 public readonly struct CastOrder

@@ -35,7 +35,7 @@ public class CursorHoverTargetProvider : MonoBehaviour, ITargetable
             if (hits.Length == 0)
             {
                 // 로그 한 번만
-                // Debug.Log("[TargetProvider] No enemy under cursor");
+                //Debug.Log("[TargetProvider] No enemy under cursor");
                 return false;
             }
         }
@@ -54,19 +54,18 @@ public class CursorHoverTargetProvider : MonoBehaviour, ITargetable
             {
                 var to = (Vector2)h.bounds.ClosestPoint(origin);
                 var hit = Physics2D.Linecast(origin, to, blockerMask);
-                blocked = hit.collider != null;
+                blocked = hit.collider != null; // 이 line이 문제인 것 같음, hit 판정이 잘못되었다?
             }
 
             // 타깃 로그
-            // Debug.Log($"[TargetProvider] hit={h.name} layer={LayerMask.LayerToName(h.gameObject.layer)} d={d:F2} inRange={inRange} blocked={blocked}");
-
+            //Debug.Log($"[TargetProvider] hit={h.name} layer={LayerMask.LayerToName(h.gameObject.layer)} d={d:F2} inRange={inRange} blocked={blocked}");
             if (!inRange || blocked) continue;
             if (d < bestDist) { bestDist = d; best = t; }
         }
 
         if (!best)
         {
-            // Debug.Log("[TargetProvider] Hits found but filtered out by range/LOS");
+            //Debug.Log("[TargetProvider] Hits found but filtered out by range/LOS");
             return false;
         }
 

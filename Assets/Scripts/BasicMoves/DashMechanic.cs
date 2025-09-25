@@ -75,9 +75,11 @@ public class DashMechanic : SkillMechanicBase<DashParams>, ITargetedMechanic
                 Vector2 aim = ((Vector2)target.position - pos);
                 Vector2 dir = aim.sqrMagnitude > 1e-4f ? aim.normalized : dir0;
 
-                // --- 단일 스윕(모터가 같은 프레임에 슬라이드 반복 처리) ---
-                var res = motor.SweepMove(dir * stepDist);
-                remaining -= res.actualDelta.magnitude;
+				// --- 단일 스윕(모터가 같은 프레임에 슬라이드 반복 처리) ---
+				motor.Depenetration();
+				var res = motor.SweepMove(dir * stepDist);
+				motor.Depenetration();
+				remaining -= res.actualDelta.magnitude;
 
                 // --- 히트(관통 여부 무관) ---
                 if (p.dealDamage && p.enemyMask.value != 0)
@@ -119,11 +121,7 @@ public class DashMechanic : SkillMechanicBase<DashParams>, ITargetedMechanic
             }
 
             // 관통 대시였다면, 종료 프레임에 겹침 청소 한 번 더(적 포함 상황 대비)
-            if (sensor)
-            {
-                var sEnd = sensor.GetState();
-                //if (sEnd.intruding && sEnd.mtvDir != Vector2.zero) motor.RemoveComponent();
-            }
+			motor.Depenetration();
         }
 
         owner.GetComponent<SkillRunner>()?.NotifyHookOnExpire((Vector2)owner.position);

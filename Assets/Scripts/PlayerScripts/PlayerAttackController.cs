@@ -12,9 +12,9 @@ public class PlayerAttackController : MonoBehaviour
 
     [Header("Input")]
     public InputActionReference attackKey;   // LMB(+Passive)
-    public InputActionReference skill1Key;   // RMB
-    public InputActionReference skill2Key;   // SHIFT
-    public InputActionReference ultimateKey; // SPACE
+    public InputActionReference skill1Key;   // Shift
+    public InputActionReference skill2Key;   // Space
+    public InputActionReference ultimateKey; // RMB
                                             //АјАн LMB, Skill1 Shift, Skill2 Space, Ultimate RMB?
     private readonly Dictionary<SkillSlot, ISkillRunner> _runners = new();
 

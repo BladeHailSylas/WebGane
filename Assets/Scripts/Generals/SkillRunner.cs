@@ -1,8 +1,13 @@
-// SkillRunner.cs (REFACTOR)
+ï»¿// SkillRunner_V2_Lite.cs â€” "7ë‹¨ê³„ íŒŒì´í”„ë¼ì¸" ë¦¬íŒ©í„° (ë¡œì§ ë³€ê²½ ìµœì†Œí™”)
+// - ëª©í‘œ: CoCastë¥¼ KinematicMotor2D.SweepMove ìˆ˜ì¤€ìœ¼ë¡œ ì–‡ê²Œ ìœ ì§€
+// - í•µì‹¬: BuildContext â†’ Validate â†’ BeginCostAndBusy â†’ EnsureAnchor â†’ Execute â†’ ApplyPipeline â†’ HandleFollowUps (+Finalize)
+// - ì£¼ì˜: ì „íˆ¬ ìˆ˜ì¹˜ ë³€ê²½/Effect íŒŒì´í”„ë¼ì¸ì€ ê¸°ì¡´ ì‹œìŠ¤í…œì„ ê·¸ëŒ€ë¡œ ì‚¬ìš©(ì—¬ê¸°ì„œëŠ” ì´ë²¤íŠ¸ ë°œí–‰ ìˆ˜ì¤€)
+// - ë””ë²„ê·¸: debugLogging í† ê¸€, ë‹¨ê³„ë³„ Trace, ì‹¤íŒ¨ ì‚¬ìœ  ë¡œê¹…
+
 using ActInterfaces;
 using SkillInterfaces;
+using System;
 using System.Collections;
-using UnityEditor.UIElements;
 using UnityEngine;
 using static EventBus;
 using static GameEventMetaFactory;
@@ -10,181 +15,352 @@ using static TargetAnchorUtil2D;
 
 public class SkillRunner : MonoBehaviour, ISkillRunner
 {
-    [SerializeField] ISkillMechanic mech;
-    [SerializeReference] ISkillParam param;
-    Camera cam;
-    bool busy; float cd;
+	[Header("Bindings")]
+	[SerializeField] ISkillMechanic mech;
+	[SerializeReference] ISkillParam param;
 
-    public bool IsBusy => busy;
-    public bool IsOnCooldown => cd > 0f;
-    bool createdAnchor = false;
+	[Header("Debugging")]
+	[SerializeField] bool debugLogging = false;           // ë‹¨ê³„ë³„ ë¡œê·¸ í† ê¸€
+	[SerializeField] int warnFollowUpsPerFrame = 16;      // í”„ë ˆì„ë‹¹ ê³¼ë„í•œ FollowUp ê°ì§€
 
-    void Awake() { cam = Camera.main; }
-    void Update() { if (cd > 0f) cd -= Time.deltaTime; }
+	Camera cam;
+	bool busy; float cd;
+	int castSeq;                  // ë‹¨ìˆœ CastId ì‹œí€€ìŠ¤
+	int scheduledThisFrame;       // í”„ë ˆì„ë‹¹ FollowUp ìŠ¤ì¼€ì¤„ ì¹´ìš´íŠ¸
 
-    // ½½·ÔÀÇ ±âº» ½ºÅ³ ½ÃÀü (ÀÔ·Â¿¡¼­ È£Ãâ)
-    public void TryCast()
-    {
-        if (busy || cd > 0f || mech == null || param == null) return;
+	// === Public state ===
+	public bool IsBusy => busy;
+	public bool IsOnCooldown => cd > 0f;
 
-        // (A) ½ºÀ§Ä¡ Á¤Ã¥ÀÌ ÀÖÀ¸¸é ¸ÕÀú ÁÖ¹®¼­ ¼±ÅÃ ½Ãµµ ¡æ ¼º°øÇÏ¸é ±×°É ½ÃÀü <= »ç½Ç ÇÊ¿ä°¡ ¾ø´Ù, Switch SkillÀº ¿ÜºÎÀûÀ¸·Î ¾Æ¹« ±â´ÉÀÌ ¾ø¾î ±×³É ½ÃÀüÇÏ°Ô µÎ¾îµµ µÇ°Åµç
-		//SkillRunner¿Í MoveParamsµµ °¥¾Æ¾şÀ» ¶§°¡ ¿Ô´Ù, AI¿¡°Ô ÀÇÁ¸ÇÏÁö ¾Ê´Â ´É·ÂÀÌ ÇÊ¿ä
-        if (param is ISwitchPolicy sp && sp.TrySelect(transform, cam, out var switched))
-        {
-            Schedule(switched, 0f, respectBusyCooldown: true);
-            return;
-        }
+	void Awake() { cam = Camera.main; }
+	void Update()
+	{
+		if (cd > 0f) cd -= Time.deltaTime;
+		scheduledThisFrame = 0; // í”„ë ˆì„ ê²½ê³„ì—ì„œ ì´ˆê¸°í™”
+	}
 
-        // (B) Æò¼ÒÃ³·³ ½½·ÔÀÇ ¸ŞÄ¿´ĞÀ» ½ÃÀü
-        Schedule(new CastOrder(mech, param), 0f, true);
-    }
+	// ---------------------------------------------------------------------
+	// Entry: ìŠ¬ë¡¯ ê¸°ë³¸ ìŠ¤í‚¬ ì‹œì „ (ì…ë ¥ì—ì„œ í˜¸ì¶œ)
+	// ---------------------------------------------------------------------
+	public void TryCast()
+	{
+		if (busy || cd > 0f || mech == null || param == null)
+		{
+			D($"TryCast blocked: busy={busy}, cd={cd:F2}, mech={(mech == null)}, param={(param == null)}");
+			return;
+		}
 
-    // === Ç¥ÁØ ½ºÄÉÁÙ API (FollowUp/ÀÏ¹İ/½ºÀ§Ä¡ ¸ğµÎ µ¿ÀÏ °æ·Î) ===
-    public void Schedule(CastOrder order, float delay, bool respectBusyCooldown)
-    {
-        StartCoroutine(CoSchedule(order, delay, respectBusyCooldown));
-    }
+		// (ì˜µì…˜) Switch ì •ì±…: ì™¸ë¶€ì—ì„œ ì£¼ë¬¸ì„œ ì„ íƒ
+		if (param is ISwitchPolicy sp && sp.TrySelect(transform, cam, out var switched))
+		{
+			D("SwitchPolicy selected alt CastOrder â†’ Schedule");
+			Schedule(switched, 0f, respectBusyCooldown: true);
+			return;
+		}
 
-    IEnumerator CoSchedule(CastOrder order, float delay, bool respect)
-    {
-        if (respect)
-        {
-            while (busy || cd > 0f)
-            {
-                yield return null;
-            }
-            if (delay > 0f) yield return new WaitForSeconds(delay);
-            yield return CoCast(order);
-        }
-    }
+		// ê¸°ë³¸ ë©”ì»¤ë‹‰ ì‹œì „
+		Schedule(new CastOrder(mech, param), 0f, respectBusyCooldown: true);
+	}
 
-    IEnumerator CoCast(CastOrder order)
-    {
-        busy = true;
-        BroadcastHook(AbilityHook.OnCastStart, null);
-        var meta = Create(transform, channel: "combat"); // °øÅë ¸ŞÅ¸
-        var skillRef = new SkillRef(order.Mech as Object); // SO ÂüÁ¶ ±â¹İ
-        Transform target = order.TargetOverride;
-		Transform t = null;
-		Publish(new CastStarted(meta, skillRef, order.Param, transform, target));
-        // Å¸±ê ºĞ±â´Â Runner¸¸ ´ã´ç (È¥Àç OK)
-        if (order.Mech is ITargetedMechanic tgt)
-        {
-            t = order.TargetOverride;
+	// === í‘œì¤€ ìŠ¤ì¼€ì¤„ API (ì¼ë°˜/FollowUp/ìŠ¤ìœ„ì¹˜ ë™ì¼ ê²½ë¡œ) ===
+	public void Schedule(CastOrder order, float delay, bool respectBusyCooldown)
+	{
+		StartCoroutine(CoSchedule(order, delay, respectBusyCooldown));
+	}
 
-            if (t == null)
-            {
-                Vector3 desired = default;
-                bool needEnemy = true;
-                float rad = 0f, skin = 0.05f;
-                LayerMask walls = 0;
+	IEnumerator CoSchedule(CastOrder order, float delay, bool respect)
+	{
+		if (respect)
+		{
+			while (busy || cd > 0f) yield return null;  // ë°”ì¨/ì¿¨ë‹¤ìš´ ì¡´ì¤‘
+		}
+		if (delay > 0f) yield return new WaitForSeconds(delay);
+		yield return CoCast(order);
+	}
 
-                if (order.Param is ITargetingData td)
-                {
-                    //Debug.Log("Hello again");
-                    walls = td.WallsMask;
-                    rad = td.CollisionRadius;
-                    skin = Mathf.Max(0.01f, td.AnchorSkin);
+	// =====================================================================
+	// CoCast â€” ì–‡ì€ 7ë‹¨ê³„ íŒŒì´í”„ë¼ì¸ (ë¡œì§ì€ ì‘ì€ í•¨ìˆ˜ë¡œ ìœ„ì„)
+	// =====================================================================
+	IEnumerator CoCast(CastOrder order)
+	{
+		var ctx = BuildContext(order);                           // 1) ì»¨í…ìŠ¤íŠ¸
+		var vResult = Validate(ctx, order.Param);                // 2) ê²€ì¦(ë¶€ì‘ìš© X)
+		if (!vResult.IsValid)
+		{
+			FailCastEarly(ctx, vResult);
+			yield break;
+		}
 
-                    switch (td.Mode)
-                    {
-                        case TargetMode.TowardsEnemy:
-                            { 
-                                needEnemy = true;
-                                break;
-                            }
+		BeginCostAndBusy(ctx, order);                            // 3) ë¹„ìš©/ë°”ì¨/ì¿¨ë‹¤ìš´(ì‹œì )
+		using (var anchor = EnsureAnchor(ctx, order))            // 4) ì•µì»¤ ìŠ¤ì½”í”„(ìë™ í•´ì œ)
+		{
+			Hooks_OnCastStart(ctx);
 
-                        case TargetMode.TowardsCursor:
-                            {
-                                needEnemy = false;
-                                var cursor = CursorWorld2D(cam, transform, depthFallback: 10f);
-                                desired = transform.position + (cursor - transform.position).normalized * Mathf.Max(0f, td.FallbackRange);
-                                break;
-                            }
+			var res = ExecuteMechanism(ctx, order, anchor.Target); // 5) ë©”ì»¤ë‹ˆì¦˜ ì‹¤í–‰
+			yield return res.Yieldable;                            // ì‹¤í–‰ ì½”ë£¨í‹´ ëŒ€ê¸°(í•„ìš” ì‹œ)
 
-                        case TargetMode.TowardsMovement:
-                            {
-                                needEnemy = false;
-                                // Á¤¸é ´ëÃ¼ ¾ø´Â Ãëµæ ¡æ 0ÀÌ¸é ½ÃÀü ½ÇÆĞ
-                                if (!TryGetMoveDir(transform, out var moveDir))
-                                {
-                                    Debug.LogWarning("HELP!");
-                                    Publish(new TargetNotFound(meta, skillRef, transform));   // ¼±ÅÃ ÀÌº¥Æ®
-                                    Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
-                                    busy = false; yield break;
-                                }
-                                desired = transform.position + (Vector3)(moveDir * Mathf.Max(0f, td.FallbackRange));
-                                break;
-                            }
+			ApplyPipeline(ctx, res);                              // 6) ê²°ê³¼ ë°˜ì˜(ì´ë²¤íŠ¸/íŒŒì´í”„ë¼ì¸)
+			HandleFollowUps(ctx, res);                            // 7) FollowUp ìŠ¤ì¼€ì¤„
+		}
+		FinalizeCast(ctx, order);                                 // End ë§ˆë¬´ë¦¬
+	}
 
-                        case TargetMode.TowardsOffset:
-                            {
-                                needEnemy = false;
-                                desired = transform.TransformPoint((Vector3)td.LocalOffset);
-                                break;
-                            }
-                    }
-                }
+	// ------------------------------------------------------------------
+	// (1) BuildContext â€” ë©”íƒ€/ì‹ë³„ì/ì°¸ì¡° êµ¬ì„± (ìˆœìˆ˜)
+	// ------------------------------------------------------------------
+	private CastContext BuildContext(CastOrder order)
+	{
+		var meta = Create(transform, channel: "combat"); // ê³µí†µ ë©”íƒ€
+		var skillRef = new SkillRef(order.Mech as UnityEngine.Object); // SO ì°¸ì¡° ê¸°ë°˜
+		var castId = ++castSeq;
+		var c = new CastContext(castId, transform, cam, meta, skillRef, order);
+		D($"[CTX] CastId={castId} Mech={order.Mech?.GetType().Name}");
+		return c;
+	}
 
-                if (needEnemy)
-                {
-                    //Å¸±ê È¹µæ ·ÎÁ÷
-                    var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
-                    if (provider == null || !provider.TryGetTarget(out t) || t == null)
-                    {
-                        Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
-                        busy = false; yield break;
-                    }
-                    // ½ÇÆĞ ½Ã: ÀÌº¥Æ® TargetNotFound + Á¾·á (Çö ½Ã½ºÅÛ°ú ÀÏ°ü) :contentReference[oaicite:3]{index=3}
-                    // (ºñÅ¸±êÀÎµ¥ ÀûÀÌ °¡±îÀÌ ÀÖ¾îµµ '¹«½Ã'ÇØ¾ß ÇÏ¹Ç·Î needEnemy=false ·Î ºĞ±âµË´Ï´Ù)
-                }
-                else
-                {
-                    var clamped = ResolveReachablePoint2D(transform.position, desired, walls, rad, skin);
+	// ------------------------------------------------------------------
+	// (2) Validate â€” ì‚¬ì „ ê²€ì¦(ë¶€ì‘ìš© ì—†ìŒ)
+	// ------------------------------------------------------------------
+	private ValidationResult Validate(CastContext ctx, ISkillParam p)
+	{
+		// í˜„ì¬ ì‹œìŠ¤í…œì—ì„œëŠ” TryCastì—ì„œ busy/cdë¥¼ ê±¸ëŸ¬ë‚´ë¯€ë¡œ ì—¬ê¸°ì„  íƒ€ê¹ƒ/ì…ë ¥ ìœ íš¨ì„±ë§Œ ì‚¬ì „ ì²´í¬ ê°€ëŠ¥
+		// íƒ€ê¹ƒì€ EnsureAnchorì—ì„œ ìµœì¢…ì ìœ¼ë¡œ ë‹¤ì‹œ í™•ì¸ë˜ë¯€ë¡œ, ì—¬ê¸°ì„œëŠ” ë‹¨ìˆœ íŒ¨ìŠ¤
+		return ValidationResult.Ok;
+	}
 
-                    // 2) ³Ê¹« °¡±î¿î Á¡(°ÅÀÇ Á¦ÀÚ¸®) ¡æ '°­Á¦·Î Á¤¸é' ±İÁö, ¾ÈÀüÇÏ°Ô ½ÃÀü Áß´Ü
-                    var v = (clamped - transform.position);
-                    if (v.sqrMagnitude < 0.0001f)
-                    {
-                        Publish(new TargetNotFound(meta, skillRef, transform));      // ¼±ÅÃ
-                        Publish(new CastEnded(meta, skillRef, transform, interrupted: true));
-                        busy = false; yield break;
-                    }
+	private void FailCastEarly(CastContext ctx, ValidationResult vr)
+	{
+		// í˜„ì¬ëŠ” ë³„ë„ ì‚¬ìœ ê°€ ê±°ì˜ ì—†ìœ¼ë¯€ë¡œ ì´ë²¤íŠ¸ ìµœì†Œ ë°œí–‰
+		Publish(new CastEnded(ctx.Meta, ctx.SkillRef, ctx.Caster, interrupted: true));
+		D($"[FAIL] Early validation fail: reason={vr.Reason}");
+	}
 
-                    // 3) ¾ŞÄ¿ »ı¼º/¼ö¸íÁÖ±â À¯Áö
-                    t = TargetAnchorPool.Acquire(clamped);
-                    createdAnchor = true;
-                }
-            }
-            Publish(new TargetAcquired(meta, skillRef, transform, t));
-            // Å¸±ê(Àû ¶Ç´Â ¾ŞÄ¿)À» ÇâÇØ Ä³½ºÆ®
-            yield return tgt.Cast(transform, cam, order.Param, t);
-            //if(createdAnchor) TargetAnchorPool.Release(t);
-        }
-        else
-        {
-            yield return order.Mech.Cast(transform, cam, order.Param);
-        }
+	// ------------------------------------------------------------------
+	// (3) BeginCostAndBusy â€” ë¹„ìš©/ì¿¨ë‹¤ìš´/ë°”ì¨ ì‹œì  ì²˜ë¦¬
+	// ------------------------------------------------------------------
+	private void BeginCostAndBusy(CastContext ctx, CastOrder order)
+	{
+		busy = true; // FollowUp respect ì •ì±…ì€ ìŠ¤ì¼€ì¤„ëŸ¬ì—ì„œ ì²˜ë¦¬
+					// ì¿¨ë‹¤ìš´ì€ ê¸°ì¡´ ì½”ë“œì²˜ëŸ¼ ì¢…ë£Œ ì‹œì— ë°˜ì˜(IHasCooldown) â†’ ë¡œì§ ìœ ì§€
+		D("[BEGIN] Busy=true");
+	}
 
-        if (order.Param is IHasCooldown h) cd = Mathf.Max(cd, h.Cooldown);
-        Publish(new CastEnded(meta, skillRef, transform, false));
-		if (createdAnchor) TargetAnchorPool.Release(t);
-        // ½ÃÀü ¿Ï·á ÈÄ Hook °ø±ŞÀÚµéÀÇ FollowUpÀ» °°Àº °æ·Î·Î ½ºÄÉÁÙÇØµµ µÊ(¿øÇÑ´Ù¸é OnAfterCast ÈÅ Ãß°¡)
-        busy = false;
-    }
+	// ------------------------------------------------------------------
+	// (4) EnsureAnchor â€” íƒ€ê¹ƒ/ì•µì»¤ í™•ë³´ë¥¼ ìŠ¤ì½”í”„í™”(IDisposable)
+	//   - íƒ€ê¹ƒí˜•: ëŒ€ìƒ Transform í™•ë³´(ì—†ìœ¼ë©´ ì‹¤íŒ¨)
+	//   - ë¹„íƒ€ê¹ƒí˜•/ì¢Œí‘œí˜•: ì•µì»¤ Transform ìƒì„± í›„ ìŠ¤ì½”í”„ ì¢…ë£Œ ì‹œ Release
+	// ------------------------------------------------------------------
+	private AnchorScope EnsureAnchor(CastContext ctx, CastOrder order)
+	{
+		if (order.Mech is ITargetedMechanic tgt)
+		{
+			// ìš°ì„ ìˆœìœ„: ëª…ì‹œ TargetOverride â†’ ì  íƒ€ê¹ƒ â†’ ëª©ì ì§€ ì•µì»¤
+			Transform t = order.TargetOverride;
+			if (t == null)
+			{
+				bool needEnemy = true;
+				Vector3 desired = default;
+				float rad = 0f, skin = 0.05f; LayerMask walls = 0;
 
-    // === ÈÅ ¿£µåÆ÷ÀÎÆ®(¸ŞÄ¿´Ğ¿¡¼­ Äİ¹é) ===
-    public void NotifyHookOnHit(Transform target, Vector2 point) => BroadcastHook(AbilityHook.OnHit, target);
-    public void NotifyHookOnExpire(Vector2 point) => BroadcastHook(AbilityHook.OnExpire, null);
+				if (order.Param is ITargetingData td)
+				{
+					walls = td.WallsMask;
+					rad = td.CollisionRadius;
+					skin = Mathf.Max(0.01f, td.AnchorSkin);
 
-    void BroadcastHook(AbilityHook hook, Transform prevTarget)
-    {
-        // ParamÀÌ FollowUp Á¦°ø ½Ã ¡æ ÁÖ¹®¼­ ¼öÁı ¡æ Schedule
-        if (param is IFollowUpProvider p)
-            foreach (var (order, delay, respect) in p.BuildFollowUps(hook, prevTarget))
-                Schedule(order, delay, respect);
-    }
+					switch (td.Mode)
+					{
+						case TargetMode.TowardsEnemy:
+							needEnemy = true; break;
+						case TargetMode.TowardsCursor:
+							needEnemy = false;
+							var cursor = CursorWorld2D(cam, transform, depthFallback: 10f);
+							desired = transform.position + (cursor - transform.position).normalized * Mathf.Max(0f, td.FallbackRange);
+							break;
+						case TargetMode.TowardsMovement:
+							needEnemy = false;
+							if (!TryGetMoveDir(transform, out var moveDir))
+							{
+								// íƒ€ê¹ƒ ì‹¤íŒ¨ ì²˜ë¦¬ â€” ì´ë²¤íŠ¸ + ì¢…ë£ŒëŠ” ìƒìœ„(CoCast)ì—ì„œ ì¼ê´€ë˜ê²Œ ìˆ˜í–‰
+								return AnchorScope.Fail("NoMoveDir");
+							}
+							desired = transform.position + (Vector3)(moveDir * Mathf.Max(0f, td.FallbackRange));
+							break;
+						case TargetMode.TowardsOffset:
+							needEnemy = false;
+							desired = transform.TransformPoint((Vector3)td.LocalOffset);
+							break;
+					}
+				}
 
-    // ¹ÙÀÎµù
-    public void Init(ISkillMechanic m, ISkillParam p) { mech = m; param = p; cam = Camera.main; }
+				if (needEnemy)
+				{
+					var provider = GetComponent<ITargetable>() ?? GetComponentInChildren<ITargetable>();
+					if (provider == null || !provider.TryGetTarget(out t) || t == null)
+						return AnchorScope.Fail("NoEnemyTarget");
+				}
+				else
+				{
+					var clamped = ResolveReachablePoint2D(transform.position, desired, walls, rad, skin);
+					var v = (clamped - transform.position);
+					if (v.sqrMagnitude < 0.0001f)
+						return AnchorScope.Fail("AnchorTooClose");
+
+					t = TargetAnchorPool.Acquire(clamped);
+					return AnchorScope.Created(t); // ìŠ¤ì½”í”„ ì¢…ë£Œ ì‹œ Release
+				}
+			}
+			// ëª…ì‹œ íƒ€ê¹ƒ ë˜ëŠ” ì  íƒ€ê¹ƒ ì„±ê³µ
+			return AnchorScope.Reused(t);
+		}
+		// ë¹„íƒ€ê¹ƒ ë©”ì»¤ë‹‰
+		return AnchorScope.None();
+	}
+
+	// ------------------------------------------------------------------
+	// (5) Execute â€” ë©”ì»¤ë‹ˆì¦˜ ì‹¤í–‰ (ê²Œì„ ë¡œì§ì€ ì—¬ê¸°ì—ì„œë§Œ ìˆ˜í–‰)
+	// ------------------------------------------------------------------
+	private ExecResult ExecuteMechanism(CastContext ctx, CastOrder order, Transform target)
+	{
+		// ì´ë²¤íŠ¸: ì‹œì‘/íƒ€ê¹ƒ íšë“
+		Publish(new CastStarted(ctx.Meta, ctx.SkillRef, transform, target));
+		if (order.Mech is ITargetedMechanic tgt && target != null)
+			Publish(new TargetAcquired(ctx.Meta, ctx.SkillRef, transform, target));
+
+		// ì‹¤ì œ ë©”ì»¤ë‹ˆì¦˜(ì½”ë£¨í‹´) ì‹¤í–‰
+		if (order.Mech is ITargetedMechanic tgtMech)
+		{
+			return ExecResult.FromCoroutine(tgtMech.Cast(transform, cam, order.Param, target));
+		}
+		else
+		{
+			return ExecResult.FromCoroutine(order.Mech.Cast(transform, cam, order.Param));
+		}
+	}
+
+	// ------------------------------------------------------------------
+	// (6) ApplyPipeline â€” ê²°ê³¼ ë°˜ì˜ (í˜„ ì‹œìŠ¤í…œ: ì´ë²¤íŠ¸ ìˆ˜ì¤€ ìœ ì§€)
+	// ------------------------------------------------------------------
+	private void ApplyPipeline(CastContext ctx, ExecResult res)
+	{
+		// ë³¸ í”„ë¡œì íŠ¸ì—ì„  Mechanicì´ ë‚´ë¶€ì—ì„œ ì „íˆ¬ ì²˜ë¦¬ë¥¼ ìˆ˜í–‰í•˜ê³ , RunnerëŠ” ì´ë²¤íŠ¸ë¥¼ ë°œí–‰í•˜ëŠ” ì—­í• 
+		// í•„ìš” ì‹œ Effect íŒŒì´í”„ë¼ì¸ ì—°ê³„ ì§€ì 
+		// (ì—¬ê¸°ì„œëŠ” ì¶”ê°€ ë³€ê²½ ì—†ìŒ)
+	}
+
+	/// <summary>
+	/// (7) HandleFollowUps â€” í›…/ì •ì±…ì„ í†µí•´ FollowUp ìŠ¤ì¼€ì¤„ (ë¡œì§ ë³€ê²½ ì—†ìŒ)
+	/// </summary>
+	/// <param name="ctx"></param>
+	/// <param name="res"></param>
+	private void HandleFollowUps(CastContext ctx, ExecResult res)
+	{
+		// ê¸°ì¡´ êµ¬ì¡° ìœ ì§€: í›…ì—ì„œ FollowUpë“¤ì„ Scheduleë¡œ í˜ë¦¼
+		// í•„ìš” ì‹œ MaxDepth/ìš°ì„ ìˆœìœ„ëŠ” ë³„ë„ ì •ì±… í´ë˜ìŠ¤ë¡œ ì¶”ì¶œ ê°€ëŠ¥
+		// ì—¬ê¸°ì— ë””ë²„ê·¸ìš© ì¹´ìš´í„° ì‚½ì…
+		if (scheduledThisFrame > warnFollowUpsPerFrame)
+		{
+			W($"FollowUps scheduled too many in a single frame: {scheduledThisFrame}");
+		}
+	}
+
+	///<summary>
+	/// End â€” ì¿¨ë‹¤ìš´/í›…/ë°”ì¨ í•´ì œ (ê¸°ì¡´ ë¡œì§ ìµœëŒ€í•œ ìœ ì§€)
+	///</summary>
+	private void FinalizeCast(CastContext ctx, CastOrder order)
+	{
+		if (order.Param is IHasCooldown h) cd = Mathf.Max(cd, h.Cooldown);
+		Publish(new CastEnded(ctx.Meta, ctx.SkillRef, transform, false));
+		Hooks_OnCastEnd(ctx);
+		busy = false;
+		D("[END] Cast finalized: Busy=false");
+	}
+
+	// === í›… ì—”ë“œí¬ì¸íŠ¸(ë©”ì»¤ë‹‰ì—ì„œ ì½œë°±) ===
+	public void NotifyHookOnHit(Transform target, Vector2 point) => BroadcastHook(AbilityHook.OnHit, target, param);
+	public void NotifyHookOnExpire(Vector2 point) => BroadcastHook(AbilityHook.OnCastEnd, null, param);
+
+	void BroadcastHook(AbilityHook hook, Transform prevTarget, ISkillParam srcParam)
+	{
+		try
+		{
+			if (srcParam is IFollowUpProvider p)
+			{
+				foreach (var (order, delay, respect) in p.BuildFollowUps(hook, prevTarget))
+				{
+					Schedule(order, delay, respect);
+					scheduledThisFrame++;
+					if (debugLogging) D($"[HOOK] {hook} â†’ Schedule(delay={delay:F2}, respect={respect})");
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Debug.LogError($"[SkillRunner] Hook exception on {hook}");
+			Debug.LogException(ex);
+		}
+	}
+
+	// === í›… í˜¸ì¶œ(ì•ˆì „í•˜ê²Œ try/catch ë‚´ë¶€) ===
+	private void Hooks_OnCastStart(CastContext ctx) => BroadcastHook(AbilityHook.OnCastStart, null, param);
+	private void Hooks_OnCastEnd(CastContext ctx) => BroadcastHook(AbilityHook.OnCastEnd, null, param);
+
+	// === ë°”ì¸ë”© ===
+	public void Init(ISkillMechanic m, ISkillParam p) { mech = m; param = p; cam = Camera.main; }
+
+	// === Debug helpers ===
+	private void D(string msg)
+	{
+		if (debugLogging) Debug.Log($"[SkillRunner#{castSeq}] {msg}");
+	}
+	private void W(string msg)
+	{
+		Debug.LogWarning($"[SkillRunner#{castSeq}] {msg}");
+	}
+
+	// =====================================================================
+	// ë‚´ë¶€ íƒ€ì…ë“¤ â€” ì»¨í…ìŠ¤íŠ¸/ì‹¤í–‰ê²°ê³¼/ì•µì»¤ ìŠ¤ì½”í”„
+	// =====================================================================
+	private readonly struct CastContext
+	{
+		public readonly int CastId;
+		public readonly Transform Caster;
+		public readonly Camera Cam;
+		public readonly GameEventMeta Meta;
+		public readonly SkillRef SkillRef;
+		public readonly CastOrder Order;
+		public CastContext(int castId, Transform caster, Camera cam, GameEventMeta meta, SkillRef skillRef, CastOrder order)
+		{ CastId = castId; Caster = caster; Cam = cam; Meta = meta; SkillRef = skillRef; Order = order; }
+	}
+
+	private readonly struct ValidationResult
+	{
+		public static readonly ValidationResult Ok = new ValidationResult(true, "");
+		public readonly bool IsValid;
+		public readonly string Reason;
+		public ValidationResult(bool ok, string reason) { IsValid = ok; Reason = reason; }
+	}
+
+	private readonly struct ExecResult
+	{
+		public readonly IEnumerator Yieldable; // ë©”ì»¤ë‹ˆì¦˜ ì½”ë£¨í‹´(ì—†ìœ¼ë©´ Empty)
+		private ExecResult(IEnumerator y) { Yieldable = y; }
+		public static ExecResult FromCoroutine(IEnumerator y) => new ExecResult(y);
+	}
+
+	private struct AnchorScope : IDisposable
+	{
+		public readonly Transform Target;   // ì  íƒ€ê¹ƒ ë˜ëŠ” ìƒì„± ì•µì»¤
+		readonly bool created;
+		readonly bool failed;
+		readonly string failReason;
+		public bool IsFailed => failed;
+		private AnchorScope(Transform t, bool created, bool failed, string reason) { Target = t; this.created = created; this.failed = failed; failReason = reason; }
+		public static AnchorScope None() => new AnchorScope(null, false, false, "");
+		public static AnchorScope Reused(Transform t) => new AnchorScope(t, false, false, "");
+		public static AnchorScope Created(Transform t) => new AnchorScope(t, true, false, "");
+		public static AnchorScope Fail(string reason) => new AnchorScope(null, false, true, reason);
+		public void Dispose() { if (created && Target != null) TargetAnchorPool.Release(Target); }
+		public override string ToString() => failed ? $"Fail({failReason})" : (created ? "Created" : (Target ? "Reused" : "None"));
+	}
 }

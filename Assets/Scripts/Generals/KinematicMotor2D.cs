@@ -40,7 +40,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
     Rigidbody2D rb;
     Collider2D col;
     CollisionPolicy current;
-	bool movable = true;
+	//bool movable = true;
 
     void Awake()
     {
@@ -60,21 +60,21 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
     }
     sealed class Scope : IDisposable { readonly Action onDispose; public Scope(Action a) { onDispose = a; } public void Dispose() { onDispose?.Invoke(); } }
 	// [RULE: Depenetrate/MTV] 시작 겹침 탈출(벽+적 모두, 최소 이탈 벡터)
-	public Vector2 RemoveComponent(Vector2 vector, LayerMask mask, MoveResult result) //어쩌면 이게 vfinal을?
+	public Vector2 RemoveNormalComponent(Vector2 vector, LayerMask mask, MoveResult result)
 	{
 		Vector2 vfinal = vector;
 		// 1) 벽 우선
 		var maskHit = Physics2D.CircleCastAll((Vector2)transform.position, current.radius, vector.normalized, vector.magnitude, mask);
-		if (mask == current.enemyMask && !current.enemyAsBlocker)
-		{
-			Debug.Log("Enemy is not blocker now; penetrating");
-			return vector;
-		}
 		foreach (var hit in maskHit)
 		{
-			if (hit.collider)
+			if(mask == current.enemyMask && !current.enemyAsBlocker)
 			{
-				// --- 이동하지 않는다. 법선 성분만 무효화하고 방향/잔여만 재설정 ---
+				//Debug.Log("Hello again");
+				vfinal = vector;
+			}
+			else if (hit.collider)
+			{
+				//법선 성분을 무효로 한다
 				result.hitWall = true;
 				result.hitTransform = hit.transform;
 				result.hitNormal = hit.normal.normalized;
@@ -86,7 +86,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 				if (Mathf.Abs(dot) > 0f) //Abs?
 				{
 					v -= dot * n;            // v' = v - max(0,dot) * n
-					vfinal = v;
+					vfinal = v; 			//벡터 연산을 중첩시키기 위해서 vfinal에 대입
 				}
 			}
 		}
@@ -100,7 +100,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
         float remaining = desiredDelta.magnitude;
 		Vector2 wishDir = desiredDelta.normalized;
 
-		const int kMaxSlideIters = 3;
+		const int kMaxSlideIters = 4;
         int iters = 0;
 
         while (remaining > 1e-5f && iters++ < kMaxSlideIters)
@@ -108,11 +108,11 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 			Vector2 vfinal = wishDir * remaining;
 			// 1) 벽 우선
 			//vfinal = wishDir * remaining;
-			vfinal = RemoveComponent(vfinal, current.wallsMask, result);
+			vfinal = RemoveNormalComponent(vfinal, current.wallsMask, result);
 			// 2) 적 차단(기본값 true). “겹치기 금지” 정책 유지
-			vfinal = RemoveComponent(vfinal, current.enemyMask, result);
+			vfinal = RemoveNormalComponent(vfinal, current.enemyMask, result);
 			//↓RemoveComponent를 2번 수행했을 때 제거되는 성분이 있다면(즉, 벡터가 수평도 수직도 아니라서 어느 한쪽의 접선이 다른 쪽을 넘을 경우) 이동을 무효로
-			if(vfinal != RemoveComponent(vfinal, current.wallsMask, result) || vfinal != RemoveComponent(vfinal, current.enemyMask, result))
+			if(vfinal != RemoveNormalComponent(vfinal, current.wallsMask, result) || vfinal != RemoveNormalComponent(vfinal, current.enemyMask, result))
 			{
 				//vfinal = Vector2.zero;
 				break;
@@ -132,7 +132,6 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 			MoveDiscrete(vfinal);
             remaining = 0f;
         }
-
         result.actualDelta = (Vector2)transform.position - origin;
         return result;
     }
@@ -157,20 +156,14 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 	/// <param name="minEps">보정 문턱. 이보다 작으면 0으로 간주</param>
 	/// <param name="maxTotal">총 보정 상한(Depenetration에서 사용). 시그니처 유지용.</param>
 	/// <returns>이번 스텝에서 적용할 단일 MTD(보정 벡터). 없으면 (0,0)</returns>
-	public Vector2 DepenVector(
-		LayerMask blockersMask,
-		int maxIterations = 4,
-		float skin = 0.03125f,
-		float minEps = 0.001f,
-		float maxTotal = 0.5f)
+	public Vector2 DepenVector(LayerMask blockersMask, int maxIterations = 4, float skin = 0.125f, float minEps = 0.001f, float maxTotal = 0.5f)
 	{
 		// 안전 체크
 		if (rb == null || col == null)
 			return Vector2.zero;
 
 		// ContactFilter2D 구성: Blocker 레이어만, Trigger 무시
-		var filter = new ContactFilter2D();
-		filter.useLayerMask = true;
+		ContactFilter2D filter = new() { useLayerMask = true };
 		filter.SetLayerMask(blockersMask);
 		filter.useTriggers = false;
 

@@ -22,8 +22,25 @@ public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
     // ★ FollowUp(예: 2타)을 Param에 직접 둠 — 필요 시 인스펙터에서 설정
     public List<MechanicRef> onHit = new();
     public List<MechanicRef> onExpire = new();
-
-    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+	public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+	{
+		if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
+		foreach (var m in onExpire)
+		{
+			Debug.Log(m);
+			if (m.TryBuildOrder(null, out var order))
+			{
+				Debug.Log($"Callback {order.Mech}!");
+				yield return (order, m.delay, m.respectBusyCooldown);
+			}
+			else
+			{
+				Debug.Log("No callback...");
+				yield break;
+			}
+		}
+	}
+	/*public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
     {
         var src = hook == AbilityHook.OnHit ? onHit :
                     hook == AbilityHook.OnExpire ? onExpire : null;
@@ -31,7 +48,7 @@ public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
         foreach (var mref in src)
             if (mref.TryBuildOrder(prevTarget, out var order))
                 yield return (order, mref.delay, mref.respectBusyCooldown);
-    }
+    }*/
 }
 
 [System.Serializable]
@@ -68,8 +85,25 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
     // ★ FollowUp 예: 맞으면 폭발, 소멸하면 잔류 디버프…
     public List<MechanicRef> onHit = new();
     public List<MechanicRef> onExpire = new();
-
-    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+	public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+	{
+		if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
+		foreach (var m in onExpire)
+		{
+			Debug.Log(m);
+			if (m.TryBuildOrder(null, out var order))
+			{
+				Debug.Log($"Callback {order.Mech}!");
+				yield return (order, m.delay, m.respectBusyCooldown);
+			}
+			else
+			{
+				Debug.Log("No callback...");
+				yield break;
+			}
+		}
+	}
+	/*public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
     {
         var src = hook == AbilityHook.OnHit ? onHit :
                     hook == AbilityHook.OnExpire ? onExpire : null;
@@ -77,7 +111,7 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
         foreach (var mref in src)
             if (mref.TryBuildOrder(prevTarget, out var order))
                 yield return (order, mref.delay, mref.respectBusyCooldown);
-    }
+    }*/
 }
 [System.Serializable]
 public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData, IAnchorClearance
@@ -126,14 +160,31 @@ public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargeti
 
     [Header("FollowUps")]
     public List<MechanicRef> onExpire = new(); // 대시 종료 후 후속(예: 원형 베기)
-
-    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+	public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+	{
+		if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
+		foreach (var m in onExpire)
+		{
+			Debug.Log(m);
+			if (m.TryBuildOrder(null, out var order))
+			{
+				Debug.Log($"Callback {order.Mech}!");
+				yield return (order, m.delay, m.respectBusyCooldown);
+			}
+			else
+			{
+				Debug.Log("No callback...");
+				yield break;
+			}
+		}
+	}
+	/*public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
     {
         if (hook != AbilityHook.OnExpire || onExpire == null) yield break;
         foreach (var m in onExpire)
             if (m.TryBuildOrder(null, out var order))
                 yield return (order, m.delay, m.respectBusyCooldown);
-    }
+    }*/
 
 }
 

@@ -27,6 +27,7 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
         sr.sprite = GenerateDotSprite();
         sr.sortingOrder = 1000;
         transform.localScale = Vector3.one * (P.radius * 2f);
+		//Debug.Log($"target {this.target.name}");
     }
 
     void Update()
@@ -43,9 +44,10 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
 
         Vector2 pos = transform.position;
 
-        // 원하는 방향(유도)
-        Vector2 desired = target ? ((Vector2)target.position - pos).normalized : dir;
-        float maxTurnRad = P.maxTurnDegPerSec * Mathf.Deg2Rad * dt;
+		// 원하는 방향(유도)
+		//Vector2 desired = target ? ((Vector2)target.position - pos).normalized : dir;
+		Vector2 desired = target?.name == "Anchor" ? dir : ((Vector2)target.position - pos).normalized;
+		float maxTurnRad = P.maxTurnDegPerSec * Mathf.Deg2Rad * dt;
         dir = Vector3.RotateTowards(dir, desired, maxTurnRad, 0f).normalized;
 
         // === 이동/충돌(여러 번) 처리 ===
@@ -61,7 +63,7 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
             {
                 // 벽까지 이동 후 소멸
                 Move(wallHit.distance);
-                Expire(target);
+                Expire();
                 return;
             }
 
@@ -89,7 +91,7 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
                     // 관통 불가이거나(=명중 즉시 소멸) / 타깃 그 자체면 소멸
                     if (!P.CanPenetrate || (target != null && c.transform == target))
                     {
-                        Expire(target);
+                        Expire();
                         return;
                     }
                 }
@@ -113,7 +115,7 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
         }
 
         // 사거리 체크
-        if (traveled >= P.maxRange) Expire(target);
+        if (traveled >= P.maxRange) Expire();
     }
 
     void Move(float d)
@@ -147,9 +149,4 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
 		//제거될 때 뭔가 해야 한다?
         Destroy(gameObject);
     }
-	public void Expire(Transform target)
-	{
-		TargetAnchorPool.Release(target);
-		Destroy(gameObject);
-	}
 }

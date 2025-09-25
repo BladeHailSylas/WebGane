@@ -8,13 +8,14 @@ namespace EffectInterfaces
 {
     public enum Effects
     {
-        None = 0, Haste, DamageBoost, ReduceDamage, GainHealth, GainMana, Invisibility, Slow, Stun, Suppressed, Root, Tumbled, Damage //Damage는 지속 피해, duration을 0으로 하면 즉시 피해도 가능함
+        Stack = 0, Haste, DamageBoost, ArmorBoost, APBoost, DRBoost, Invisibility, Invincible, Slow, Stun, Suppressed, Root, Tumbled, Damage //Damage는 지속 피해, duration을 0으로 하면 즉시 피해도 가능함
     }
     public class EffectState
     {
         public float duration;
         public int amplifier;
         public GameObject effecter;
+		public string effectName;
         public EffectState()
         { 
         }
@@ -22,6 +23,13 @@ namespace EffectInterfaces
         {
             duration = dur; amplifier = amp; effecter = eft;
         }
+		public EffectState(string name, int amp, GameObject eft)
+		{
+			duration = float.PositiveInfinity;
+			effectName = name;
+			amplifier = amp;
+			effecter = eft;
+		}
     }
     public interface IEffectStats
     {
@@ -101,7 +109,8 @@ namespace ActInterfaces
 
     public interface IAffectable
     {
-        void ApplyEffect(Effects buffType, float duration, int Amplifier = 0);
+        void ApplyEffect(Effects buffType, GameObject effecter, float duration, int Amplifier = 0, string name = null);
+		void ApplyStack(string name, int amp, GameObject go);
         void Purify(Effects buffType);
     }
     public interface ITargetable
