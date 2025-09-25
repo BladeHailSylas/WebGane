@@ -46,14 +46,14 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	{
 		if (busy || cd > 0f || mech == null || param == null)
 		{
-			D($"TryCast blocked: busy={busy}, cd={cd:F2}, mech={(mech == null)}, param={(param == null)}");
+			Dlog($"TryCast blocked: busy={busy}, cd={cd:F2}, mech={(mech == null)}, param={(param == null)}");
 			return;
 		}
 
 		// (옵션) Switch 정책: 외부에서 주문서 선택
 		if (param is ISwitchPolicy sp && sp.TrySelect(transform, cam, out var switched))
 		{
-			D("SwitchPolicy selected alt CastOrder → Schedule");
+			Dlog("SwitchPolicy selected alt CastOrder → Schedule");
 			Schedule(switched, 0f, respectBusyCooldown: true);
 			return;
 		}
@@ -105,8 +105,13 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 		FinalizeCast(ctx, order);                                 // End 마무리
 	}
 
+	#region ===== MISC ===== 
 	// ------------------------------------------------------------------
-	// (1) BuildContext — 메타/식별자/참조 구성 (순수)
+	/// <summary>
+	/// (1) BuildContext — 메타/식별자/참조 구성 (순수)
+	/// </summary>
+	/// <param name="order"></param>
+	/// <returns></returns>
 	// ------------------------------------------------------------------
 	private CastContext BuildContext(CastOrder order)
 	{
@@ -114,12 +119,17 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 		var skillRef = new SkillRef(order.Mech as UnityEngine.Object); // SO 참조 기반
 		var castId = ++castSeq;
 		var c = new CastContext(castId, transform, cam, meta, skillRef, order);
-		D($"[CTX] CastId={castId} Mech={order.Mech?.GetType().Name}");
+		Dlog($"[CTX] CastId={castId} Mech={order.Mech?.GetType().Name}");
 		return c;
 	}
 
 	// ------------------------------------------------------------------
-	// (2) Validate — 사전 검증(부작용 없음)
+	/// <summary>
+	/// (2) Validate — 사전 검증(부작용 없음)
+	/// </summary>
+	/// <param name="ctx">No use</param>
+	/// <param name="p">No use 2</param>
+	/// <returns></returns>
 	// ------------------------------------------------------------------
 	private ValidationResult Validate(CastContext ctx, ISkillParam p)
 	{
@@ -132,7 +142,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	{
 		// 현재는 별도 사유가 거의 없으므로 이벤트 최소 발행
 		Publish(new CastEnded(ctx.Meta, ctx.SkillRef, ctx.Caster, interrupted: true));
-		D($"[FAIL] Early validation fail: reason={vr.Reason}");
+		Dlog($"[FAIL] Early validation fail: reason={vr.Reason}");
 	}
 
 	// ------------------------------------------------------------------
@@ -142,13 +152,18 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	{
 		busy = true; // FollowUp respect 정책은 스케줄러에서 처리
 					// 쿨다운은 기존 코드처럼 종료 시에 반영(IHasCooldown) → 로직 유지
-		D("[BEGIN] Busy=true");
+		Dlog("[BEGIN] Busy=true");
 	}
 
 	// ------------------------------------------------------------------
-	// (4) EnsureAnchor — 타깃/앵커 확보를 스코프화(IDisposable)
-	//   - 타깃형: 대상 Transform 확보(없으면 실패)
-	//   - 비타깃형/좌표형: 앵커 Transform 생성 후 스코프 종료 시 Release
+	/// <summary>
+	/// (4) EnsureAnchor — 타깃/앵커 확보를 스코프화(IDisposable)
+	///   - 타깃형: 대상 Transform 확보(없으면 실패)
+	///   - 비타깃형/좌표형: 앵커 Transform 생성 후 스코프 종료 시 Release
+	/// </summary>
+	/// <param name="ctx"></param>
+	/// <param name="order"></param>
+	/// <returns></returns>
 	// ------------------------------------------------------------------
 	private AnchorScope EnsureAnchor(CastContext ctx, CastOrder order)
 	{
@@ -218,12 +233,18 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	}
 
 	// ------------------------------------------------------------------
-	// (5) Execute — 메커니즘 실행 (게임 로직은 여기에서만 수행)
+	/// <summary>
+	/// (5) Execute — 메커니즘 실행 (게임 로직은 여기에서만 수행)
+	/// </summary>
+	/// <param name="ctx"></param>
+	/// <param name="order"></param>
+	/// <param name="target"></param>
+	/// <returns></returns>
 	// ------------------------------------------------------------------
 	private ExecResult ExecuteMechanism(CastContext ctx, CastOrder order, Transform target)
 	{
 		// 이벤트: 시작/타깃 획득
-		Publish(new CastStarted(ctx.Meta, ctx.SkillRef, transform, target));
+		Publish(new CastStarted(ctx.Meta, ctx.SkillRef, param, transform, target));
 		if (order.Mech is ITargetedMechanic tgt && target != null)
 			Publish(new TargetAcquired(ctx.Meta, ctx.SkillRef, transform, target));
 
@@ -239,7 +260,11 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	}
 
 	// ------------------------------------------------------------------
-	// (6) ApplyPipeline — 결과 반영 (현 시스템: 이벤트 수준 유지)
+	/// <summary>
+	/// (6) ApplyPipeline — 결과 반영 (현 시스템: 이벤트 수준 유지)
+	/// </summary>
+	/// <param name="ctx"></param>
+	/// <param name="res"></param>
 	// ------------------------------------------------------------------
 	private void ApplyPipeline(CastContext ctx, ExecResult res)
 	{
@@ -260,7 +285,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 		// 여기에 디버그용 카운터 삽입
 		if (scheduledThisFrame > warnFollowUpsPerFrame)
 		{
-			W($"FollowUps scheduled too many in a single frame: {scheduledThisFrame}");
+			Wlog($"FollowUps scheduled too many in a single frame: {scheduledThisFrame}");
 		}
 	}
 
@@ -273,12 +298,13 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 		Publish(new CastEnded(ctx.Meta, ctx.SkillRef, transform, false));
 		Hooks_OnCastEnd(ctx);
 		busy = false;
-		D("[END] Cast finalized: Busy=false");
+		Dlog("[END] Cast finalized: Busy=false");
 	}
 
 	// === 훅 엔드포인트(메커닉에서 콜백) ===
-	public void NotifyHookOnHit(Transform target, Vector2 point) => BroadcastHook(AbilityHook.OnHit, target, param);
-	public void NotifyHookOnExpire(Vector2 point) => BroadcastHook(AbilityHook.OnCastEnd, null, param);
+	// 소신) 훅 엔드포인트를 단일화하거나 없애고 싶음
+	public void NotifyHook(Transform target, Vector2 point) => BroadcastHook(AbilityHook.OnHit, target, param);
+	public void NotifyHook(Vector2 point) => BroadcastHook(AbilityHook.OnCastEnd, null, param);
 
 	void BroadcastHook(AbilityHook hook, Transform prevTarget, ISkillParam srcParam)
 	{
@@ -290,7 +316,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 				{
 					Schedule(order, delay, respect);
 					scheduledThisFrame++;
-					if (debugLogging) D($"[HOOK] {hook} → Schedule(delay={delay:F2}, respect={respect})");
+					if (debugLogging) Dlog($"[HOOK] {hook} → Schedule(delay={delay:F2}, respect={respect})");
 				}
 			}
 		}
@@ -309,13 +335,17 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	public void Init(ISkillMechanic m, ISkillParam p) { mech = m; param = p; cam = Camera.main; }
 
 	// === Debug helpers ===
-	private void D(string msg)
+	private void Dlog(string msg)
 	{
 		if (debugLogging) Debug.Log($"[SkillRunner#{castSeq}] {msg}");
 	}
-	private void W(string msg)
+	private void Wlog(string msg)
 	{
 		Debug.LogWarning($"[SkillRunner#{castSeq}] {msg}");
+	}
+	private void Elog(string msg)
+	{
+		Debug.LogError($"[SkillRunner#{castSeq}] {msg}");
 	}
 
 	// =====================================================================
@@ -335,7 +365,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 
 	private readonly struct ValidationResult
 	{
-		public static readonly ValidationResult Ok = new ValidationResult(true, "");
+		public static readonly ValidationResult Ok = new(true, "");
 		public readonly bool IsValid;
 		public readonly string Reason;
 		public ValidationResult(bool ok, string reason) { IsValid = ok; Reason = reason; }
@@ -345,10 +375,10 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	{
 		public readonly IEnumerator Yieldable; // 메커니즘 코루틴(없으면 Empty)
 		private ExecResult(IEnumerator y) { Yieldable = y; }
-		public static ExecResult FromCoroutine(IEnumerator y) => new ExecResult(y);
+		public static ExecResult FromCoroutine(IEnumerator y) => new(y);
 	}
 
-	private struct AnchorScope : IDisposable
+	private readonly struct AnchorScope : IDisposable
 	{
 		public readonly Transform Target;   // 적 타깃 또는 생성 앵커
 		readonly bool created;
@@ -356,11 +386,12 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 		readonly string failReason;
 		public bool IsFailed => failed;
 		private AnchorScope(Transform t, bool created, bool failed, string reason) { Target = t; this.created = created; this.failed = failed; failReason = reason; }
-		public static AnchorScope None() => new AnchorScope(null, false, false, "");
-		public static AnchorScope Reused(Transform t) => new AnchorScope(t, false, false, "");
-		public static AnchorScope Created(Transform t) => new AnchorScope(t, true, false, "");
-		public static AnchorScope Fail(string reason) => new AnchorScope(null, false, true, reason);
+		public static AnchorScope None() => new(null, false, false, "");
+		public static AnchorScope Reused(Transform t) => new(t, false, false, "");
+		public static AnchorScope Created(Transform t) => new(t, true, false, "");
+		public static AnchorScope Fail(string reason) => new(null, false, true, reason);
 		public void Dispose() { if (created && Target != null) TargetAnchorPool.Release(Target); }
 		public override string ToString() => failed ? $"Fail({failReason})" : (created ? "Created" : (Target ? "Reused" : "None"));
 	}
 }
+#endregion

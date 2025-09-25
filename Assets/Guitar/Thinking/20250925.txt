@@ -12,6 +12,22 @@ Switch Skill이라는 이름에 걸맞게 본문 자체는 그냥 Switch 역할�
 왜냐면 대상/비대상 판정은 CoCast에서 하고 있거든
 
 
+FollowUp의 구조?
+FollowUp을 어떻게 SkillRunner로 전달하겠는가?
+그걸 명확히 하기 위해서 각 Component의 역할을 알 필요가 있다
+SkillRunner: 기술을 받아 실행하는 역할
+SkillMechanism: 각 기술의 공통 로직
+SkillParams: 기술의 데이터를 넣어두는 역할
+여기서 FollowUp은 SkillParams에 들어있는데, SkillRunner가 SkillMechanism의 Cast를 실행하고 SkillMechanism이 SkillParams에 맞춰 기술의 효과를 사용하는 구조이다
+즉 SkillParams를 읽는 SkillMechanism이 FollowUp을 예약하도록 만들어야 한다
+하지만 너무 귀찮지 않은가? 어떻게 타입 하나 새로 만들 때마다 FollowUp 예약을 시키는가?
+여기서 우리는 Abstract class를 사용하면 된다
+Abstract class의 최대 장점은 공통 로직이 필요한 경우 더없이 손쉽게 그 공통 로직을 사용할 수 있다는 점이다
+다만 아무리 Abstract라고 해도 결국 class 상속이기에 부모를 수정하면 자식에게도 큰 영향이 가는 문제점이 있다
+하지만 우리는 이미 SkillMechanismBase라는 Abstract class가 있고, 여기에 FollowUp 예약을 시키도록 만들면 실제 문제가 없다
+더불어 FollowUp 예약은 어떤 기술이 되었든 동일해야 한다, 다음 기술에 또 다른 대상이 필요하면 SkillRunner가 따로 가져올 것이다
+
+
 이쯤 해서 기술 재정리
 첨언하자면, 대상을 지정할 수 있는("Targeted:"로 표시) 모든 기술은 앵커를 대상으로 삼아 비대상 기술로 만들 수 있다
 Melee(정면 부채꼴 방향을 공격, deg가 360이면 원형 공격도 가능)

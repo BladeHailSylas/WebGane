@@ -3,7 +3,7 @@ using UnityEngine;
 using System.Collections;
 
 [CreateAssetMenu(menuName = "Mechanics/Projectile (Homing, Targeted)")]
-public class ProjectileMechanics : SkillMechanicBase<MissileParams>, ITargetedMechanic
+public class ProjectileMechanics : SkillMechanismBase<MissileParams>, ITargetedMechanic
 {
     // 타깃형 진입점
     public IEnumerator Cast(Transform owner, Camera cam, ISkillParam p, Transform target)

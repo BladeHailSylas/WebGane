@@ -227,7 +227,7 @@ namespace SkillInterfaces
 
     // 제네릭 베이스: 타입 가드 + 제네릭 오버로드
 
-    public abstract class SkillMechanicBase<TParam> : ScriptableObject, ISkillMechanic
+    public abstract class SkillMechanismBase<TParam> : ScriptableObject, ISkillMechanic
         where TParam : ISkillParam
     {
         public System.Type ParamType => typeof(TParam);
