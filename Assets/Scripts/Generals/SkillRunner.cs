@@ -15,6 +15,7 @@ using static TargetAnchorUtil2D;
 
 public class SkillRunner : MonoBehaviour, ISkillRunner
 {
+	#region ===== Settings =====
 	[Header("Bindings")]
 	[SerializeField] ISkillMechanic mech;
 	[SerializeReference] ISkillParam param;
@@ -28,17 +29,20 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	int castSeq;                  // 단순 CastId 시퀀스
 	int scheduledThisFrame;       // 프레임당 FollowUp 스케줄 카운트
 
-	// === Public state ===
+	// === Public properties ===
 	public bool IsBusy => busy;
 	public bool IsOnCooldown => cd > 0f;
 
-	void Awake() { cam = Camera.main; }
+	void Awake() 
+	{
+		cam = Camera.main;
+	}
 	void Update()
 	{
 		if (cd > 0f) cd -= Time.deltaTime;
 		scheduledThisFrame = 0; // 프레임 경계에서 초기화
 	}
-
+	#endregion
 	// ---------------------------------------------------------------------
 	// Entry: 슬롯 기본 스킬 시전 (입력에서 호출)
 	// ---------------------------------------------------------------------
@@ -105,7 +109,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 		FinalizeCast(ctx, order);                                 // End 마무리
 	}
 
-	#region ===== MISC ===== 
+	#region ===== Methods ===== 
 	// ------------------------------------------------------------------
 	/// <summary>
 	/// (1) BuildContext — 메타/식별자/참조 구성 (순수)
@@ -127,8 +131,8 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	/// <summary>
 	/// (2) Validate — 사전 검증(부작용 없음)
 	/// </summary>
-	/// <param name="ctx">No use</param>
-	/// <param name="p">No use 2</param>
+	/// <param name="ctx">No use for now</param>
+	/// <param name="p">No use for now 2</param>
 	/// <returns></returns>
 	// ------------------------------------------------------------------
 	private ValidationResult Validate(CastContext ctx, ISkillParam p)
@@ -146,7 +150,11 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	}
 
 	// ------------------------------------------------------------------
-	// (3) BeginCostAndBusy — 비용/쿨다운/바쁨 시점 처리
+	/// <summary>
+	/// (3) BeginCostAndBusy — 비용/쿨다운/바쁨 시점 처리
+	/// </summary>
+	/// <param name="ctx"></param>
+	/// <param name="order"></param>
 	// ------------------------------------------------------------------
 	private void BeginCostAndBusy(CastContext ctx, CastOrder order)
 	{
@@ -283,7 +291,11 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 		// 기존 구조 유지: 훅에서 FollowUp들을 Schedule로 흘림
 		// 필요 시 MaxDepth/우선순위는 별도 정책 클래스로 추출 가능
 		// 여기에 디버그용 카운터 삽입
-		if (scheduledThisFrame > warnFollowUpsPerFrame)
+		if(scheduledThisFrame > warnFollowUpsPerFrame * 2)
+		{
+			Elog($"FollowUps scheduled unpardonably in a single frame: {scheduledThisFrame}");
+		}
+		else if (scheduledThisFrame > warnFollowUpsPerFrame)
 		{
 			Wlog($"FollowUps scheduled too many in a single frame: {scheduledThisFrame}");
 		}
@@ -322,7 +334,7 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 		}
 		catch (Exception ex)
 		{
-			Debug.LogError($"[SkillRunner] Hook exception on {hook}");
+			Elog($"[SkillRunner] Hook exception on {hook}");
 			Debug.LogException(ex);
 		}
 	}
@@ -341,15 +353,17 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	}
 	private void Wlog(string msg)
 	{
-		Debug.LogWarning($"[SkillRunner#{castSeq}] {msg}");
+		if (debugLogging) Debug.LogWarning($"[SkillRunner#{castSeq}] ! {msg}");
 	}
 	private void Elog(string msg)
 	{
-		Debug.LogError($"[SkillRunner#{castSeq}] {msg}");
+		if (debugLogging) Debug.LogError($"[SkillRunner#{castSeq}] !! {msg}");
 	}
 
 	// =====================================================================
-	// 내부 타입들 — 컨텍스트/실행결과/앵커 스코프
+	/// <summary>
+	/// 내부 타입들 — 컨텍스트/실행결과/앵커 스코프
+	/// </summary>
 	// =====================================================================
 	private readonly struct CastContext
 	{
