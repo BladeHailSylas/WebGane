@@ -21,8 +21,6 @@ public class DashMechanic : SkillMechanismBase<DashParams>, ITargetedMechanic
         var motor = owner.GetComponent<KinematicMotor2D>();
         if (!motor) yield break;
 
-        var sensor = owner.GetComponentInChildren<PlayerSensor2D>(); // 센서가 없으면 null 허용
-
         // (선택) 무적
         if (p.grantIFrame && p.iFrameDuration > 0f)
         {
@@ -56,9 +54,6 @@ public class DashMechanic : SkillMechanismBase<DashParams>, ITargetedMechanic
 
             while (remaining > 0f)
             {
-                // --- 센서 상태로 프리셋/겹침 청소 ---
-                var s = sensor ? sensor.GetState() : default;
-                if (sensor) dashPolicy.allowWallSlide = s.nearWall; // 벽 임박 시 슬라이드 허용
                 // 스코프 내에서 갱신 반영
                 using (motor.With(dashPolicy))
                 {
@@ -124,6 +119,6 @@ public class DashMechanic : SkillMechanismBase<DashParams>, ITargetedMechanic
 			motor.Depenetration();
         }
 
-        owner.GetComponent<SkillRunner>()?.NotifyHook((Vector2)owner.position);
+        owner.GetComponent<SkillRunner>()?.NotifyHook(AbilityHook.OnCastEnd, p);
     }
 }

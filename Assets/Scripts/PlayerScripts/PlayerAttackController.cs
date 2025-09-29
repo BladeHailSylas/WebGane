@@ -15,8 +15,6 @@ public class PlayerAttackController : MonoBehaviour
     public InputActionReference skill1Key;   // Shift
     public InputActionReference skill2Key;   // Space
     public InputActionReference ultimateKey; // RMB
-    private readonly Dictionary<SkillSlot, ISkillRunner> _runners = new();
-
     readonly Dictionary<SkillSlot, ISkillRunner> runners = new();
 
     void Awake()
@@ -24,21 +22,26 @@ public class PlayerAttackController : MonoBehaviour
         Bind(spec.attack);
         Bind(spec.skill1);
         Bind(spec.skill2);
+		Bind(spec.ultimate);
     }
 
     void Bind(SkillBinding b)
     {
-        if (b.mechanic is not ISkillMechanic mech || b.param == null) return;
-        if (!mech.ParamType.IsInstanceOfType(b.param))
-        {
-            Debug.LogError($"Param mismatch: need {mech.ParamType.Name}, got {b.param.GetType().Name}"); return;
-        }
-        var r = gameObject.AddComponent<SkillRunner>();
-        r.Init(mech, b.param);
-        runners[b.slot] = r;
-    }
+		if (b.mechanic is not ISkillMechanic mech || b.param == null) return;
+		if (!mech.ParamType.IsInstanceOfType(b.param))
+		{
+			Debug.LogError($"Param mismatch: need {mech.ParamType.Name}, got {b.param.GetType().Name}"); return;
+		}
+		var r = gameObject.GetComponentInChildren<ISkillRunner>();
 
-    void OnEnable()
+		runners[b.slot] = r;
+    }
+	void Attack() => TryCast(SkillSlot.Attack);
+	void Skill1() => TryCast(SkillSlot.Skill1);
+	void Skill2() => TryCast(SkillSlot.Skill2);
+	void Ultimate() => TryCast(SkillSlot.Ultimate);
+
+	void OnEnable()
     {
         if (attackKey) { attackKey.action.Enable(); attackKey.action.performed += _ => TryCast(SkillSlot.Attack); }
         if (skill1Key) { skill1Key.action.Enable(); skill1Key.action.performed += _ => TryCast(SkillSlot.Skill1); }
@@ -54,5 +57,10 @@ public class PlayerAttackController : MonoBehaviour
         attackKey?.action.Disable(); skill1Key?.action.Disable(); skill2Key?.action.Disable(); ultimateKey?.action.Disable(); 
     }
 
-    void TryCast(SkillSlot slot) { if (runners.TryGetValue(slot, out var r)) r.TryCast(); }
+    void TryCast(SkillSlot slot) { if (runners.TryGetValue(slot, out var r))
+		{
+			//Debug.Log($"Now Requested cast to {r}");
+			r.TryCast();
+		}
+	}
 }

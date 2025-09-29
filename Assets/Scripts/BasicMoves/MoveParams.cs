@@ -30,12 +30,12 @@ public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
 			Debug.Log(m);
 			if (m.TryBuildOrder(null, out var order))
 			{
-				Debug.Log($"Callback {order.Mech}!");
+				//Debug.Log($"Callback {order.Mech}!");
 				yield return (order, m.delay, m.respectBusyCooldown);
 			}
 			else
 			{
-				Debug.Log("No callback...");
+				//Debug.Log("No callback...");
 				yield break;
 			}
 		}
@@ -93,12 +93,12 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
 			Debug.Log(m);
 			if (m.TryBuildOrder(null, out var order))
 			{
-				Debug.Log($"Callback {order.Mech}!");
+				//Debug.Log($"Callback {order.Mech}!");
 				yield return (order, m.delay, m.respectBusyCooldown);
 			}
 			else
 			{
-				Debug.Log("No callback...");
+				//Debug.Log("No callback...");
 				yield break;
 			}
 		}
@@ -165,15 +165,15 @@ public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargeti
 		if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
 		foreach (var m in onExpire)
 		{
-			Debug.Log(m);
+
 			if (m.TryBuildOrder(null, out var order))
 			{
-				Debug.Log($"Callback {order.Mech}!");
+				//Debug.Log($"Callback {order.Mech}!");
 				yield return (order, m.delay, m.respectBusyCooldown);
 			}
 			else
 			{
-				Debug.Log("No callback...");
+				//Debug.Log("No callback...");
 				yield break;
 			}
 		}
