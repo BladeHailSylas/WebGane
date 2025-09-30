@@ -201,26 +201,42 @@ namespace Combat.Intents
     {
         private sealed class ScopeToken : IDisposable
         {
-            private readonly IIntentSink _prev;
-            public ScopeToken(IIntentSink previous) => _prev = previous;
+            private readonly ScopeFrame _previous;
+            public ScopeToken(ScopeFrame previous) => _previous = previous;
             public void Dispose()
             {
-                Current = _prev;
+                Current = _previous;
             }
         }
 
-        [ThreadStatic] private static IIntentSink _current;
+        private sealed class ScopeFrame
+        {
+            public readonly IIntentSink Sink;
+            public readonly CastIntent Intent;
+            public readonly CastContext Context;
+            public readonly Transform ResolvedTarget;
 
-        private static IIntentSink Current
+            public ScopeFrame(IIntentSink sink, CastIntent intent, CastContext context, Transform target)
+            {
+                Sink = sink;
+                Intent = intent;
+                Context = context;
+                ResolvedTarget = target;
+            }
+        }
+
+        [ThreadStatic] private static ScopeFrame _current;
+
+        private static ScopeFrame Current
         {
             get => _current;
             set => _current = value;
         }
 
-        public static IDisposable Enter(IIntentSink sink)
+        public static IDisposable Enter(IIntentSink sink, CastIntent intent, CastContext context, Transform target)
         {
             var prev = Current;
-            Current = sink;
+            Current = new ScopeFrame(sink, intent, context, target);
             return new ScopeToken(prev);
         }
 
@@ -231,8 +247,24 @@ namespace Combat.Intents
                 Debug.LogWarning("CastScope.AddIntent 호출 시 유효한 Sink가 없습니다. FollowUp이 유실됩니다.");
                 return;
             }
-            Current.AddIntent(intent);
+            Current.Sink.AddIntent(intent);
         }
+
+        public static bool TryGetContext(out CastIntent intent, out CastContext context)
+        {
+            if (Current == null)
+            {
+                intent = null;
+                context = null;
+                return false;
+            }
+
+            intent = Current.Intent;
+            context = Current.Context;
+            return true;
+        }
+
+        public static Transform CurrentTarget => Current?.ResolvedTarget;
 
         public static void Reset()
         {

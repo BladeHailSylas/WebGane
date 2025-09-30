@@ -22,33 +22,35 @@ public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
     // ★ FollowUp(예: 2타)을 Param에 직접 둠 — 필요 시 인스펙터에서 설정
     public List<MechanicRef> onHit = new();
     public List<MechanicRef> onExpire = new();
-	public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
-	{
-		if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
-		foreach (var m in onExpire)
-		{
-			Debug.Log(m);
-			if (m.TryBuildOrder(null, out var order))
-			{
-				//Debug.Log($"Callback {order.Mech}!");
-				yield return (order, m.delay, m.respectBusyCooldown);
-			}
-			else
-			{
-				//Debug.Log("No callback...");
-				yield break;
-			}
-		}
-	}
-	/*public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+
+    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
     {
-        var src = hook == AbilityHook.OnHit ? onHit :
-                    hook == AbilityHook.OnExpire ? onExpire : null;
-        if (src == null) yield break;
-        foreach (var mref in src)
-            if (mref.TryBuildOrder(prevTarget, out var order))
-                yield return (order, mref.delay, mref.respectBusyCooldown);
-    }*/
+        var source = hook switch
+        {
+            AbilityHook.OnHit => onHit,
+            AbilityHook.OnCastEnd => onExpire,
+            _ => null,
+        };
+
+        if (source == null) yield break;
+
+        foreach (var (order, delay, respectBusy) in EnumerateFollowUps(source, prevTarget))
+        {
+            yield return (order, delay, respectBusy);
+        }
+    }
+
+    static IEnumerable<(CastOrder order, float delay, bool respectBusy)> EnumerateFollowUps(List<MechanicRef> source, Transform prevTarget)
+    {
+        if (source == null) yield break;
+        foreach (var reference in source)
+        {
+            if (reference.TryBuildOrder(prevTarget, out var order))
+            {
+                yield return (order, reference.delay, reference.respectBusyCooldown);
+            }
+        }
+    }
 }
 
 [System.Serializable]
@@ -87,33 +89,35 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
     // ★ FollowUp 예: 맞으면 폭발, 소멸하면 잔류 디버프…
     public List<MechanicRef> onHit = new();
     public List<MechanicRef> onExpire = new();
-	public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
-	{
-		if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
-		foreach (var m in onExpire)
-		{
-			Debug.Log(m);
-			if (m.TryBuildOrder(null, out var order))
-			{
-				//Debug.Log($"Callback {order.Mech}!");
-				yield return (order, m.delay, m.respectBusyCooldown);
-			}
-			else
-			{
-				//Debug.Log("No callback...");
-				yield break;
-			}
-		}
-	}
-	/*public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+
+    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
     {
-        var src = hook == AbilityHook.OnHit ? onHit :
-                    hook == AbilityHook.OnExpire ? onExpire : null;
-        if (src == null) yield break;
-        foreach (var mref in src)
-            if (mref.TryBuildOrder(prevTarget, out var order))
-                yield return (order, mref.delay, mref.respectBusyCooldown);
-    }*/
+        var source = hook switch
+        {
+            AbilityHook.OnHit => onHit,
+            AbilityHook.OnCastEnd => onExpire,
+            _ => null,
+        };
+
+        if (source == null) yield break;
+
+        foreach (var (order, delay, respectBusy) in EnumerateFollowUps(source, prevTarget))
+        {
+            yield return (order, delay, respectBusy);
+        }
+    }
+
+    static IEnumerable<(CastOrder order, float delay, bool respectBusy)> EnumerateFollowUps(List<MechanicRef> source, Transform prevTarget)
+    {
+        if (source == null) yield break;
+        foreach (var reference in source)
+        {
+            if (reference.TryBuildOrder(prevTarget, out var order))
+            {
+                yield return (order, reference.delay, reference.respectBusyCooldown);
+            }
+        }
+    }
 }
 [System.Serializable]
 public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData, IAnchorClearance
@@ -162,31 +166,28 @@ public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargeti
 
     [Header("FollowUps")]
     public List<MechanicRef> onExpire = new(); // 대시 종료 후 후속(예: 원형 베기)
-	public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
-	{
-		if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
-		foreach (var m in onExpire)
-		{
 
-			if (m.TryBuildOrder(null, out var order))
-			{
-				//Debug.Log($"Callback {order.Mech}!");
-				yield return (order, m.delay, m.respectBusyCooldown);
-			}
-			else
-			{
-				//Debug.Log("No callback...");
-				yield break;
-			}
-		}
-	}
-	/*public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
     {
-        if (hook != AbilityHook.OnExpire || onExpire == null) yield break;
-        foreach (var m in onExpire)
-            if (m.TryBuildOrder(null, out var order))
-                yield return (order, m.delay, m.respectBusyCooldown);
-    }*/
+        if (hook != AbilityHook.OnCastEnd) yield break;
+
+        foreach (var (order, delay, respectBusy) in EnumerateFollowUps(onExpire, prevTarget))
+        {
+            yield return (order, delay, respectBusy);
+        }
+    }
+
+    static IEnumerable<(CastOrder order, float delay, bool respectBusy)> EnumerateFollowUps(List<MechanicRef> source, Transform prevTarget)
+    {
+        if (source == null) yield break;
+        foreach (var reference in source)
+        {
+            if (reference.TryBuildOrder(prevTarget, out var order))
+            {
+                yield return (order, reference.delay, reference.respectBusyCooldown);
+            }
+        }
+    }
 
 }
 
@@ -202,17 +203,18 @@ public class SwitchControllerParams : ISkillParam, ISwitchPolicy
     // 런타임 커서(캐릭터별로 SerializeReference Param이 보관하므로 인스펙터 전역 영향 없음)
     [System.NonSerialized] int _idx = -1;
 
-    public bool TrySelect(Transform owner, Camera cam, out CastOrder order)
+    public bool TrySelect(Transform owner, Camera cam, Transform prevTarget, out CastOrder order, out MechanicRef reference)
     {
         order = default;
+        reference = default;
         if (steps == null || steps.Count == 0) return false;
 
         if (_idx < 0) _idx = Mathf.Clamp(startIndex, 0, steps.Count - 1);
         int cur = _idx;
         if (advanceOnCast) _idx = (_idx + 1) % steps.Count;
 
-        var mref = steps[cur];
-        return mref.TryBuildOrder(prevTarget: null, out order);
+        reference = steps[cur];
+        return reference.TryBuildOrder(prevTarget, out order);
     }
 
     // 필요하면 OnHit에서 수동 전진할 수 있도록 헬퍼 제공

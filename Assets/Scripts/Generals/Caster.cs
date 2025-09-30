@@ -26,7 +26,7 @@ public interface IFollowUpProvider
 /// Switch 정책(오직 Param만 구현) — 실행 직전에 선택할 주문 1개
 public interface ISwitchPolicy
 {
-    bool TrySelect(Transform owner, Camera cam, out CastOrder order);
+    bool TrySelect(Transform owner, Camera cam, Transform prevTarget, out CastOrder order, out MechanicRef reference);
 }
 
 /// Param이 참조하는 “다음 기술”

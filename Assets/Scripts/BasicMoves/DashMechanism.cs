@@ -1,4 +1,4 @@
-﻿using SkillInterfaces;
+using SkillInterfaces;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,74 +9,92 @@ using static GameEventMetaFactory;
 public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
 {
     public override IEnumerator Cast(Transform owner, Camera cam, DashParams p)
-    { Debug.LogError("Dash requires a target Transform"); yield break; }
+    {
+        return Execute(owner, cam, p, null);
+    }
 
     public IEnumerator Cast(Transform owner, Camera cam, ISkillParam param, Transform target)
-        => Cast(owner, cam, (DashParams)param, target);
+        => Execute(owner, cam, (DashParams)param, target);
 
-    IEnumerator Cast(Transform owner, Camera cam, DashParams p, Transform target)
+    IEnumerator Execute(Transform owner, Camera cam, DashParams p, Transform explicitTarget)
     {
-        if (!target) yield break;
+        if (!owner)
+        {
+            Debug.LogWarning("DashMechanism: Owner가 없어 실행을 중단합니다.");
+            yield break;
+        }
 
         var motor = owner.GetComponent<KinematicMotor2D>();
-        if (!motor) yield break;
+        if (!motor)
+        {
+            Debug.LogWarning("DashMechanism: KinematicMotor2D가 필요합니다.");
+            yield break;
+        }
 
-        // (선택) 무적
+        var solution = TargetingRuntimeUtil.Resolve(owner, cam, p, explicitTarget, createAnchor: false);
+        Transform dashTarget = solution.IsSyntheticTarget ? null : solution.Target;
+        Vector2 fallbackDir = solution.Direction.sqrMagnitude > 0f ? solution.Direction.normalized : (Vector2)owner.right;
+        float desiredDist = dashTarget ? Vector2.Distance(owner.position, dashTarget.position) : solution.Distance;
+        if (dashTarget && p.FallbackRange > 0f)
+        {
+            desiredDist = Mathf.Min(desiredDist, p.FallbackRange);
+        }
+        else if (!dashTarget && p.FallbackRange > 0f)
+        {
+            desiredDist = Mathf.Max(p.FallbackRange, desiredDist);
+        }
+        desiredDist = Mathf.Max(0f, desiredDist);
+        if (desiredDist <= 0f)
+        {
+            Debug.LogWarning("DashMechanism: 이동 거리가 0이라 대시를 생략합니다.");
+            yield break;
+        }
+
+        MechanismRuntimeUtil.QueueFollowUps(p, AbilityHook.OnCastStart, dashTarget, "Dash");
+
         if (p.grantIFrame && p.iFrameDuration > 0f)
         {
             // Publish(new EffectApplyReq(Create(owner,"combat"), owner, new IFrameEffect(), p.iFrameDuration));
         }
 
-        // === 거리 예산 고정 ===
-        Vector2 start = owner.position;
-        Vector2 toTarget0 = (Vector2)target.position - start;
-        Vector2 dir0 = toTarget0.sqrMagnitude > 1e-4f ? toTarget0.normalized : (Vector2)owner.right;
-        float directDist = toTarget0.magnitude;
-        float desiredDist = p.FallbackRange > 0 ? Mathf.Min(directDist, p.FallbackRange) : directDist;
+        Vector2 dir0 = fallbackDir.sqrMagnitude > 1e-4f ? fallbackDir : (Vector2)owner.right;
         float remaining = desiredDist;
 
-        // === 정책 스코프 ===
         var basePolicy = motor.CurrentPolicy;
         var dashPolicy = basePolicy;
         dashPolicy.wallsMask = p.WallsMask;
         dashPolicy.enemyMask = p.enemyMask;
-        dashPolicy.enemyAsBlocker = !p.CanPenetrate; // 비관통만 적 차단
+        dashPolicy.enemyAsBlocker = !p.CanPenetrate;
         dashPolicy.radius = p.radius;
         dashPolicy.skin = Mathf.Max(0.01f, p.skin);
-        dashPolicy.allowWallSlide = true; // 센서 상태로 프레임별로 갱신 예정
+        dashPolicy.allowWallSlide = true;
 
         using (motor.With(dashPolicy))
         {
             var hitIds = new HashSet<int>();
-
             float elapsed = 0f;
             float total = Mathf.Max(0.01f, p.duration);
 
             while (remaining > 0f)
             {
-                // 스코프 내에서 갱신 반영
                 using (motor.With(dashPolicy))
                 {
-                    //if (sensor && s.intruding && s.mtvDir != Vector2.zero) motor.RemoveComponent();
+                    // 센서 기반 확장을 위한 placeholder입니다.
                 }
 
-                // --- 예산 분배: 감속 금지, step만큼 시도 ---
                 float tNorm = Mathf.Clamp01(elapsed / total);
                 float nominalSpeed = (desiredDist / total) * p.speedCurve.Evaluate(tNorm);
                 float stepDist = Mathf.Min(remaining, nominalSpeed * Time.deltaTime);
 
-                // --- 목표 방향 ---
                 Vector2 pos = owner.position;
-                Vector2 aim = ((Vector2)target.position - pos);
+                Vector2 aim = dashTarget ? (Vector2)dashTarget.position - pos : fallbackDir;
                 Vector2 dir = aim.sqrMagnitude > 1e-4f ? aim.normalized : dir0;
 
-				// --- 단일 스윕(모터가 같은 프레임에 슬라이드 반복 처리) ---
-				motor.Depenetration();
-				var res = motor.SweepMove(dir * stepDist);
-				motor.Depenetration();
-				remaining -= res.actualDelta.magnitude;
+                motor.Depenetration();
+                var res = motor.SweepMove(dir * stepDist);
+                motor.Depenetration();
+                remaining -= res.actualDelta.magnitude;
 
-                // --- 히트(관통 여부 무관) ---
                 if (p.dealDamage && p.enemyMask.value != 0)
                 {
                     var hits = Physics2D.OverlapCircleAll(owner.position, p.radius, p.enemyMask);
@@ -89,7 +107,7 @@ public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
                             v.TakeDamage(p.damage, p.apRatio);
                             if (c.attachedRigidbody && p.knockback != 0f)
                             {
-                                var kdir = (Vector2)(c.transform.position - owner.position).normalized;
+                                var kdir = ((Vector2)c.transform.position - (Vector2)owner.position).normalized;
                                 c.attachedRigidbody.AddForce(kdir * p.knockback, ForceMode2D.Impulse);
                             }
                             hitIds.Add(id);
@@ -99,13 +117,12 @@ public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
                     }
                 }
 
-                // --- 종료 조건 ---
-                if (res.hitWall) break; // 슬라이드 후에도 못 가면 종료
+                if (res.hitWall) break;
 
-                if (target.GetComponent<Collider2D>() != null)
+                if (dashTarget && dashTarget.TryGetComponent<Collider2D>(out _))
                 {
                     float arrive = p.radius + p.skin;
-                    if (((Vector2)target.position - (Vector2)owner.position).sqrMagnitude <= arrive * arrive)
+                    if (((Vector2)dashTarget.position - (Vector2)owner.position).sqrMagnitude <= arrive * arrive)
                         break;
                 }
 
@@ -115,10 +132,9 @@ public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
                 yield return null;
             }
 
-            // 관통 대시였다면, 종료 프레임에 겹침 청소 한 번 더(적 포함 상황 대비)
-			motor.Depenetration();
+            motor.Depenetration();
         }
 
-        owner.GetComponent<SkillRunner>()?.NotifyHook(AbilityHook.OnCastEnd, p);
+        MechanismRuntimeUtil.QueueFollowUps(p, AbilityHook.OnCastEnd, dashTarget, "Dash");
     }
 }

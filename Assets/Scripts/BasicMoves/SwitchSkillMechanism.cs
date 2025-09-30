@@ -1,14 +1,37 @@
 using System.Collections;
 using UnityEngine;
 using SkillInterfaces;
+using Combat.Intents;
 
 [CreateAssetMenu(menuName = "Mechanics/Switch Controller")]
 public class SwitchSkillMechanism : SkillMechanismBase<SwitchControllerParams>
 {
-    // º»¹®Àº ¾Æ¹« °Íµµ ÇÏÁö ¾Ê½À´Ï´Ù.
-    // ½ÇÇà/¼±ÅÃÀº Runner°¡ Param(ISwitchPolicy)¿¡°Ô À§ÀÓÇÏ¿© ¼öÇàÇÕ´Ï´Ù.
     public override IEnumerator Cast(Transform owner, Camera cam, SwitchControllerParams p)
     {
+        if (p == null)
+        {
+            Debug.LogWarning("SwitchSkillMechanism: íŒŒë¼ë¯¸í„°ê°€ nullì…ë‹ˆë‹¤.");
+            yield break;
+        }
+
+        if (!CastScope.TryGetContext(out _, out _))
+        {
+            Debug.LogWarning("SwitchSkillMechanism: CastScope ì»¨í…ìŠ¤íŠ¸ê°€ ì—†ì–´ ë™ì‘ì„ ì¤‘ë‹¨í•©ë‹ˆë‹¤.");
+            yield break;
+        }
+
+        var prevTarget = CastScope.CurrentTarget;
+        if (p.TrySelect(owner, cam, prevTarget, out var order, out var reference))
+        {
+            var followTarget = order.TargetOverride != null ? order.TargetOverride : prevTarget;
+            MechanismRuntimeUtil.QueueCastOrder(order, AbilityHook.OnCastEnd, reference.delay, reference.respectBusyCooldown, "Switch", followTarget);
+            /** í•„ìš” ì‹œ switch ë‹¨ê³„ë³„ë¡œ UIë¥¼ ê°±ì‹ í•˜ë ¤ë©´ ì´ ì§€ì ì—ì„œ ì´ë²¤íŠ¸ë¥¼ ë¸Œë¡œë“œìºìŠ¤íŠ¸í•˜ì‹­ì‹œì˜¤. */
+        }
+        else
+        {
+            Debug.LogWarning("SwitchSkillMechanism: ì‹¤í–‰í•  ìŠ¤í…ì„ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.");
+        }
+
         yield break;
     }
 }

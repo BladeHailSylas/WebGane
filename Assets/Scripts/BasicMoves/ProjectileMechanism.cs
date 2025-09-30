@@ -5,29 +5,61 @@ using System.Collections;
 [CreateAssetMenu(menuName = "Mechanics/Projectile (Homing, Targeted)")]
 public class ProjectileMechanism : SkillMechanismBase<MissileParams>, ITargetedMechanic
 {
-    // Å¸±êÇü ÁøÀÔÁ¡
-    public IEnumerator Cast(Transform owner, Camera cam, ISkillParam p, Transform target)
-    {
-        return Cast(owner, cam, (MissileParams)p, target);
-    }
-
-    // ÀÏ¹İ ÁøÀÔÁ¡Àº »ç¿ë ¾È ÇÔ(ÇÊ¿äÇÏ¸é Ä¿¼­ ¹æÇâ ±âº» ¹ß»ç·Î ´ëÃ¼ °¡´É)
     public override IEnumerator Cast(Transform owner, Camera cam, MissileParams p)
     {
-        //Debug.Log("Homing Missile Casted Without any target"); //»ç½Ç»ó ÀÌ log´Â ¾È ³ª¿Í¾ß ÇÔ. ÀÌ°Ô ³ª¿À¸é SkillRunner°¡ ÀÌ»óÇÏ´Ù´Â Áõ°Å
-        yield break; 
+        return Execute(owner, cam, p, null);
     }
 
-    // ½ÇÁ¦ ·ÎÁ÷
-    IEnumerator Cast(Transform owner, Camera cam, MissileParams p, Transform target) //Camera camÀº ¾îµğ¿¡ ¾²´Â °Í? Ä«¸Ş¶ó ¿öÅ©¿¡ ÇÊ¿ä?
+    public IEnumerator Cast(Transform owner, Camera cam, ISkillParam param, Transform target)
     {
-        //Debug.Log($"Homing Missile Casted with target {target.name}");
-        if (target == null) yield break;
+        if (param is not MissileParams missile)
+        {
+            Debug.LogError("ProjectileMechanism: íŒŒë¼ë¯¸í„° íƒ€ì…ì´ MissileParamsê°€ ì•„ë‹™ë‹ˆë‹¤.");
+            yield break;
+        }
 
-        var go = new GameObject("HomingProjectile");
-        go.transform.position = owner.position;
-        var mover = go.AddComponent<ProjectileMovement>();
-        mover.Init(p, owner, target);
-        yield return null;
+        yield return Execute(owner, cam, missile, target);
+    }
+
+    IEnumerator Execute(Transform owner, Camera cam, MissileParams p, Transform explicitTarget)
+    {
+        if (!owner)
+        {
+            Debug.LogWarning("ProjectileMechanism: Ownerê°€ ì—†ì–´ ë°œì‚¬í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
+            yield break;
+        }
+
+        MechanismRuntimeUtil.QueueFollowUps(p, AbilityHook.OnCastStart, explicitTarget, "Projectile");
+
+        if (p.startDelay > 0f)
+        {
+            yield return new WaitForSeconds(p.startDelay);
+            if (!owner) yield break;
+        }
+
+        var solution = TargetingRuntimeUtil.Resolve(owner, cam, p, explicitTarget, createAnchor: true);
+        Transform resolvedTarget = solution.Target;
+        if (resolvedTarget == null)
+        {
+            Debug.LogWarning("ProjectileMechanism: íƒ€ê¹ƒì„ ì°¾ì§€ ëª»í•´ ë°œì‚¬ë¥¼ ì¤‘ì§€í•©ë‹ˆë‹¤.");
+            solution.DisposeAnchor();
+            yield break;
+        }
+
+        var projectile = new GameObject("HomingProjectile");
+        projectile.transform.position = owner.position;
+        solution.AdoptAnchor(projectile.transform);
+
+        var mover = projectile.AddComponent<ProjectileMovement>();
+        mover.Init(p, owner, resolvedTarget);
+
+        if (p.endDelay > 0f)
+        {
+            yield return new WaitForSeconds(p.endDelay);
+        }
+
+        var followUpTarget = solution.IsSyntheticTarget ? explicitTarget : resolvedTarget;
+        MechanismRuntimeUtil.QueueFollowUps(p, AbilityHook.OnCastEnd, followUpTarget, "Projectile");
+        /** Projectilesê°€ OnHit ì´ë²¤íŠ¸ë¥¼ ë°œí–‰í•˜ë„ë¡ í™•ì¥í•˜ë ¤ë©´ ProjectileMovementì—ì„œ MechanismRuntimeUtilì„ í˜¸ì¶œí•˜ì‹­ì‹œì˜¤. */
     }
 }

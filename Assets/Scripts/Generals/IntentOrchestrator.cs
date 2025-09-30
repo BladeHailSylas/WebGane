@@ -319,7 +319,7 @@ namespace Combat.Intents
         private ExecutionResult Execute(CastIntent intent, CastContext context, Transform target)
         {
             _followUpBuffer.Clear();
-            using (CastScope.Enter(this))
+            using (CastScope.Enter(this, intent, context, target))
             {
                 try
                 {
