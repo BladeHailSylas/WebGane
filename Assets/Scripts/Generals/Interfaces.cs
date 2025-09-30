@@ -211,7 +211,7 @@ namespace SkillInterfaces
     {
         bool IsBusy { get; }
         bool IsOnCooldown { get; }
-        void TryCast();
+        void EnqueueRootIntent(ISkillMechanic mech, ISkillParam param, Combat.Intents.TargetRequest req, int priorityLevel = 0);
     }
 
     // 메커니즘(공식): "캐스팅 코루틴"을 제공
