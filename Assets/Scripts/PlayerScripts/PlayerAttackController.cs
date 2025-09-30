@@ -1,80 +1,110 @@
-// PlayerAttackController.cs  (��ü)
+// PlayerAttackController.cs — Intent 기반 입력 파이프라인.
+// 잠재적 문제: Runner가 존재하지 않으면 입력이 조용히 무시되므로, 에디터 툴에서 검증 루틴을 추가해야 합니다.
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using SkillInterfaces;
+using Combat.Intents;
 
 public class PlayerAttackController : MonoBehaviour
 {
-	[Header("Character")]
-	public CharacterSpec spec; // ĳ���� SO (���ԡ��Ŀ����+�Ķ����)
-								//public ICharacter Spec { get { return spec; } set { spec = value; } }
+    [Header("Character")]
+    public CharacterSpec spec;
 
-	[Header("Input")]
-	public InputActionReference attackKey;   // LMB(+Passive), slot 0
-	public InputActionReference skill1Key;   // Shift, slot 1
-	public InputActionReference skill2Key;   // Space, slot 2
-	public InputActionReference ultimateKey; // RMB, slot 3
-											//InputSystem has hold feature, can we use it for delay skills?
-	readonly List<InputActionReference> keys = new();
-	//readonly Dictionary<SkillSlot, ISkillRunner> runners = new(); -> May noy be used since we have only one runner, haha in your face
-	readonly List<SkillSlot> slots = new();
-	ISkillRunner r;
+    [Header("Input")]
+    public InputActionReference attackKey;
+    public InputActionReference skill1Key;
+    public InputActionReference skill2Key;
+    public InputActionReference ultimateKey;
+
+    readonly Dictionary<SkillSlot, ISkillRunner> runners = new();
+    readonly Dictionary<SkillSlot, (ISkillMechanic mech, ISkillParam param)> slotBindings = new();
 
     void Awake()
     {
         Bind(spec.attack);
-		Bind(spec.skill1);
+        Bind(spec.skill1);
         Bind(spec.skill2);
-		Bind(spec.ultimate);
-		keys.Add(attackKey);
-		keys.Add(skill1Key);
-		keys.Add(skill2Key);
-		keys.Add(ultimateKey);
-		r = gameObject.GetComponentInChildren<ISkillRunner>();
-	}
+        Bind(spec.ultimate);
+    }
 
-    void Bind(SkillBinding b)
+    void Bind(SkillBinding binding)
     {
-		if (b.mechanism is not ISkillMechanic mech || b.param == null) return;
-		if (!mech.ParamType.IsInstanceOfType(b.param))
-		{
-			Debug.LogError($"Param mismatch: need {mech.ParamType.Name}, got {b.param.GetType().Name}"); return;
-		}
-		if (r == null) { Debug.LogError($"No ISkillRunner found in children of {gameObject.name}"); return; }
-		slots.Add(b.slot);
-	}
+        if (binding.mechanic is not ISkillMechanic mech || binding.param == null)
+            return;
 
-	void OnEnable()
-	{
-		foreach (var key in keys)
-		{
-			if (key)
-			{
-				//Is it unsubscribed without any following code? This is awkward, but it seems true
-				key.action.performed += _ =>
-				{
-					Debug.Log(keys.IndexOf(key));
-					TryCast(slots[keys.IndexOf(key)]);
-				};
-				//Well, InputSystem seems to handle the unsubscription well
-				//That's good, but that's not how C# events work... Unity, are you doing some magic tricks?
-				//Perhaps it is because InputAction is not a standard C# event, but a UnityEvent
-				//Well let's leave it as is for now since it does their job
-			}
-		}
+        if (!mech.ParamType.IsInstanceOfType(binding.param))
+        {
+            Debug.LogError($"Param mismatch: need {mech.ParamType.Name}, got {binding.param.GetType().Name}");
+            return;
+        }
 
-	}
-	void TryCast(SkillSlot slot)
-	{
-		{
-			//Here we should Create Intent and pass it to the runner
-			//No Direct TryCast allowed, All the skills should be activated through catching Intent
-			//There we can use FollowUps as general system; These are almost the same but with auto activation
-			//FollowUps for chaining skills with no exception for those(TryFollowUp is the worst idea ever)
-			//But how do you catch Intent? Event System? May there be some other way? Let us see
-			//But for now we'll make just a log here, not to break anything
-			Debug.Log($"Intent to cast {slot} has generated");
-		}
-	}
+        var runner = GetComponentInChildren<ISkillRunner>();
+        if (runner == null)
+        {
+            Debug.LogError("ISkillRunner 구현체를 찾지 못했습니다. 액터 루트에 Runner 1개가 필요합니다.");
+            return;
+        }
+
+        runners[binding.slot] = runner;
+        slotBindings[binding.slot] = (mech, binding.param);
+    }
+
+    void Attack() => TryCast(SkillSlot.Attack);
+    void Skill1() => TryCast(SkillSlot.Skill1);
+    void Skill2() => TryCast(SkillSlot.Skill2);
+    void Ultimate() => TryCast(SkillSlot.Ultimate);
+
+    void OnEnable()
+    {
+        if (attackKey)
+        {
+            attackKey.action.Enable();
+            attackKey.action.performed += _ => TryCast(SkillSlot.Attack);
+        }
+        if (skill1Key)
+        {
+            skill1Key.action.Enable();
+            skill1Key.action.performed += _ => TryCast(SkillSlot.Skill1);
+        }
+        if (skill2Key)
+        {
+            skill2Key.action.Enable();
+            skill2Key.action.performed += _ => TryCast(SkillSlot.Skill2);
+        }
+        if (ultimateKey)
+        {
+            ultimateKey.action.Enable();
+            ultimateKey.action.performed += _ => TryCast(SkillSlot.Ultimate);
+        }
+    }
+
+    void OnDisable()
+    {
+        if (attackKey) attackKey.action.performed -= _ => TryCast(SkillSlot.Attack);
+        if (skill1Key) skill1Key.action.performed -= _ => TryCast(SkillSlot.Skill1);
+        if (skill2Key) skill2Key.action.performed -= _ => TryCast(SkillSlot.Skill2);
+        if (ultimateKey) ultimateKey.action.performed -= _ => TryCast(SkillSlot.Ultimate);
+        attackKey?.action.Disable();
+        skill1Key?.action.Disable();
+        skill2Key?.action.Disable();
+        ultimateKey?.action.Disable();
+    }
+
+    void TryCast(SkillSlot slot)
+    {
+        if (!runners.TryGetValue(slot, out var runner)) return;
+        if (!slotBindings.TryGetValue(slot, out var binding)) return;
+
+        var request = new TargetRequest
+        {
+            Policy = TargetPolicy.SameAsCast,
+            ExplicitActor = transform,
+            Radius = 0f,
+            TeamMask = ~0,
+        };
+
+        // 추후 목표 포인트(조준선/커서 등)를 반영할 경우 TargetRequest를 갱신해야 합니다.
+        runner.EnqueueRootIntent(binding.mech, binding.param, request, priorityLevel: 0);
+    }
 }

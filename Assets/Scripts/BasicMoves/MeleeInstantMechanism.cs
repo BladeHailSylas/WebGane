@@ -3,7 +3,7 @@ using System.Collections;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Mechanics/Melee Instant")]
-public class MeleeInstantMechanic : SkillMechanismBase<MeleeParams>
+public class MeleeInstantMechanism : SkillMechanismBase<MeleeParams>
 {
     public override IEnumerator Cast(Transform owner, Camera cam, MeleeParams p)
     {
