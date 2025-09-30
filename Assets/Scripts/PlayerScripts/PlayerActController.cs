@@ -42,8 +42,8 @@ public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
     }
 
     // --- IVulnerable ---
-    public void TakeDamage(float damage, float apratio, bool isFixed)
-        => stats.ReduceStat(ReduceType.Health, damage, apratio, isFixed);
+    public void TakeDamage(float damage, float apratio, DamageType type)
+        => stats.ReduceStat(ReduceType.Health, damage, apratio, type);
 
     public void Die() => Destroy(gameObject);
 
