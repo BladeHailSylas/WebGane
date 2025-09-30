@@ -22,29 +22,27 @@ MonoBehaviour:
   baseSpeed: 8
   attack:
     slot: 0
-    mechanic: {fileID: 11400000, guid: fc59fcced4d960944b72d6a0822e45ad, type: 2}
+    mechanism: {fileID: 0}
     param:
       rid: 830848590756970620
   skill1:
     slot: 1
-    mechanic: {fileID: 11400000, guid: 8eac857f8e9b7ac4e8dfb345295b3ca3, type: 2}
+    mechanism: {fileID: 0}
     param:
       rid: 830848590756970621
   skill2:
     slot: 2
-    mechanic: {fileID: 11400000, guid: 8cd4bfe941aac2f4aa7c5fe05d78363b, type: 2}
+    mechanism: {fileID: 0}
     param:
       rid: 830848590756970622
   ultimate:
     slot: 3
-    mechanic: {fileID: 0}
+    mechanism: {fileID: 0}
     param:
-      rid: -2
+      rid: 830848840148189256
   references:
     version: 2
     RefIds:
-    - rid: -2
-      type: {class: , ns: , asm: }
     - rid: 830848590756970620
       type: {class: MeleeParams, ns: , asm: Assembly-CSharp}
       data:
@@ -80,7 +78,9 @@ MonoBehaviour:
         damage: 8
         apRatio: 0
         knockback: 0
+        startDelay: 0.25
         cooldown: 0.35
+        endDelay: 0.05
         retargetOnLost: 0
         retargetRadius: 3
         mode: 1
@@ -165,7 +165,9 @@ MonoBehaviour:
         damage: 8
         apRatio: 0
         knockback: 0
+        startDelay: 0.25
         cooldown: 0.35
+        endDelay: 0.05
         retargetOnLost: 1
         retargetRadius: 3
         mode: 1
@@ -175,4 +177,54 @@ MonoBehaviour:
         skin: 0
         canpen: 0
         onHit: []
+        onExpire: []
+    - rid: 830848840148189256
+      type: {class: DashParams, ns: , asm: Assembly-CSharp}
+      data:
+        _mode: 2
+        _fallbackRange: 4
+        _localOffset: {x: 0, y: 0}
+        _wallsMask:
+          serializedVersion: 2
+          m_Bits: 0
+        _canpen: 0
+        duration: 0.18
+        speedCurve:
+          serializedVersion: 2
+          m_Curve:
+          - serializedVersion: 3
+            time: 0
+            value: 1
+            inSlope: 0
+            outSlope: 0
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          - serializedVersion: 3
+            time: 1
+            value: 1
+            inSlope: 0
+            outSlope: 0
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          m_PreInfinity: 2
+          m_PostInfinity: 2
+          m_RotationOrder: 4
+        stopOnWall: 1
+        radius: 0.5
+        skin: 0.05
+        dealDamage: 1
+        canPenetrate: 1
+        enemyMask:
+          serializedVersion: 2
+          m_Bits: 0
+        damage: 8
+        apRatio: 0
+        knockback: 6
+        grantIFrame: 1
+        iFrameDuration: 0.18
+        cooldown: 0.35
         onExpire: []
