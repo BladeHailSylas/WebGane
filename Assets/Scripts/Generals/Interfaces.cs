@@ -194,8 +194,8 @@ namespace StatsInterfaces
     }*/
     public interface IStatModifier
     {
-        void Apply(PlayerStats stats);
-        void Remove(PlayerStats stats);
+        void Apply(PlayerStatsContainer stats);
+        void Remove(PlayerStatsContainer stats);
     }
 }
 #endregion

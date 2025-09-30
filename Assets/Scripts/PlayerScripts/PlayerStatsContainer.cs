@@ -1,7 +1,7 @@
 using StatsInterfaces;
 using System.Collections.Generic;
 using UnityEngine;
-public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에서는 참조만
+public sealed class PlayerStatsContainer : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에서는 참조만
 {
     [SerializeField] PlayerEffects effects;
     public float BaseHealth { get; private set; }
@@ -83,15 +83,3 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에
         return Mathf.Max(0.15f, totalDR); //공격자 우선(하게 두되 대안을 주어라) -> 대미지가 들어가게 두되 다른 생존 수단(체력 회복, 보호막 등)으로 원콤이 안 나게 하라
     }
 }
-//PlayerStats가 꽤 길어지는데 따로 분류할 방법이?
-//Health, Mana와 같은 것은 array나 List로 묶어서 enum StatRef(Base, Max, Current)와 연계해야 되나?
-//아니면 길어지는 것이 필연적이므로 그냥 가만히 둔다? Stat부터 너무 많아서 어쩔 수 없나?
-//PlayerStatsController가 존재한다고 해도 메서드를 유의미하게 가져갈 것 같지 않은데?
-//여기에 event listening까지 하면 코드가 꽤 길어질 것인데
-//그렇다고 PlayerStatsController가 PlayerStats를 직접 수정하는 건 싫다, 접근 벡터를 줄이고 싶음
-//아니면 오히려 Controller가 있기에 접근 벡터가 줄어든다?
-//현재 구조: 다른 객체가 필요한 시기에 직접 PlayerStats를 참조
-//컨트롤러: 다른 객체가 Controller를 참조, Controller만 PlayerStats를 참조
-//이게 더 나은 것 같기는 하지만, 우리는 궁극적으로 event를 통한 SerializeField 참조 제거를 원함
-//event로 SerializeField 전체 참조가 가능한지는 잘 몰라도 가능한 한 접근 벡터를 줄일 수 있을 것으로 예상
-//StatsEventListener같은 걸 만든다? 오히려 접근 벡터를 늘리는 방안 같다고 생각

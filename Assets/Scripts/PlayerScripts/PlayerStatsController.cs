@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerStatsController : MonoBehaviour, IStatProvider
 {
-    [SerializeField] PlayerStats stats;
+    [SerializeField] PlayerStatsContainer stats;
     public float GetBool(StatBool sb)
     {
         return sb switch

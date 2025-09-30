@@ -5,7 +5,7 @@ using UnityEngine;
 public struct SkillBinding
 {
     public SkillSlot slot;
-    public ScriptableObject mechanic;
+    public ScriptableObject mechanism;
     [SerializeReference] public ISkillParam param;
 }
 

@@ -6,7 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
 {
-    [SerializeField] PlayerStats stats;
+    [SerializeField] PlayerStatsContainer stats;
     [SerializeField] PlayerLocomotion locomotion;
     [SerializeField] PlayerEffects effects;
 
