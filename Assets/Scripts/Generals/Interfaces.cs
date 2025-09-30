@@ -52,7 +52,7 @@ namespace ActInterfaces
 {
     public interface IVulnerable //피해를 받아 죽을 수 있음
     {
-        void TakeDamage(float damage, float apratio = 1f, bool isFixed = false);
+        void TakeDamage(float damage, float apratio = 1f, StatsInterfaces.DamageType type = 0);
         void Die();
     }
 
@@ -130,7 +130,7 @@ namespace StatsInterfaces
         Shield, SpecialShield,
         AttackDamage,
         Mana, ManaRegen,
-        Velocity, JumpTime
+        Speed, JumpTime
     }
     public enum StatRef
     {
@@ -144,6 +144,10 @@ namespace StatsInterfaces
     {
         Health = 0, Mana
     }
+	public enum DamageType
+	{
+		Normal = 0, Fixed, CurrentPercent, LostPercent, MaxPercent
+	}
     public interface IStatProvider
     {
         float GetStat(StatType stat, StatRef re = StatRef.Current);
@@ -194,8 +198,8 @@ namespace StatsInterfaces
     }*/
     public interface IStatModifier
     {
-        void Apply(PlayerStats stats);
-        void Remove(PlayerStats stats);
+        void Apply(PlayerStatsBridge stats);
+        void Remove(PlayerStatsBridge stats);
     }
 }
 #endregion

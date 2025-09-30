@@ -16,7 +16,7 @@ public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
     public float attack = 10f, apRatio = 0f, knockback = 0f, attackPercent = 1.0f;
 
     [Header("Timing")]
-    public float windup = 0.05f, recover = 0.08f, cooldown = 0.10f;
+    public float windup = 0.05f, recover = 0.08f, cooldown = 8f;
     public float Cooldown => cooldown;
 
     // ★ FollowUp(예: 2타)을 Param에 직접 둠 — 필요 시 인스펙터에서 설정
@@ -69,9 +69,11 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
     [Header("Damage")]
     public float damage = 8f, apRatio = 0f, knockback = 0f;
 
-    [Header("Timing")]
-    public float cooldown = 0.35f;
-    public float Cooldown => cooldown;
+	[Header("Timing")]
+	public float startDelay = 0.25f;
+    public float cooldown = 10f;
+	public float endDelay = 0.05f;
+	public float Cooldown => cooldown;
 
     [Header("Behavior")]
     public bool retargetOnLost = true;
