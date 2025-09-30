@@ -5,10 +5,20 @@ using SkillInterfaces;
 [CreateAssetMenu(menuName = "Mechanics/Switch Controller")]
 public class SwitchSkillMechanic : SkillMechanismBase<SwitchControllerParams>
 {
-    // º»¹®Àº ¾Æ¹« °Íµµ ÇÏÁö ¾Ê½À´Ï´Ù.
-    // ½ÇÇà/¼±ÅÃÀº Runner°¡ Param(ISwitchPolicy)¿¡°Ô À§ÀÓÇÏ¿© ¼öÇàÇÕ´Ï´Ù.
-    public override IEnumerator Cast(Transform owner, Camera cam, SwitchControllerParams p)
+    protected override IEnumerator Execute(MechanismContext ctx, SwitchControllerParams p)
     {
+        var owner = ctx.Owner;
+        if (p.TrySelect(owner, ctx.Camera, out var reference, out var order))
+        {
+            ctx.ScheduleFollowUp(order, reference.delay, reference.respectBusyCooldown, AbilityHook.OnCastEnd, nameof(SwitchSkillMechanic));
+        }
+        else
+        {
+            Debug.LogWarning("[SwitchSkillMechanic] ì„ íƒ ê°€ëŠ¥í•œ ì£¼ë¬¸ì´ ì—†ìŠµë‹ˆë‹¤.");
+        }
+
+        Vector2? hookPoint = owner ? (Vector2)owner.position : (Vector2?)null;
+        ctx.EmitHook(AbilityHook.OnCastEnd, ctx.Target, hookPoint, nameof(SwitchSkillMechanic));
         yield break;
     }
 }

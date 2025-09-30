@@ -50,17 +50,9 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 			return;
 		}
 
-		// (옵션) Switch 정책: 외부에서 주문서 선택
-		if (param is ISwitchPolicy sp && sp.TrySelect(transform, cam, out var switched))
-		{
-			Dlog("SwitchPolicy selected alt CastOrder → Schedule");
-			Schedule(switched, 0f, respectBusyCooldown: true);
-			return;
-		}
-
-		// 기본 메커닉 시전
-		Schedule(new CastOrder(mech, param), 0f, respectBusyCooldown: true);
-	}
+                // 기본 메커닉 시전
+                Schedule(new CastOrder(mech, param), 0f, respectBusyCooldown: true);
+        }
 
 	// === 표준 스케줄 API (일반/FollowUp/스위치 동일 경로) ===
 	public void Schedule(CastOrder order, float delay, bool respectBusyCooldown)
@@ -241,23 +233,26 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	/// <param name="target"></param>
 	/// <returns></returns>
 	// ------------------------------------------------------------------
-	private ExecResult ExecuteMechanism(CastContext ctx, CastOrder order, Transform target)
-	{
-		// 이벤트: 시작/타깃 획득
-		Publish(new CastStarted(ctx.Meta, ctx.SkillRef, param, transform, target));
-		if (order.Mech is ITargetedMechanic tgt && target != null)
-			Publish(new TargetAcquired(ctx.Meta, ctx.SkillRef, transform, target));
+        private ExecResult ExecuteMechanism(CastContext ctx, CastOrder order, Transform target)
+        {
+                // 이벤트: 시작/타깃 획득
+                Publish(new CastStarted(ctx.Meta, ctx.SkillRef, order.Param, transform, target));
+                if (order.Mech is ITargetedMechanic && target != null)
+                        Publish(new TargetAcquired(ctx.Meta, ctx.SkillRef, transform, target));
 
-		// 실제 메커니즘(코루틴) 실행
-		if (order.Mech is ITargetedMechanic tgtMech)
-		{
-			return ExecResult.FromCoroutine(tgtMech.Cast(transform, cam, order.Param, target));
-		}
-		else
-		{
-			return ExecResult.FromCoroutine(order.Mech.Cast(transform, cam, order.Param));
-		}
-	}
+                var orchestrator = ctx.Caster.GetComponent<IntentOrchestrator>() ?? ctx.Caster.GetComponentInParent<IntentOrchestrator>();
+                var mechContext = new MechanismContext(ctx.Caster, ctx.Cam, target, this, orchestrator, order, ctx.Meta, ctx.SkillRef);
+
+                // 실제 메커니즘(코루틴) 실행
+                if (order.Mech is ITargetedMechanic tgtMech)
+                {
+                        return ExecResult.FromCoroutine(tgtMech.Cast(mechContext, order.Param, target));
+                }
+                else
+                {
+                        return ExecResult.FromCoroutine(order.Mech.Cast(mechContext, order.Param));
+                }
+        }
 
 	// ------------------------------------------------------------------
 	/// <summary>
@@ -295,41 +290,53 @@ public class SkillRunner : MonoBehaviour, ISkillRunner
 	private void FinalizeCast(CastContext ctx, CastOrder order)
 	{
 		if (order.Param is IHasCooldown h) cd = Mathf.Max(cd, h.Cooldown);
-		Publish(new CastEnded(ctx.Meta, ctx.SkillRef, transform, false));
-		Hooks_OnCastEnd(ctx);
-		busy = false;
-		Dlog("[END] Cast finalized: Busy=false");
-	}
+                Publish(new CastEnded(ctx.Meta, ctx.SkillRef, transform, false));
+                // OnCastEnd 훅은 MechanismContext에서 명시적으로 호출하도록 위임합니다.
+                busy = false;
+                Dlog("[END] Cast finalized: Busy=false");
+        }
 
-	// === 훅 엔드포인트(메커닉에서 콜백) ===
-	// 소신) 훅 엔드포인트를 단일화하거나 없애고 싶음
-	public void NotifyHook(Transform target, Vector2 point) => BroadcastHook(AbilityHook.OnHit, target, param);
-	public void NotifyHook(Vector2 point) => BroadcastHook(AbilityHook.OnCastEnd, null, param);
+        // === 훅 엔드포인트(메커닉에서 콜백) ===
+        // ※ 기존 NotifyHook 사용 코드는 MechanismContext.EmitHook으로 전환하십시오.
+        [System.Obsolete("MechanismContext.EmitHook을 사용하십시오.")]
+        public void NotifyHook(Transform target, Vector2 point) => EmitHook(AbilityHook.OnHit, target, param, point, nameof(SkillRunner));
+        [System.Obsolete("MechanismContext.EmitHook을 사용하십시오.")]
+        public void NotifyHook(Vector2 point) => EmitHook(AbilityHook.OnCastEnd, null, param, point, nameof(SkillRunner));
 
-	void BroadcastHook(AbilityHook hook, Transform prevTarget, ISkillParam srcParam)
-	{
-		try
-		{
-			if (srcParam is IFollowUpProvider p)
-			{
-				foreach (var (order, delay, respect) in p.BuildFollowUps(hook, prevTarget))
-				{
-					Schedule(order, delay, respect);
-					scheduledThisFrame++;
-					if (debugLogging) Dlog($"[HOOK] {hook} → Schedule(delay={delay:F2}, respect={respect})");
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-			Debug.LogError($"[SkillRunner] Hook exception on {hook}");
-			Debug.LogException(ex);
-		}
-	}
+        internal void EmitHook(AbilityHook hook, Transform prevTarget, ISkillParam srcParam, Vector2? worldPoint, string sourceTag)
+        {
+                if (srcParam == null) return;
+                try
+                {
+                        if (srcParam is IFollowUpProvider provider)
+                        {
+                                foreach (var (order, delay, respect) in provider.BuildFollowUps(hook, prevTarget))
+                                {
+                                        ScheduleFollowUp(order, delay, respect, hook, sourceTag ?? srcParam.GetType().Name);
+                                }
+                        }
+                }
+                catch (Exception ex)
+                {
+                        Debug.LogError($"[SkillRunner] Hook exception on {hook} from {sourceTag ?? srcParam.GetType().Name}");
+                        Debug.LogException(ex);
+                }
+        }
 
-	// === 훅 호출(안전하게 try/catch 내부) ===
-	private void Hooks_OnCastStart(CastContext ctx) => BroadcastHook(AbilityHook.OnCastStart, null, param);
-	private void Hooks_OnCastEnd(CastContext ctx) => BroadcastHook(AbilityHook.OnCastEnd, null, param);
+        internal void ScheduleFollowUp(CastOrder order, float delay, bool respectBusyCooldown, AbilityHook reason, string sourceTag)
+        {
+                Schedule(order, delay, respectBusyCooldown);
+                scheduledThisFrame++;
+                if (debugLogging)
+                {
+                        var mechName = order.Mech?.GetType().Name ?? "<null>";
+                        Dlog($"[HOOK:{reason}] {sourceTag ?? mechName} → Schedule({mechName}, delay={delay:F2}, respect={respectBusyCooldown})");
+                }
+        }
+
+        // === 훅 호출(안전하게 try/catch 내부) ===
+        private void Hooks_OnCastStart(CastContext ctx)
+                => EmitHook(AbilityHook.OnCastStart, null, ctx.Order.Param, null, ctx.Order.Mech?.GetType().Name);
 
 	// === 바인딩 ===
 	public void Init(ISkillMechanic m, ISkillParam p) { mech = m; param = p; cam = Camera.main; }

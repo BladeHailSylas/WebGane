@@ -5,29 +5,34 @@ using System.Collections;
 [CreateAssetMenu(menuName = "Mechanics/Projectile (Homing, Targeted)")]
 public class ProjectileMechanics : SkillMechanismBase<MissileParams>, ITargetedMechanic
 {
-    // Å¸±êÇü ÁøÀÔÁ¡
-    public IEnumerator Cast(Transform owner, Camera cam, ISkillParam p, Transform target)
+    protected override IEnumerator Execute(MechanismContext ctx, MissileParams p)
     {
-        return Cast(owner, cam, (MissileParams)p, target);
-    }
+        var owner = ctx.Owner;
+        if (!owner)
+        {
+            Debug.LogWarning("[ProjectileMechanics] Owner transformê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.");
+            yield break;
+        }
 
-    // ÀÏ¹İ ÁøÀÔÁ¡Àº »ç¿ë ¾È ÇÔ(ÇÊ¿äÇÏ¸é Ä¿¼­ ¹æÇâ ±âº» ¹ß»ç·Î ´ëÃ¼ °¡´É)
-    public override IEnumerator Cast(Transform owner, Camera cam, MissileParams p)
-    {
-        Debug.Log("Homing Missile Casted Without any target"); //»ç½Ç»ó ÀÌ log´Â ¾È ³ª¿Í¾ß ÇÔ. ÀÌ°Ô ³ª¿À¸é SkillRunner°¡ ÀÌ»óÇÏ´Ù´Â Áõ°Å
-        yield break; 
-    }
-
-    // ½ÇÁ¦ ·ÎÁ÷
-    IEnumerator Cast(Transform owner, Camera cam, MissileParams p, Transform target) //Camera camÀº ¾îµğ¿¡ ¾²´Â °Í? Ä«¸Ş¶ó ¿öÅ©¿¡ ÇÊ¿ä?
-    {
-        Debug.Log($"Homing Missile Casted with target {target.name}");
-        if (target == null) yield break;
+        if (!ctx.HasTarget)
+        {
+            Debug.LogWarning("[ProjectileMechanics] Targetì´ ì—†ì–´ ê¸°ë³¸ ë°œì‚¬ë¥¼ ìˆ˜í–‰í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.");
+            yield break;
+        }
 
         var go = new GameObject("HomingProjectile");
         go.transform.position = owner.position;
         var mover = go.AddComponent<ProjectileMovement>();
-        mover.Init(p, owner, target);
+        mover.Init(p, ctx);
+
+        // 1í”„ë ˆì„ ë™ì•ˆ ìƒì„±ëœ íˆ¬ì‚¬ì²´ì˜ ì´ˆê¸°í™”ê°€ ì™„ë£Œë˜ë„ë¡ ëŒ€ê¸°í•©ë‹ˆë‹¤.
         yield return null;
+    }
+
+    public IEnumerator Cast(MechanismContext ctx, ISkillParam param, Transform target)
+    {
+        if (param is not MissileParams missile)
+            throw new System.InvalidOperationException($"Param type mismatch. Need {nameof(MissileParams)}");
+        return Execute(ctx.WithTarget(target), missile);
     }
 }

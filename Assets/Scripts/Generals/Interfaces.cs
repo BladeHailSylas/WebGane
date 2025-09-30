@@ -218,11 +218,11 @@ namespace SkillInterfaces
     public interface ISkillMechanic
     {
         System.Type ParamType { get; }
-        IEnumerator Cast(Transform owner, Camera cam, ISkillParam param);
+        IEnumerator Cast(MechanismContext context, ISkillParam param);
     }
     public interface ITargetedMechanic : ISkillMechanic
     {
-        IEnumerator Cast(Transform owner, Camera cam, ISkillParam param, Transform target);
+        IEnumerator Cast(MechanismContext context, ISkillParam param, Transform target);
     }
 
     // 제네릭 베이스: 타입 가드 + 제네릭 오버로드
@@ -232,15 +232,15 @@ namespace SkillInterfaces
     {
         public System.Type ParamType => typeof(TParam);
 
-        public IEnumerator Cast(Transform owner, Camera cam, ISkillParam param)
+        public IEnumerator Cast(MechanismContext context, ISkillParam param)
         {
             if (param is not TParam p)
                 throw new System.InvalidOperationException(
                     $"Param type mismatch. Need {typeof(TParam).Name}, got {param?.GetType().Name ?? "null"}");
-            return Cast(owner, cam, p);
+            return Execute(context, p);
         }
-        
-        public abstract IEnumerator Cast(Transform owner, Camera cam, TParam param);
+
+        protected abstract IEnumerator Execute(MechanismContext context, TParam param);
     }
     public enum TargetMode { TowardsEnemy, TowardsCursor, TowardsMovement, TowardsOffset }
     

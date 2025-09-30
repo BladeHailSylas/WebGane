@@ -1,4 +1,4 @@
-﻿// MoveParams.cs (REFACTOR/EXTEND)
+// MoveParams.cs (REFACTOR/EXTEND)
 using System.Collections.Generic;
 using UnityEngine;
 using SkillInterfaces;
@@ -19,36 +19,23 @@ public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
     public float windup = 0.05f, recover = 0.08f, cooldown = 0.10f;
     public float Cooldown => cooldown;
 
-    // ★ FollowUp(예: 2타)을 Param에 직접 둠 — 필요 시 인스펙터에서 설정
     public List<MechanicRef> onHit = new();
     public List<MechanicRef> onExpire = new();
-	public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
-	{
-		if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
-		foreach (var m in onExpire)
-		{
-			Debug.Log(m);
-			if (m.TryBuildOrder(null, out var order))
-			{
-				Debug.Log($"Callback {order.Mech}!");
-				yield return (order, m.delay, m.respectBusyCooldown);
-			}
-			else
-			{
-				Debug.Log("No callback...");
-				yield break;
-			}
-		}
-	}
-	/*public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+
+    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
     {
-        var src = hook == AbilityHook.OnHit ? onHit :
-                    hook == AbilityHook.OnExpire ? onExpire : null;
+        var src = hook switch
+        {
+            AbilityHook.OnHit => onHit,
+            AbilityHook.OnCastEnd => onExpire,
+            _ => null
+        };
         if (src == null) yield break;
+
         foreach (var mref in src)
             if (mref.TryBuildOrder(prevTarget, out var order))
                 yield return (order, mref.delay, mref.respectBusyCooldown);
-    }*/
+    }
 }
 
 [System.Serializable]
@@ -76,43 +63,42 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
     [Header("Behavior")]
     public bool retargetOnLost = true;
     public float retargetRadius = 3f;
+
     [Header("Targeter")]
-    public TargetMode mode; public float fallback = 10f; public Vector2 local; public float col; public float skin; public bool canpen;
-    public TargetMode Mode => mode; public float FallbackRange => fallback; public Vector2 LocalOffset => local; public LayerMask WallsMask => blockerMask;
-    public float CollisionRadius => col; public float AnchorSkin => skin; public bool CanPenetrate => canpen;
+    public TargetMode mode;
+    public float fallback = 10f;
+    public Vector2 local;
+    public float col;
+    public float skin;
+    public bool canpen;
 
+    public TargetMode Mode => mode;
+    public float FallbackRange => fallback;
+    public Vector2 LocalOffset => local;
+    public LayerMask WallsMask => blockerMask;
+    public float CollisionRadius => col;
+    public float AnchorSkin => skin;
+    public bool CanPenetrate => canpen;
 
-    // ★ FollowUp 예: 맞으면 폭발, 소멸하면 잔류 디버프…
     public List<MechanicRef> onHit = new();
     public List<MechanicRef> onExpire = new();
-	public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
-	{
-		if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
-		foreach (var m in onExpire)
-		{
-			Debug.Log(m);
-			if (m.TryBuildOrder(null, out var order))
-			{
-				Debug.Log($"Callback {order.Mech}!");
-				yield return (order, m.delay, m.respectBusyCooldown);
-			}
-			else
-			{
-				Debug.Log("No callback...");
-				yield break;
-			}
-		}
-	}
-	/*public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+
+    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
     {
-        var src = hook == AbilityHook.OnHit ? onHit :
-                    hook == AbilityHook.OnExpire ? onExpire : null;
+        var src = hook switch
+        {
+            AbilityHook.OnHit => onHit,
+            AbilityHook.OnCastEnd => onExpire,
+            _ => null
+        };
         if (src == null) yield break;
+
         foreach (var mref in src)
             if (mref.TryBuildOrder(prevTarget, out var order))
                 yield return (order, mref.delay, mref.respectBusyCooldown);
-    }*/
+    }
 }
+
 [System.Serializable]
 public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData, IAnchorClearance
 {
@@ -130,21 +116,20 @@ public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargeti
     public bool CanPenetrate => _canpen;
 
     [Header("Motion")]
-    public float duration = 0.18f;           // 총 대시 시간
+    public float duration = 0.18f;
     public AnimationCurve speedCurve = AnimationCurve.Linear(0, 1, 1, 1);
-    public bool stopOnWall = true;           // 벽 충돌 시 즉시 종료
+    public bool stopOnWall = true;
 
     [Header("Collision Volume")]
-    public float radius = 0.5f;              // 내 몸의 반경(적/벽 체크 모두에 사용)
-    public float skin = 0.05f;               // 충돌면 살짝 넘기는 여유
+    public float radius = 0.5f;
+    public float skin = 0.05f;
 
-    // IAnchorClearance
     public float CollisionRadius => radius;
     public float AnchorSkin => Mathf.Max(0.01f, skin);
 
     [Header("Combat During Dash")]
-    public bool dealDamage = true;           // 대시 중 피해를 줄 것인지
-    public bool canPenetrate = true;         // 적을 관통할지
+    public bool dealDamage = true;
+    public bool canPenetrate = true;
     public LayerMask enemyMask;
     public float damage = 8f;
     public float apRatio = 0f;
@@ -152,40 +137,22 @@ public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargeti
 
     [Header("I-Frame/Status")]
     public bool grantIFrame = true;
-    public float iFrameDuration = 0.18f;     // 보통 duration과 동일
+    public float iFrameDuration = 0.18f;
 
     [Header("Timing")]
     public float cooldown = 0.35f;
     public float Cooldown => cooldown;
 
     [Header("FollowUps")]
-    public List<MechanicRef> onExpire = new(); // 대시 종료 후 후속(예: 원형 베기)
-	public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
-	{
-		if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
-		foreach (var m in onExpire)
-		{
-			Debug.Log(m);
-			if (m.TryBuildOrder(null, out var order))
-			{
-				Debug.Log($"Callback {order.Mech}!");
-				yield return (order, m.delay, m.respectBusyCooldown);
-			}
-			else
-			{
-				Debug.Log("No callback...");
-				yield break;
-			}
-		}
-	}
-	/*public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
-    {
-        if (hook != AbilityHook.OnExpire || onExpire == null) yield break;
-        foreach (var m in onExpire)
-            if (m.TryBuildOrder(null, out var order))
-                yield return (order, m.delay, m.respectBusyCooldown);
-    }*/
+    public List<MechanicRef> onExpire = new();
 
+    public IEnumerable<(CastOrder, float, bool)> BuildFollowUps(AbilityHook hook, Transform prevTarget)
+    {
+        if (hook != AbilityHook.OnCastEnd || onExpire == null) yield break;
+        foreach (var mref in onExpire)
+            if (mref.TryBuildOrder(prevTarget, out var order))
+                yield return (order, mref.delay, mref.respectBusyCooldown);
+    }
 }
 
 [System.Serializable]
@@ -195,13 +162,13 @@ public class SwitchControllerParams : ISkillParam, ISwitchPolicy
     public List<MechanicRef> steps = new();
 
     [Min(0)] public int startIndex = 0;
-    public bool advanceOnCast = true; // false면 OnHit 등에서 수동 전진
+    public bool advanceOnCast = true;
 
-    // 런타임 커서(캐릭터별로 SerializeReference Param이 보관하므로 인스펙터 전역 영향 없음)
     [System.NonSerialized] int _idx = -1;
 
-    public bool TrySelect(Transform owner, Camera cam, out CastOrder order)
+    public bool TrySelect(Transform owner, Camera cam, out MechanicRef reference, out CastOrder order)
     {
+        reference = default;
         order = default;
         if (steps == null || steps.Count == 0) return false;
 
@@ -209,11 +176,10 @@ public class SwitchControllerParams : ISkillParam, ISwitchPolicy
         int cur = _idx;
         if (advanceOnCast) _idx = (_idx + 1) % steps.Count;
 
-        var mref = steps[cur];
-        return mref.TryBuildOrder(prevTarget: null, out order);
+        reference = steps[cur];
+        return reference.TryBuildOrder(prevTarget: null, out order);
     }
 
-    // 필요하면 OnHit에서 수동 전진할 수 있도록 헬퍼 제공
     public void AdvanceExplicit()
     {
         if (steps == null || steps.Count == 0) return;
