@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using static SkillRunner;
 
-public static class CastScope
+/*public static class CastScope
 {
 	[ThreadStatic] static Stack<Scope> _stack;
 	public static IDisposable Push(int runnerId, int castId, IIntentSink sink)
@@ -33,4 +33,4 @@ public sealed class IntentBuffer : IIntentSink
 	readonly List<CastIntent> _list = new();
 	public void Add(CastIntent i) => _list.Add(i);
 	public IReadOnlyList<CastIntent> Drain() { var r = _list.ToArray(); _list.Clear(); return r; }
-}
+}*/

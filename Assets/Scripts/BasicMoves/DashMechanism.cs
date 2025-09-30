@@ -6,7 +6,7 @@ using static EventBus;
 using static GameEventMetaFactory;
 
 [CreateAssetMenu(menuName = "Mechanics/Dash")]
-public class DashMechanic : SkillMechanismBase<DashParams>, ITargetedMechanic
+public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
 {
     public override IEnumerator Cast(Transform owner, Camera cam, DashParams p)
     { Debug.LogError("Dash requires a target Transform"); yield break; }
