@@ -1,73 +1,73 @@
-// Enemy¿¡ ºÙÀÔ´Ï´Ù. ¾ÆÁÖ ´Ü¼øÇÑ Ã¼·Â/³Ë¹é Ã³¸® ¿¹½ÃÀÔ´Ï´Ù.
+ï»¿// Enemyì— ë¶™ì…ë‹ˆë‹¤. ì•„ì£¼ ë‹¨ìˆœí•œ ì²´ë ¥/ë„‰ë°± ì²˜ë¦¬ ì˜ˆì‹œì…ë‹ˆë‹¤.
 using UnityEngine;
 using ActInterfaces;
 using StatsInterfaces;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class EnemyDummy : MonoBehaviour, IVulnerable//, ITargetable //±×³É ÀÓ½Ã ´õ¹Ì, Àı´ë ÀÌ·¸°Ô ¸¸µé¸é ¾È µÊ(IVulnerableÀÇ ±¸ÇöÀÌ ¿©±â¼­ ¿Ö ÇÊ¿äÇÔ)
+public class EnemyDummy : MonoBehaviour, IVulnerable//, ITargetable //ê·¸ëƒ¥ ì„ì‹œ ë”ë¯¸, ì ˆëŒ€ ì´ë ‡ê²Œ ë§Œë“¤ë©´ ì•ˆ ë¨(IVulnerableì˜ êµ¬í˜„ì´ ì—¬ê¸°ì„œ ì™œ í•„ìš”í•¨)
 {
-    public float BasicHealth { get; private set; } = 100f;
-    public float MaxHealth { get; private set; } = 150f;
-    public float Health { get; private set; }
+	public float BasicHealth { get; private set; } = 100f;
+	public float MaxHealth { get; private set; } = 150f;
+	public float Health { get; private set; }
 
-    public float BasicArmor { get; private set; } = 40f;
-    public float Armor { get; private set; }
+	public float BasicArmor { get; private set; } = 40f;
+	public float Armor { get; private set; }
 
-    public bool IsDead { get; private set; }
-    //[SerializeField] Transform myTransform;
-    private float _armorIncreaseRate = 0f; //¹æ¾î·Â ¹öÇÁ
-    private Rigidbody2D rb;
-    private SpriteRenderer sr;
+	public bool IsDead { get; private set; }
+	//[SerializeField] Transform myTransform;
+	private float _armorIncreaseRate = 0f; //ë°©ì–´ë ¥ ë²„í”„
+	private Rigidbody2D rb;
+	private SpriteRenderer sr;
 
-    void Awake()
-    {
-        rb = GetComponent<Rigidbody2D>();
-        sr = GetComponentInChildren<SpriteRenderer>();
-        Health = MaxHealth;
-        Armor = BasicArmor * (1 + _armorIncreaseRate);
-        Debug.Log($"Enemy info: Health {Health}, Armor {Armor}");
-    }
-    void Update()
-    {
-        float _tempArmor = BasicArmor * (1 + _armorIncreaseRate);
-        if (Armor != _tempArmor)
-        {
-            Armor = _tempArmor;
-            Debug.Log($"Enemy info: Health {Health}, Armor {Armor}");
-        }
-    }
+	void Awake()
+	{
+		rb = GetComponent<Rigidbody2D>();
+		sr = GetComponentInChildren<SpriteRenderer>();
+		Health = MaxHealth;
+		Armor = BasicArmor * (1 + _armorIncreaseRate);
+		Debug.Log($"Enemy info: Health {Health}, Armor {Armor}");
+	}
+	void Update()
+	{
+		float _tempArmor = BasicArmor * (1 + _armorIncreaseRate);
+		if (Armor != _tempArmor)
+		{
+			Armor = _tempArmor;
+			Debug.Log($"Enemy info: Health {Health}, Armor {Armor}");
+		}
+	}
 
-    public void TakeDamage(float damage, float apratio, DamageType isFixed)
-    {
-        if (isFixed == DamageType.Fixed)
-        {
-            Health -= damage;
-        }
-        else
-        {
-            Health = Mathf.Max(0f, Health - damage * 80 / (80 + Armor * (1 - apratio / 100))); // ´ë¹ÌÁö * ÇÇÇØÀ², ÇÇÇØÀ² »êÃâÀ» ÇÏ³ªÀÇ ¸Ş¼­µå·Î »ç¿ë? << PlayerStatsÀÇ ReduceStat¿¡ ±¸ÇöµÊ
-            _armorIncreaseRate += 0.1f; // ÇÇ°İ ½Ã¸¶´Ù ¹æ¾î·Â 10% Áõ°¡(ÀÓ½Ã ¹öÇÁ, ½ÇÁ¦ ¹öÇÁ´Â ÀÌ·¸°Ô Àû¿ëÇÏÁö ¾ÊÀ½)
-            StartCoroutine(Flash());
-        }
-        Debug.Log($"Enemy took {damage * 80 / (80 + Armor * (1 - apratio / 100))} damage");
-        if (Health <= 0f) Die();
-    }
-    /*public bool TryGetTarget(out Transform target) {
-        target = myTransform;
-        return true;
-    }*/
-    System.Collections.IEnumerator Flash()
-    {
-        var original = sr.color;
-        sr.color = Color.white;
-        yield return new WaitForSeconds(0.06f);
-        sr.color = original;
-    }
-    public void Die()
-    {
-        // TODO: »ç¸Á ¿¬Ãâ
-        Debug.Log("Now that's a LOTTA damage");
-        IsDead = true;
-        Destroy(gameObject);
-    }
+	public void TakeDamage(float damage, float apratio, DamageType isFixed)
+	{
+		if (isFixed == DamageType.Fixed)
+		{
+			Health -= damage;
+		}
+		else
+		{
+			Health = Mathf.Max(0f, Health - damage * 80 / (80 + Armor * (1 - apratio / 100))); // ëŒ€ë¯¸ì§€ * í”¼í•´ìœ¨, í”¼í•´ìœ¨ ì‚°ì¶œì„ í•˜ë‚˜ì˜ ë©”ì„œë“œë¡œ ì‚¬ìš©? << PlayerStatsì˜ ReduceStatì— êµ¬í˜„ë¨
+			_armorIncreaseRate += 0.1f; // í”¼ê²© ì‹œë§ˆë‹¤ ë°©ì–´ë ¥ 10% ì¦ê°€(ì„ì‹œ ë²„í”„, ì‹¤ì œ ë²„í”„ëŠ” ì´ë ‡ê²Œ ì ìš©í•˜ì§€ ì•ŠìŒ)
+			StartCoroutine(Flash());
+		}
+		Debug.Log($"Enemy took {damage * 80 / (80 + Armor * (1 - apratio / 100))} damage");
+		if (Health <= 0f) Die();
+	}
+	/*public bool TryGetTarget(out Transform target) {
+		target = myTransform;
+		return true;
+	}*/
+	System.Collections.IEnumerator Flash()
+	{
+		var original = sr.color;
+		sr.color = Color.white;
+		yield return new WaitForSeconds(0.06f);
+		sr.color = original;
+	}
+	public void Die()
+	{
+		// TODO: ì‚¬ë§ ì—°ì¶œ
+		Debug.Log("Now that's a LOTTA damage");
+		IsDead = true;
+		Destroy(gameObject);
+	}
 }

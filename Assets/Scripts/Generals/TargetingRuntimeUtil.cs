@@ -68,9 +68,9 @@ public static class TargetingRuntimeUtil
                     {
                         fallbackDir = mover.LastMoveDir;
                     }
-                    else if (owner.TryGetComponent<Rigidbody2D>(out var rb) && rb.velocity.sqrMagnitude > MinDirectionSqr)
+                    else if (owner.TryGetComponent<Rigidbody2D>(out var rb) && rb.linearVelocity.sqrMagnitude > MinDirectionSqr)
                     {
-                        fallbackDir = rb.velocity;
+                        fallbackDir = rb.linearVelocity;
                     }
                     desiredPoint = origin + fallbackDir.normalized * Mathf.Max(data.FallbackRange, fallbackDistance);
                     fallbackDistance = data.FallbackRange;
