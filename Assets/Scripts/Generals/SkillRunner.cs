@@ -1,10 +1,10 @@
-// SkillRunner.cs — Intent 전용 Runner. 액터당 1개만 존재해야 합니다.
+﻿// SkillRunner.cs — Intent 전용 Runner. 액터당 1개만 존재해야 합니다.
 // - Runner는 IntentOrchestrator로 Root Intent만 전달합니다.
 // - FollowUp은 CastScope.AddIntent를 통해 Orchestrator가 직접 수집합니다.
 // - Busy/Cooldown 상태는 Orchestrator에서 관리합니다.
 // 잠재적 문제: 현재 Owner Transform을 Awake 시점에 고정하며, 런타임에 변경되면 Intent가 잘못된 위치를 참조할 수 있습니다.
 
-using Combat.Intents;
+using Intents;
 using SkillInterfaces;
 using System;
 using UnityEngine;
@@ -40,7 +40,7 @@ public sealed class SkillRunner : MonoBehaviour, ISkillRunner
         _orchestrator ??= IntentOrchestrator.Instance;
         if (_orchestrator == null)
         {
-            Debug.LogWarning("Orchestrator 미존재: Intent를 큐잉할 수 없습니다.");
+            Debug.LogWarning("Orchestrator 부재: Intent를 큐잉할 수 없습니다.");
         }
     }
 

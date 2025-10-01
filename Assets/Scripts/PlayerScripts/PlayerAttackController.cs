@@ -1,10 +1,10 @@
-// PlayerAttackController.cs — Intent 기반 입력 파이프라인.
+﻿// PlayerAttackController.cs — Intent 기반 입력 파이프라인.
 // 잠재적 문제: Runner가 존재하지 않으면 입력이 조용히 무시되므로, 에디터 툴에서 검증 루틴을 추가해야 합니다.
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using SkillInterfaces;
-using Combat.Intents;
+using Intents;
 
 public class PlayerAttackController : MonoBehaviour
 {
@@ -30,7 +30,7 @@ public class PlayerAttackController : MonoBehaviour
 
     void Bind(SkillBinding binding)
     {
-        if (binding.mechanic is not ISkillMechanic mech || binding.param == null)
+        if (binding.mechanism is not ISkillMechanic mech || binding.param == null)
             return;
 
         if (!mech.ParamType.IsInstanceOfType(binding.param))

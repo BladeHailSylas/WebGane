@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using SkillInterfaces;
 
-namespace Combat.Intents
+namespace Intents
 {
     /// <summary>
     ///     캐스트 타이밍 종류. Periodic은 Interval을 통해 재스케줄되며 Immediate는 동틱 꼬리 큐에 적재됩니다.

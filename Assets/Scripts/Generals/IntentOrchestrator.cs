@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using SkillInterfaces;
 
-namespace Combat.Intents
+namespace Intents
 {
     /// <summary>
     ///     전역 Orchestrator. FixedUpdate 단일 소비자로 Intent 파이프라인을 처리합니다.
