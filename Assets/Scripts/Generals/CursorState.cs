@@ -1,20 +1,20 @@
-// Ä¿¼­ »óÅÂ¸¸ °ü¸®ÇÏ´Â ÃÊ¼ÒÇü ÄÄÆ÷³ÍÆ®
+ï»¿// ì»¤ì„œ ìƒíƒœë§Œ ê´€ë¦¬í•˜ëŠ” ì´ˆì†Œí˜• ì»´í¬ë„ŒíŠ¸
 using UnityEngine;
 
-public class SwitchCursorState : MonoBehaviour //CursorState°¡ ÇÊ¿äÇÔ? ¿Ö?
+public class SwitchCursorState : MonoBehaviour //CursorStateê°€ í•„ìš”í•¨? ì™œ?
 
 {
-    int _idx = -1;
+	int _idx = -1;
 
-    public int GetAndAdvance(int count, int startIndex, bool advanceNow)
-    {
-        if (count <= 0) return 0;
-        if (_idx < 0) _idx = Mathf.Clamp(startIndex, 0, count - 1);
-        int cur = _idx;
-        if (advanceNow) _idx = (_idx + 1) % count;
-        return cur;
-    }
+	public int GetAndAdvance(int count, int startIndex, bool advanceNow)
+	{
+		if (count <= 0) return 0;
+		if (_idx < 0) _idx = Mathf.Clamp(startIndex, 0, count - 1);
+		int cur = _idx;
+		if (advanceNow) _idx = (_idx + 1) % count;
+		return cur;
+	}
 
-    // OnHit¿¡¼­ ¼öµ¿ Áõ°¡°¡ ÇÊ¿äÇÒ ¶§ È£Ãâ
-    public void AdvanceExplicit(int count) => _idx = (_idx + 1 + count) % count;
+	// OnHitì—ì„œ ìˆ˜ë™ ì¦ê°€ê°€ í•„ìš”í•  ë•Œ í˜¸ì¶œ
+	public void AdvanceExplicit(int count) => _idx = (_idx + 1 + count) % count;
 }

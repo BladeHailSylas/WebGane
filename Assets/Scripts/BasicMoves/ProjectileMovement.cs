@@ -1,152 +1,152 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using ActInterfaces;
 using System;
 using System.Collections.Generic;
 
 public class ProjectileMovement : MonoBehaviour, IExpirable
 {
-    MissileParams P;
-    Transform owner, target;
-    Vector2 dir;
-    float speed, traveled, life;
-    public float Lifespan => life;
+	MissileParams P;
+	Transform owner, target;
+	Vector2 dir;
+	float speed, traveled, life;
+	public float Lifespan => life;
 
-    // ¡Ú ÀÌ¹Ì ¸ÂÃá Äİ¶óÀÌ´õ ÀçÅ¸°İ ¹æÁö
-    readonly HashSet<int> _hitIds = new();
-    const float SKIN = 0.01f; // Ãæµ¹¸éÀ» »ìÂ¦ ³Ñ¾î°¡µµ·Ï
+	// Â¡Ãš Ã€ÃŒÂ¹ÃŒ Â¸Ã‚ÃƒÃ¡ Ã„ÃÂ¶Ã³Ã€ÃŒÂ´Ãµ Ã€Ã§Ã…Â¸Â°Ã Â¹Ã¦ÃÃ¶
+	readonly HashSet<int> _hitIds = new();
+	const float SKIN = 0.01f; // ÃƒÃ¦ÂµÂ¹Â¸Ã©Ã€Â» Â»Ã¬Ã‚Â¦ Â³Ã‘Â¾Ã®Â°Â¡ÂµÂµÂ·Ã
 
-    public void Init(MissileParams p, Transform owner, Transform target)
-    {
-        P = p; this.owner = owner; this.target = target;
-        Vector2 start = owner.position;
-        Vector2 tgt = target ? (Vector2)target.position : start + Vector2.right;
-        dir = (tgt - start).normalized;
-        speed = P.speed;
+	public void Init(MissileParams p, Transform owner, Transform target)
+	{
+		P = p; this.owner = owner; this.target = target;
+		Vector2 start = owner.position;
+		Vector2 tgt = target ? (Vector2)target.position : start + Vector2.right;
+		dir = (tgt - start).normalized;
+		speed = P.speed;
 
-        var sr = gameObject.AddComponent<SpriteRenderer>();
-        sr.sprite = GenerateDotSprite();
-        sr.sortingOrder = 1000;
-        transform.localScale = Vector3.one * (P.radius * 2f);
+		var sr = gameObject.AddComponent<SpriteRenderer>();
+		sr.sprite = GenerateDotSprite();
+		sr.sortingOrder = 1000;
+		transform.localScale = Vector3.one * (P.radius * 2f);
 		//Debug.Log($"target {this.target.name}");
-    }
+	}
 
-    void Update()
-    {
-        float dt = Time.deltaTime;
-        life += dt; if (life > P.maxLife) { Expire(); }
+	void Update()
+	{
+		float dt = Time.deltaTime;
+		life += dt; if (life > P.maxLife) { Expire(); }
 
-        // °¡¼Ó
-        speed = Mathf.Max(0f, speed + P.acceleration * dt);
+		// Â°Â¡Â¼Ã“
+		speed = Mathf.Max(0f, speed + P.acceleration * dt);
 
-        // Å¸±ê À¯È¿¼º È®ÀÎ + ÀçÅ¸±êÆÃ
-        if (target == null && P.retargetOnLost)
-            TryRetarget();
+		// Ã…Â¸Â±Ãª Ã€Â¯ÃˆÂ¿Â¼Âº ÃˆÂ®Ã€Ã + Ã€Ã§Ã…Â¸Â±ÃªÃ†Ãƒ
+		if (target == null && P.retargetOnLost)
+			TryRetarget();
 
-        Vector2 pos = transform.position;
+		Vector2 pos = transform.position;
 
-		// ¿øÇÏ´Â ¹æÇâ(À¯µµ)
+		// Â¿Ã¸Ã‡ÃÂ´Ã‚ Â¹Ã¦Ã‡Ã¢(Ã€Â¯ÂµÂµ)
 		//Vector2 desired = target ? ((Vector2)target.position - pos).normalized : dir;
-		Vector2 desired = target?.name == "Anchor" ? dir : ((Vector2)target.position - pos).normalized;
+		Vector2 desired = target != null && target.name == TargetingRuntimeUtil.AnchorName ? dir : ((Vector2)target.position - pos).normalized;
 		float maxTurnRad = P.maxTurnDegPerSec * Mathf.Deg2Rad * dt;
-        dir = Vector3.RotateTowards(dir, desired, maxTurnRad, 0f).normalized;
+		dir = Vector3.RotateTowards(dir, desired, maxTurnRad, 0f).normalized;
 
-        // === ÀÌµ¿/Ãæµ¹(¿©·¯ ¹ø) Ã³¸® ===
-        float remaining = speed * dt;
+		// === Ã€ÃŒÂµÂ¿/ÃƒÃ¦ÂµÂ¹(Â¿Â©Â·Â¯ Â¹Ã¸) ÃƒÂ³Â¸Â® ===
+		float remaining = speed * dt;
 
-        while (remaining > 0f)
-        {
-            pos = transform.position;
+		while (remaining > 0f)
+		{
+			pos = transform.position;
 
-            // 1) º® Ã¼Å©
-            var wallHit = Physics2D.CircleCast(pos, P.radius, dir, remaining, P.blockerMask);
-            if (wallHit.collider)
-            {
-                // º®±îÁö ÀÌµ¿ ÈÄ ¼Ò¸ê
-                Move(wallHit.distance);
-                Expire();
-                return;
-            }
+			// 1) ÂºÂ® ÃƒÂ¼Ã…Â©
+			var wallHit = Physics2D.CircleCast(pos, P.radius, dir, remaining, P.blockerMask);
+			if (wallHit.collider)
+			{
+				// ÂºÂ®Â±Ã®ÃÃ¶ Ã€ÃŒÂµÂ¿ ÃˆÃ„ Â¼Ã’Â¸Ãª
+				Move(wallHit.distance);
+				Expire();
+				return;
+			}
 
-            // 2) Àû Ã¼Å©
-            var enemyHit = Physics2D.CircleCast(pos, P.radius, dir, remaining, P.enemyMask);
-            if (enemyHit.collider)
-            {
-                var c = enemyHit.collider;
+			// 2) Ã€Ã» ÃƒÂ¼Ã…Â©
+			var enemyHit = Physics2D.CircleCast(pos, P.radius, dir, remaining, P.enemyMask);
+			if (enemyHit.collider)
+			{
+				var c = enemyHit.collider;
 
-                // °°Àº Äİ¶óÀÌ´õ Áßº¹ Å¸°İ ¹æÁö
-                int id = c.GetInstanceID();
-                if (!_hitIds.Contains(id))
-                {
-                    // Ãæµ¹Á¡±îÁö ÀÌµ¿
-                    Move(enemyHit.distance);
+				// Â°Â°Ã€Âº Ã„ÃÂ¶Ã³Ã€ÃŒÂ´Ãµ ÃÃŸÂºÂ¹ Ã…Â¸Â°Ã Â¹Ã¦ÃÃ¶
+				int id = c.GetInstanceID();
+				if (!_hitIds.Contains(id))
+				{
+					// ÃƒÃ¦ÂµÂ¹ÃÂ¡Â±Ã®ÃÃ¶ Ã€ÃŒÂµÂ¿
+					Move(enemyHit.distance);
 
-                    // ÇÇÇØ/³Ë¹é Àû¿ë
-                    if (c.TryGetComponent(out IVulnerable v))
-                        v.TakeDamage(P.damage, P.apRatio);
-                    if (c.attachedRigidbody)
-                        c.attachedRigidbody.AddForce(dir * P.knockback, ForceMode2D.Impulse);
+					// Ã‡Ã‡Ã‡Ã˜/Â³Ã‹Â¹Ã© Ã€Ã»Â¿Ã«
+					if (c.TryGetComponent(out IVulnerable v))
+						v.TakeDamage(P.damage, P.apRatio);
+					if (c.attachedRigidbody)
+						c.attachedRigidbody.AddForce(dir * P.knockback, ForceMode2D.Impulse);
 
-                    _hitIds.Add(id); // ±â·Ï
+					_hitIds.Add(id); // Â±Ã¢Â·Ã
 
-                    // °üÅë ºÒ°¡ÀÌ°Å³ª(=¸íÁß Áï½Ã ¼Ò¸ê) / Å¸±ê ±× ÀÚÃ¼¸é ¼Ò¸ê
-                    if (!P.CanPenetrate || (target != null && c.transform == target))
-                    {
-                        Expire();
-                        return;
-                    }
-                }
-                else
-                {
-                    // ÀÌ¹Ì ¸ÂÃá ´ë»óÀÌ¸é Ãæµ¹Á¡±îÁö´Â ±»ÀÌ ¾È ¸ØÃß°í Åë°ú Ã³¸®
-                    Move(enemyHit.distance);
-                }
+					// Â°Ã¼Ã…Ã« ÂºÃ’Â°Â¡Ã€ÃŒÂ°Ã…Â³Âª(=Â¸Ã­ÃÃŸ ÃÃ¯Â½Ãƒ Â¼Ã’Â¸Ãª) / Ã…Â¸Â±Ãª Â±Ã— Ã€ÃšÃƒÂ¼Â¸Ã© Â¼Ã’Â¸Ãª
+					if (!P.CanPenetrate || (target != null && c.transform == target))
+					{
+						Expire();
+						return;
+					}
+				}
+				else
+				{
+					// Ã€ÃŒÂ¹ÃŒ Â¸Ã‚ÃƒÃ¡ Â´Ã«Â»Ã³Ã€ÃŒÂ¸Ã© ÃƒÃ¦ÂµÂ¹ÃÂ¡Â±Ã®ÃÃ¶Â´Ã‚ Â±Â»Ã€ÃŒ Â¾Ãˆ Â¸Ã˜ÃƒÃŸÂ°Ã­ Ã…Ã«Â°Ãº ÃƒÂ³Â¸Â®
+					Move(enemyHit.distance);
+				}
 
-                // Ãæµ¹¸éÀ» »ìÂ¦ ³Ñ¾î°¡ ´ÙÀ½ Ä³½ºÆ®¿¡¼­ °°Àº ¸é¿¡ °É¸®Áö ¾Ê°Ô
-                Move(SKIN);
+				// ÃƒÃ¦ÂµÂ¹Â¸Ã©Ã€Â» Â»Ã¬Ã‚Â¦ Â³Ã‘Â¾Ã®Â°Â¡ Â´Ã™Ã€Â½ Ã„Â³Â½ÂºÃ†Â®Â¿Â¡Â¼Â­ Â°Â°Ã€Âº Â¸Ã©Â¿Â¡ Â°Ã‰Â¸Â®ÃÃ¶ Â¾ÃŠÂ°Ã”
+				Move(SKIN);
 
-                // ÀÜ¿© °Å¸® °»½Å
-                remaining -= enemyHit.distance + SKIN;
-                continue; // ´ÙÀ½ Ãæµ¹/ÀÌµ¿ Ã³¸®
-            }
+				// Ã€ÃœÂ¿Â© Â°Ã…Â¸Â® Â°Â»Â½Ã…
+				remaining -= enemyHit.distance + SKIN;
+				continue; // Â´Ã™Ã€Â½ ÃƒÃ¦ÂµÂ¹/Ã€ÃŒÂµÂ¿ ÃƒÂ³Â¸Â®
+			}
 
-            // 3) Ãæµ¹ ¾øÀ¸¸é ³²Àº °Å¸®¸¸Å­ ÀÌµ¿ÇÏ°í Á¾·á
-            Move(remaining);
-            remaining = 0f;
-        }
+			// 3) ÃƒÃ¦ÂµÂ¹ Â¾Ã¸Ã€Â¸Â¸Ã© Â³Â²Ã€Âº Â°Ã…Â¸Â®Â¸Â¸Ã…Â­ Ã€ÃŒÂµÂ¿Ã‡ÃÂ°Ã­ ÃÂ¾Â·Ã¡
+			Move(remaining);
+			remaining = 0f;
+		}
 
-        // »ç°Å¸® Ã¼Å©
-        if (traveled >= P.maxRange) Expire();
-    }
+		// Â»Ã§Â°Ã…Â¸Â® ÃƒÂ¼Ã…Â©
+		if (traveled >= P.maxRange) Expire();
+	}
 
-    void Move(float d)
-    {
-        transform.position += (Vector3)(dir * d);
-        traveled += d;
-    }
+	void Move(float d)
+	{
+		transform.position += (Vector3)(dir * d);
+		traveled += d;
+	}
 
-    void TryRetarget()
-    {
-        var hits = Physics2D.OverlapCircleAll(transform.position, P.retargetRadius, P.enemyMask);
-        float best = float.PositiveInfinity; Transform bestT = null;
-        foreach (var h in hits)
-        {
-            float d = Vector2.SqrMagnitude((Vector2)h.bounds.center - (Vector2)transform.position);
-            if (d < best) { best = d; bestT = h.transform; }
-        }
-        if (bestT) target = bestT;
-    }
+	void TryRetarget()
+	{
+		var hits = Physics2D.OverlapCircleAll(transform.position, P.retargetRadius, P.enemyMask);
+		float best = float.PositiveInfinity; Transform bestT = null;
+		foreach (var h in hits)
+		{
+			float d = Vector2.SqrMagnitude((Vector2)h.bounds.center - (Vector2)transform.position);
+			if (d < best) { best = d; bestT = h.transform; }
+		}
+		if (bestT) target = bestT;
+	}
 
-    Sprite GenerateDotSprite()
-    {
-        int s = 8; var tex = new Texture2D(s, s, TextureFormat.RGBA32, false);
-        var col = new Color32[s * s]; for (int i = 0; i < col.Length; i++) col[i] = new Color32(255, 255, 255, 255);
-        tex.SetPixels32(col); tex.Apply();
-        return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), s);
-    }
+	Sprite GenerateDotSprite()
+	{
+		int s = 8; var tex = new Texture2D(s, s, TextureFormat.RGBA32, false);
+		var col = new Color32[s * s]; for (int i = 0; i < col.Length; i++) col[i] = new Color32(255, 255, 255, 255);
+		tex.SetPixels32(col); tex.Apply();
+		return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), s);
+	}
 
-    public void Expire()
-    {
-		//Á¦°ÅµÉ ¶§ ¹º°¡ ÇØ¾ß ÇÑ´Ù?
-        Destroy(gameObject);
-    }
+	public void Expire()
+	{
+		//ÃÂ¦Â°Ã…ÂµÃ‰ Â¶Â§ Â¹ÂºÂ°Â¡ Ã‡Ã˜Â¾ÃŸ Ã‡Ã‘Â´Ã™?
+		Destroy(gameObject);
+	}
 }

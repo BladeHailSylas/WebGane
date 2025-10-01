@@ -1,32 +1,32 @@
-using StatsInterfaces;
+ï»¿using StatsInterfaces;
 using System.Collections.Generic;
 using UnityEngine;
-public sealed class PlayerStats : MonoBehaviour // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, ´Ù¸¥ °÷¿¡¼­´Â ÂüÁ¶¸¸
+public sealed class PlayerStats : MonoBehaviour // í”Œë ˆì´ì–´ ìŠ¤íƒ¯ ê´€ë¦¬, ë‹¤ë¥¸ ê³³ì—ì„œëŠ” ì°¸ì¡°ë§Œ
 {
 	[SerializeField] readonly CharacterSpec spec;
 	public float BaseHealth { get; private set; }
-    public float MaxHealth { get; private set; }
-    public float Health { get; private set; }
-    public float Shield { get; private set; }
-    public float SpecialShield { get; private set; }
-    public float BaseArmor { get; private set; }
-    public float Armor { get; private set; }
-    public float BaseHealthRegen { get; private set; }
-    public float HealthRegen { get; private set; }
+	public float MaxHealth { get; private set; }
+	public float Health { get; private set; }
+	public float Shield { get; private set; }
+	public float SpecialShield { get; private set; }
+	public float BaseArmor { get; private set; }
+	public float Armor { get; private set; }
+	public float BaseHealthRegen { get; private set; }
+	public float HealthRegen { get; private set; }
 	public List<float> DamageReduction { get; private set; } = new();
-    public float BaseAttackDamage { get; private set; } = 10f;
-    public float AttackDamage { get; private set; } = 12f;
-    public List<float> ArmorPenetration { get; private set; } = new();
-    public float BaseMana { get; private set; }
-    public float MaxMana { get; private set; }
-    public float Mana { get; private set; }
-    public float BaseManaRegen { get; private set; }
-    public float ManaRegen { get; private set; }
-    public float BaseSpeed { get; private set; } = 8f;
-    public float Speed { get; private set; } = 8f;
-    public float JumpTime { get; private set; }
-    public bool OnGround { get; private set; }
-    public bool IsDead { get; private set; }
+	public float BaseAttackDamage { get; private set; } = 10f;
+	public float AttackDamage { get; private set; } = 12f;
+	public List<float> ArmorPenetration { get; private set; } = new();
+	public float BaseMana { get; private set; }
+	public float MaxMana { get; private set; }
+	public float Mana { get; private set; }
+	public float BaseManaRegen { get; private set; }
+	public float ManaRegen { get; private set; }
+	public float BaseSpeed { get; private set; } = 8f;
+	public float Speed { get; private set; } = 8f;
+	public float JumpTime { get; private set; }
+	public bool OnGround { get; private set; }
+	public bool IsDead { get; private set; }
 	private void Awake()
 	{
 		BaseHealth = spec.baseHP;
@@ -39,7 +39,7 @@ public sealed class PlayerStats : MonoBehaviour // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, ´Ù¸¥ °÷¿¡
 	}
 	public void ReduceStat(ReduceType stat, float damage, float apRatio = 0f, DamageType type = DamageType.Normal)
 	{
-		if (stat == ReduceType.Mana) // 1(Mana)ÀÌ¸é ¸¶³ª, 0(Health)ÀÌ¸é Ã¼·Â
+		if (stat == ReduceType.Mana) // 1(Mana)ì´ë©´ ë§ˆë‚˜, 0(Health)ì´ë©´ ì²´ë ¥
 		{
 			Mana = Mathf.Max(0f, Mana - damage);
 		}
@@ -49,7 +49,7 @@ public sealed class PlayerStats : MonoBehaviour // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, ´Ù¸¥ °÷¿¡
 		}
 		if (Health <= 0f) IsDead = true;
 	}
-	void GetDamage(float damage, float apRatio = 0f, DamageType type = DamageType.Normal) //ºñ·Ê ÇÇÇØ¸¦ ¿©±â¼­ °è»êÇØ¾ß µÇ³ª << ±×·² °Å °°Áö ¾ÊÀ½
+	void GetDamage(float damage, float apRatio = 0f, DamageType type = DamageType.Normal) //ë¹„ë¡€ í”¼í•´ë¥¼ ì—¬ê¸°ì„œ ê³„ì‚°í•´ì•¼ ë˜ë‚˜ << ê·¸ëŸ´ ê±° ê°™ì§€ ì•ŠìŒ
 	{
 		if (IsDead || damage <= 0f) return;
 		switch (type) 
@@ -84,16 +84,16 @@ public sealed class PlayerStats : MonoBehaviour // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, ´Ù¸¥ °÷¿¡
 			IsDead = true;
 		}
 	}
-	float DamageReductionCalc(float armor, float apRatio = 0f, float damageRatio = 1f) //Player°¡ ÇÇÇØ¸¦ ¹Ş´Â °æ¿ì
+	float DamageReductionCalc(float armor, float apRatio = 0f, float damageRatio = 1f) //Playerê°€ í”¼í•´ë¥¼ ë°›ëŠ” ê²½ìš°
 	{
 		return (80 / (80 + armor * (1 - apRatio))) * damageRatio;
 	}
-	public float TotalArmorPenetration() //AP¸¦ ¹İÈ¯ÇÏ´Â °Å¸é 1 - totalAP°¡ ¸Â´Âµ¥ ±×·³ °è»êÀÌ ±ÍÂú¾ÆÁü, ¸íÄªÀ» ¹Ù²Ù´Â °ÍÀÌ ¸ÂÁö ¾Ê³ª
+	public float TotalArmorPenetration() //APë¥¼ ë°˜í™˜í•˜ëŠ” ê±°ë©´ 1 - totalAPê°€ ë§ëŠ”ë° ê·¸ëŸ¼ ê³„ì‚°ì´ ê·€ì°®ì•„ì§, ëª…ì¹­ì„ ë°”ê¾¸ëŠ” ê²ƒì´ ë§ì§€ ì•Šë‚˜
 	{
 		float totalAP = 1f;
 		foreach (var ap in ArmorPenetration)
 		{
-			totalAP *= (1 - ap / 100); // ´ÜÀÏ AP ºñÀ²ÀÌ 100%¸¦ ³ÑÀ¸¸é ¹æ¾î·ÂÀÌ ¸¶ÀÌ³Ê½º¶ó ÇÇÇØ ¹èÀ²ÀÌ ³Ê¹« Ä¿Áö¹Ç·Î ±×·± ÀÏÀÌ ¾ø¾î¾ß ÇÔ
+			totalAP *= (1 - ap / 100); // ë‹¨ì¼ AP ë¹„ìœ¨ì´ 100%ë¥¼ ë„˜ìœ¼ë©´ ë°©ì–´ë ¥ì´ ë§ˆì´ë„ˆìŠ¤ë¼ í”¼í•´ ë°°ìœ¨ì´ ë„ˆë¬´ ì»¤ì§€ë¯€ë¡œ ê·¸ëŸ° ì¼ì´ ì—†ì–´ì•¼ í•¨
 		}
 		return 1 - totalAP;
 	}
@@ -102,8 +102,8 @@ public sealed class PlayerStats : MonoBehaviour // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, ´Ù¸¥ °÷¿¡
 		float totalDR = 1f;
 		foreach (var dr in DamageReduction)
 		{
-			totalDR *= (1 - dr / 100); //´ÜÀÏ DR ºñÀ²ÀÌ 100%¸¦ ³ÑÀ¸¸é ¸Â´Âµ¥ È¸º¹ÇÔ, APµµ 100%¸¦ ³ÑÀ¸¸é ¾È µÇÁö¸¸ DRÀº ´õ´õ¿í ´ÜÀÏ ºñÀ²ÀÌ 100%À» ³Ñ¾î¼­´Â ¾È µÊ(¸Á°×ÀÓ)
+			totalDR *= (1 - dr / 100); //ë‹¨ì¼ DR ë¹„ìœ¨ì´ 100%ë¥¼ ë„˜ìœ¼ë©´ ë§ëŠ”ë° íšŒë³µí•¨, APë„ 100%ë¥¼ ë„˜ìœ¼ë©´ ì•ˆ ë˜ì§€ë§Œ DRì€ ë”ë”ìš± ë‹¨ì¼ ë¹„ìœ¨ì´ 100%ì„ ë„˜ì–´ì„œëŠ” ì•ˆ ë¨(ë§ê²œì„)
 		}
-		return Mathf.Max(0.15f, totalDR); //°ø°İÀÚ ¿ì¼±(ÇÏ°Ô µÎµÇ ´ë¾ÈÀ» ÁÖ¾î¶ó) -> ´ë¹ÌÁö°¡ µé¾î°¡°Ô µÎµÇ ´Ù¸¥ »ıÁ¸ ¼ö´Ü(Ã¼·Â È¸º¹, º¸È£¸· µî)À¸·Î ¿øÄŞÀÌ ¾È ³ª°Ô ÇÏ¶ó
+		return Mathf.Max(0.15f, totalDR); //ê³µê²©ì ìš°ì„ (í•˜ê²Œ ë‘ë˜ ëŒ€ì•ˆì„ ì£¼ì–´ë¼) -> ëŒ€ë¯¸ì§€ê°€ ë“¤ì–´ê°€ê²Œ ë‘ë˜ ë‹¤ë¥¸ ìƒì¡´ ìˆ˜ë‹¨(ì²´ë ¥ íšŒë³µ, ë³´í˜¸ë§‰ ë“±)ìœ¼ë¡œ ì›ì½¤ì´ ì•ˆ ë‚˜ê²Œ í•˜ë¼
 	}
 }

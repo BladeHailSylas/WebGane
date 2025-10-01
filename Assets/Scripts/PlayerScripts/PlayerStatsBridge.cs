@@ -1,4 +1,4 @@
-using StatsInterfaces;
+ï»¿using StatsInterfaces;
 using UnityEngine;
 using static UnityEngine.Rendering.DebugUI;
 
@@ -8,18 +8,18 @@ public class PlayerStatsBridge : MonoBehaviour, IStatProvider
 	//Should we change the name to PlayerStatsBridge?
 	[SerializeField] PlayerStats stats;
 	[SerializeField] PlayerEffects effects;
-    public float GetBool(StatBool sb)
-    {
-        return sb switch
-        {
-            StatBool.OnGround => stats.OnGround ? 1f : 0f,
-            StatBool.IsDead => stats.IsDead ? 1f : 0f,
-            _ => 0f,
-        };
-    }
-    public float GetStat(StatType t, StatRef re = StatRef.Current)
-    {
-        switch(re)
+	public float GetBool(StatBool sb)
+	{
+		return sb switch
+		{
+			StatBool.OnGround => stats.OnGround ? 1f : 0f,
+			StatBool.IsDead => stats.IsDead ? 1f : 0f,
+			_ => 0f,
+		};
+	}
+	public float GetStat(StatType t, StatRef re = StatRef.Current)
+	{
+		switch(re)
 		{
 			case StatRef.Base:
 				return t switch
@@ -57,11 +57,11 @@ public class PlayerStatsBridge : MonoBehaviour, IStatProvider
 			default:
 				return -1f;
 		}
-    }
-    public float GetArmorRatio() //ÇÃ·¹ÀÌ¾î°¡ ÇÇÇØ¸¦ °¡ÇÏ´Â °æ¿ì¿¡¸¸ ¾²ÀÓ
-    {
-        return stats.TotalArmorPenetration();
-    }
+	}
+	public float GetArmorRatio() //í”Œë ˆì´ì–´ê°€ í”¼í•´ë¥¼ ê°€í•˜ëŠ” ê²½ìš°ì—ë§Œ ì“°ìž„
+	{
+		return stats.TotalArmorPenetration();
+	}
 	public void ReduceStat(ReduceType stat, float damage, float armorRatio = 1f, DamageType type = DamageType.Normal) //The only way to access stats
 	{
 		stats.ReduceStat(stat, damage, armorRatio, type);
@@ -69,8 +69,8 @@ public class PlayerStatsBridge : MonoBehaviour, IStatProvider
 }
 /*public sealed class ArmorPenPercentMod : IStatModifier
 {
-    public readonly float Percent;  // 0~100
-    public ArmorPenPercentMod(float percent) { Percent = Mathf.Clamp(percent, 0, 100); }
-    public void Apply(PlayerStats s) => s.AddArmorPen(Percent);
-    public void Remove(PlayerStats s) => s.RemoveArmorPen(Percent);
+	public readonly float Percent;  // 0~100
+	public ArmorPenPercentMod(float percent) { Percent = Mathf.Clamp(percent, 0, 100); }
+	public void Apply(PlayerStats s) => s.AddArmorPen(Percent);
+	public void Remove(PlayerStats s) => s.RemoveArmorPen(Percent);
 }*/
