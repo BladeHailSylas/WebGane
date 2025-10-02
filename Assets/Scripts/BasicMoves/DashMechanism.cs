@@ -23,8 +23,7 @@ public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
 			Debug.LogWarning("DashMechanism: Owner가 없어 실행을 중단합니다.");
 			yield break;
 		}
-
-		var motor = owner.GetComponent<KinematicMotor2D>();
+		var motor = owner.GetComponent<KinematicMotor2D>() ?? owner.GetComponentInParent<KinematicMotor2D>() ?? owner.GetComponentInChildren<KinematicMotor2D>();
 		if (!motor)
 		{
 			Debug.LogWarning("DashMechanism: KinematicMotor2D가 필요합니다.");
@@ -35,6 +34,7 @@ public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
 		Transform dashTarget = solution.IsSyntheticTarget ? null : solution.Target;
 		Vector2 fallbackDir = solution.Direction.sqrMagnitude > 0f ? solution.Direction.normalized : (Vector2)owner.right;
 		float desiredDist = dashTarget ? Vector2.Distance(owner.position, dashTarget.position) : solution.Distance;
+		Debug.Log($"DashMechanism: 대시 대상 {dashTarget?.name ?? "null"}, fallbackDir {fallbackDir}, desiredDist {desiredDist}");
 		if (dashTarget && p.FallbackRange > 0f)
 		{
 			desiredDist = Mathf.Min(desiredDist, p.FallbackRange);

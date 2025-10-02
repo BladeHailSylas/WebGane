@@ -1,4 +1,4 @@
-using ActInterfaces;
+﻿using ActInterfaces;
 using SkillInterfaces;
 using UnityEngine;
 
@@ -14,15 +14,16 @@ public static class TargetingRuntimeUtil
 
     const float MinDirectionSqr = 1e-4f;
 
-    /// <summary>
-    ///     현재 캐스트 환경에서 사용할 타깃 정보를 계산합니다.
-    /// </summary>
-    /// <param name="owner">기술을 시전하는 주체입니다.</param>
-    /// <param name="cam">시야 계산에 활용할 카메라입니다.</param>
-    /// <param name="data">타깃팅 모드를 정의한 파라미터입니다.</param>
-    /// <param name="explicitTarget">Intent에서 이미 결정된 대상입니다.</param>
-    /// <param name="createAnchor">명시적 대상이 없을 때 Anchor GameObject를 생성할지 여부입니다.</param>
-    public static TargetingResult Resolve(Transform owner, Camera cam, ITargetingData data, Transform explicitTarget, bool createAnchor = false)
+	/// <summary>
+	///     현재 캐스트 환경에서 사용할 타깃 정보를 계산합니다.
+	/// </summary>
+	/// <param name="owner">기술을 시전하는 주체입니다.</param>
+	/// <param name="cam">시야 계산에 활용할 카메라입니다.</param>
+	/// <param name="data">타깃팅 모드를 정의한 파라미터입니다.</param>
+	/// <param name="explicitTarget">Intent에서 이미 결정된 대상입니다.</param>
+	/// <param name="createAnchor">명시적 대상이 없을 때 Anchor GameObject를 생성할지 여부입니다.</param>
+	/// <param name="targetSelf">자신을 타깃으로 삼을 수 있는지 결정합니다.</param>
+	public static TargetingResult Resolve(Transform owner, Camera cam, ITargetingData data, Transform explicitTarget, bool createAnchor = false, bool targetSelf = false)
     {
         if (owner == null)
         {

@@ -39,6 +39,7 @@ public class ProjectileMechanism : SkillMechanismBase<MissileParams>, ITargetedM
 
 		var solution = TargetingRuntimeUtil.Resolve(owner, cam, p, explicitTarget, createAnchor: true);
 		Transform resolvedTarget = solution.Target;
+		Debug.Log($"ProjectileMechanism: 발사 대상 {resolvedTarget?.name ?? "null"}, 방향 {solution.Direction}, 거리 {solution.Distance}");
 		if (resolvedTarget == null)
 		{
 			Debug.LogWarning("ProjectileMechanism: 타깃을 찾지 못해 발사를 중지합니다.");
