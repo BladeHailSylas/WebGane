@@ -77,13 +77,29 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
 	public float endDelay = 0.05f;
 	public float Cooldown => cooldown;
 
-	[Header("Behavior")]
-	public bool retargetOnLost = true;
-	public float retargetRadius = 3f;
-	[Header("Targeter")]
-	public TargetMode mode; public float fallback = 10f; public Vector2 local; public float col; public float skin; public bool canpen;
-	public TargetMode Mode => mode; public float FallbackRange => fallback; public Vector2 LocalOffset => local; public LayerMask WallsMask => blockerMask;
-	public float CollisionRadius => col; public float AnchorSkin => skin; public bool CanPenetrate => canpen;
+        [Header("Behavior")]
+        public bool retargetOnLost = true;
+        public float retargetRadius = 3f;
+
+        [Header("Targeting")]
+        [Tooltip("Toggle to deliberately target the caster instead of searching for another entity.")]
+        public bool targetSelf = false;
+        public TargetMode mode;
+        public float fallback = 10f;
+        public Vector2 local;
+        public float col;
+        public float skin;
+        public bool canpen;
+
+        public TargetMode Mode => mode;
+        public float FallbackRange => fallback;
+        public Vector2 LocalOffset => local;
+        public LayerMask WallsMask => blockerMask;
+        public LayerMask TargetMask => enemyMask;
+        public bool TargetSelf => targetSelf;
+        public float CollisionRadius => col;
+        public float AnchorSkin => skin;
+        public bool CanPenetrate => canpen;
 
 
 	// ★ FollowUp 예: 맞으면 폭발, 소멸하면 잔류 디버프…
@@ -123,17 +139,20 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
 public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData, IAnchorClearance
 {
 	[Header("Targeting (Runner가 해석)")]
-	[SerializeField] TargetMode _mode = TargetMode.TowardsMovement;
-	[SerializeField] float _fallbackRange = 4f;
-	[SerializeField] Vector2 _localOffset = Vector2.zero;
-	[SerializeField] LayerMask _wallsMask;
-	[SerializeField] bool _canpen;
+        [SerializeField] TargetMode _mode = TargetMode.TowardsMovement;
+        [SerializeField] float _fallbackRange = 4f;
+        [SerializeField] Vector2 _localOffset = Vector2.zero;
+        [SerializeField] LayerMask _wallsMask;
+        [SerializeField] bool _canpen;
+        [SerializeField] bool _targetSelf;
 
-	public TargetMode Mode => _mode;
-	public float FallbackRange => _fallbackRange;
-	public Vector2 LocalOffset => _localOffset;
-	public LayerMask WallsMask => _wallsMask;
-	public bool CanPenetrate => _canpen;
+        public TargetMode Mode => _mode;
+        public float FallbackRange => _fallbackRange;
+        public Vector2 LocalOffset => _localOffset;
+        public LayerMask WallsMask => _wallsMask;
+        public LayerMask TargetMask => enemyMask;
+        public bool TargetSelf => _targetSelf;
+        public bool CanPenetrate => _canpen;
 
 	[Header("Motion")]
 	public float duration = 0.18f;           // 총 대시 시간
