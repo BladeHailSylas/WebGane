@@ -82,13 +82,19 @@ public class PlayerAttackController : MonoBehaviour
 		if (runner == null) return;
 		if (!slotBindings.TryGetValue(slot, out var binding)) return;
 
-		var request = new TargetRequest
-		{
-			Policy = TargetPolicy.SameAsCast,
-			ExplicitActor = transform,
-			Radius = 0f,
-			TeamMask = ~0,
-		};
+                Transform explicitActor = transform;
+                if (binding.param is ITargetingData targeting && !targeting.TargetSelf)
+                {
+                        explicitActor = null;
+                }
+
+                var request = new TargetRequest
+                {
+                        Policy = TargetPolicy.SameAsCast,
+                        ExplicitActor = explicitActor,
+                        Radius = 0f,
+                        TeamMask = ~0,
+                };
 
 		// 추후 목표 포인트(조준선/커서 등)를 반영할 경우 TargetRequest를 갱신해야 합니다.
 		runner.EnqueueRootIntent(binding.mech, binding.param, request, priorityLevel: 0);
