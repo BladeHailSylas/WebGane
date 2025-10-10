@@ -68,7 +68,7 @@ namespace Intents
 		public string GuardKey;
 		public string DedupKey;
 		public int PriorityLevel;
-		public ISkillMechanic Mechanism;
+		public ISkillMechanism Mechanism;
 		public ISkillParam Param;
 		public TargetRequest TargetOverride;
 	}
@@ -88,7 +88,7 @@ namespace Intents
 		public int OriginActorId;
 		public int RootCastId;
 		public int ChainDepth;
-		public ISkillMechanic Mechanism;
+		public ISkillMechanism Mechanism;
 		public ISkillParam Param;
 		public TargetRequest TargetRequest;
 		public IntentTiming Timing;
@@ -109,7 +109,7 @@ namespace Intents
 		public static CastIntent Root(
 			int actorId,
 			int rootCastId,
-			ISkillMechanic mechanism,
+			ISkillMechanism mechanism,
 			ISkillParam param,
 			TargetRequest target,
 			bool respectBusyCooldown,
@@ -140,7 +140,7 @@ namespace Intents
 			CastIntent parent,
 			string hook,
 			string templateId,
-			ISkillMechanic mechanism,
+			ISkillMechanism mechanism,
 			ISkillParam param,
 			IntentTiming timing,
 			int delayTicks,

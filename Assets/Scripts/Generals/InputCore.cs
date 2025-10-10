@@ -139,7 +139,7 @@ public class SimpleMoveTable : IMoveTable
 	}
 }
 
-public enum SkillSlot { Attack, Skill1, Skill2, Ultimate }
+public enum SkillSlot { Attack, AttackSkill, Skill1, Skill2, Ultimate }
 
 // ------------------------------------------------------------
 // 2) 이벤트/포트: 코어⇄컨트롤러/런너 연결면

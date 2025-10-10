@@ -30,7 +30,7 @@ public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
 			yield break;
 		}
 
-                var solution = TargetingRuntimeUtil.Resolve(owner, cam, p, explicitTarget, createAnchor: false, targetSelf: p.TargetSelf);
+                var solution = TargetingRuntimeUtil.Resolve(owner, cam, p, explicitTarget, createAnchor: false, targetAlly: p.TargetSelf);
                 try
                 {
                         Transform dashTarget = solution.IsSyntheticTarget ? null : solution.Target;

@@ -18,7 +18,7 @@ public class PlayerAttackController : MonoBehaviour
 	public InputActionReference ultimateKey;
 
 	ISkillRunner runner;
-	readonly Dictionary<SkillSlot, (ISkillMechanic mech, ISkillParam param)> slotBindings = new();
+	readonly Dictionary<SkillSlot, (ISkillMechanism mech, ISkillParam param)> slotBindings = new();
 
 	void Awake()
 	{
@@ -36,7 +36,7 @@ public class PlayerAttackController : MonoBehaviour
 
 	void Bind(SkillBinding binding)
 	{
-		if (binding.mechanism is not ISkillMechanic mech || binding.param == null)
+		if (binding.mechanism is not ISkillMechanism mech || binding.param == null)
 			return;
 
 		if (!mech.ParamType.IsInstanceOfType(binding.param))

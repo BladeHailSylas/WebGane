@@ -1,30 +1,30 @@
-// EventPayloads.cs
-// ¸ñÀû: Å¸ÀÔ ±â¹İ EventBus<T>¿¡ ¸ÂÃá "°¡º­¿î °ª Å¸ÀÔ ÆäÀÌ·Îµå" Á¤ÀÇ ¸ğÀ½
-// »ç¿ë ¿¹:
-//   EventBus.Subscribe<DamageDealt>(OnDamage); // ±¸µ¶
-//   EventBus.Publish(new DamageDealt(meta, attacker, target, raw, final, EDamageType.Normal, isCrit, hitPt, hitNrm)); // ¹ßÇà
+ï»¿// EventPayloads.cs
+// ëª©ì : íƒ€ì… ê¸°ë°˜ EventBus<T>ì— ë§ì¶˜ "ê°€ë²¼ìš´ ê°’ íƒ€ì… í˜ì´ë¡œë“œ" ì •ì˜ ëª¨ìŒ
+// ì‚¬ìš© ì˜ˆ:
+//   EventBus.Subscribe<DamageDealt>(OnDamage); // êµ¬ë…
+//   EventBus.Publish(new DamageDealt(meta, attacker, target, raw, final, EDamageType.Normal, isCrit, hitPt, hitNrm)); // ë°œí–‰
 //
-// ¼³°è ¿øÄ¢:
-// 1) °ª Å¸ÀÔ(readonly struct)À¸·Î À¯ÁöÇØ °¡ºñÁö ÃÖ¼ÒÈ­.
-// 2) "¿äÃ»(Request)"°ú "»ç½Ç ¾Ë¸²(Event)"À» ¸íÈ®È÷ ±¸ºĞ.
-// 3) Unity ¼ö¸í °í·Á: Transform/Object ÂüÁ¶´Â ¿¬Ãâ/ÆíÀÇ ¸ñÀû¿¡ ÇÑÁ¤ÇÏ°í, ÇÊ¿ä ½Ã Id/Meta¸¦ º´Çà Á¦°ø.
-// 4) Å¸ÀÔÀÌ °ğ Ã¤³Î: EventBus<T> Å°´Â T Å¸ÀÔÀÌ¹Ç·Î, ±¸µ¶/¹ßÇàÀÇ °áÇÕÀº Å¸ÀÔ ½Ã±×´ÏÃ³·Î °ü¸®.
-// ¾Ë ¼ö ¾ø´Â °Í:
-// ÇÃ·¹ÀÌ¾î Ä³¸¯ÅÍ ¼±ÅÃ ½Ã¿¡µµ event¸¦ »ç¿ëÇØ¾ß ÇÏ´ÂÁö ¸ğ¸£°ÚÀ½
-// ½ºÅ×ÀÌÅÍ½º 
+// ì„¤ê³„ ì›ì¹™:
+// 1) ê°’ íƒ€ì…(readonly struct)ìœ¼ë¡œ ìœ ì§€í•´ ê°€ë¹„ì§€ ìµœì†Œí™”.
+// 2) "ìš”ì²­(Request)"ê³¼ "ì‚¬ì‹¤ ì•Œë¦¼(Event)"ì„ ëª…í™•íˆ êµ¬ë¶„.
+// 3) Unity ìˆ˜ëª… ê³ ë ¤: Transform/Object ì°¸ì¡°ëŠ” ì—°ì¶œ/í¸ì˜ ëª©ì ì— í•œì •í•˜ê³ , í•„ìš” ì‹œ Id/Metaë¥¼ ë³‘í–‰ ì œê³µ.
+// 4) íƒ€ì…ì´ ê³§ ì±„ë„: EventBus<T> í‚¤ëŠ” T íƒ€ì…ì´ë¯€ë¡œ, êµ¬ë…/ë°œí–‰ì˜ ê²°í•©ì€ íƒ€ì… ì‹œê·¸ë‹ˆì²˜ë¡œ ê´€ë¦¬.
+// ì•Œ ìˆ˜ ì—†ëŠ” ê²ƒ:
+// í”Œë ˆì´ì–´ ìºë¦­í„° ì„ íƒ ì‹œì—ë„ eventë¥¼ ì‚¬ìš©í•´ì•¼ í•˜ëŠ”ì§€ ëª¨ë¥´ê² ìŒ
+// ìŠ¤í…Œì´í„°ìŠ¤ 
 #nullable enable
 using SkillInterfaces;
 using UnityEngine;
 
-#region ===== °øÅë ¸ŞÅ¸µ¥ÀÌÅÍ =====
+#region ===== ê³µí†µ ë©”íƒ€ë°ì´í„° =====
 
 /// <summary>
-/// ¸ğµç °ÔÀÓ ÀÌº¥Æ®¿¡ °øÅëÀ¸·Î Æ÷ÇÔµÉ ¼ö ÀÖ´Â ¸ŞÅ¸ Á¤º¸.
-/// - EventId: Àü¿ª Áõ°¡ ½ÃÄö½º(·Î±×/Æ®·¹ÀÌ½Ì ¿ëÀÌ)
-/// - Time: ÀÌº¥Æ® ¹ß»ı ½Ã°¢(Time.time ½º³À¼¦)
-/// - Source: ¹ß½ÅÀÚ(ÁÖ·Î Transform ·çÆ®, null Áö¾ç)
-/// - Channel: ³í¸® Ã¤³Î("combat", "buff", "ui" µî) - ÇÊÅÍ/µğ¹ö±× ¿ë
-/// - CorrelationId: ½ÃÀÛ~Áß°£~Á¾·á °°Àº Èå¸§À» ¹­À» »ó°ü ½Äº°ÀÚ
+/// ëª¨ë“  ê²Œì„ ì´ë²¤íŠ¸ì— ê³µí†µìœ¼ë¡œ í¬í•¨ë  ìˆ˜ ìˆëŠ” ë©”íƒ€ ì •ë³´.
+/// - EventId: ì „ì—­ ì¦ê°€ ì‹œí€€ìŠ¤(ë¡œê·¸/íŠ¸ë ˆì´ì‹± ìš©ì´)
+/// - Time: ì´ë²¤íŠ¸ ë°œìƒ ì‹œê°(Time.time ìŠ¤ëƒ…ìƒ·)
+/// - Source: ë°œì‹ ì(ì£¼ë¡œ Transform ë£¨íŠ¸, null ì§€ì–‘)
+/// - Channel: ë…¼ë¦¬ ì±„ë„("combat", "buff", "ui" ë“±) - í•„í„°/ë””ë²„ê·¸ ìš©
+/// - CorrelationId: ì‹œì‘~ì¤‘ê°„~ì¢…ë£Œ ê°™ì€ íë¦„ì„ ë¬¶ì„ ìƒê´€ ì‹ë³„ì
 /// </summary>
 public readonly struct GameEventMeta
 {
@@ -48,33 +48,33 @@ public readonly struct GameEventMeta
 }
 
 /// <summary>
-/// GameEventMeta »ı¼ºÀ» Ç¥ÁØÈ­ÇÏ´Â °£´Ü ÆÑÅä¸®.
-/// - ÀÏ°üµÈ Áõ°¡ ½ÃÄö½º/½Ã°£ ½º³À¼¦À» ºÎ¿©.
-/// - <see cref="Create"/> ÇÏ³ª¸¸ ¾²¸é ¸ŞÅ¸°¡ ±ÕÀÏÇØÁı´Ï´Ù.
+/// GameEventMeta ìƒì„±ì„ í‘œì¤€í™”í•˜ëŠ” ê°„ë‹¨ íŒ©í† ë¦¬.
+/// - ì¼ê´€ëœ ì¦ê°€ ì‹œí€€ìŠ¤/ì‹œê°„ ìŠ¤ëƒ…ìƒ·ì„ ë¶€ì—¬.
+/// - <see cref="Create"/> í•˜ë‚˜ë§Œ ì“°ë©´ ë©”íƒ€ê°€ ê· ì¼í•´ì§‘ë‹ˆë‹¤.
 /// </summary>
 public static class GameEventMetaFactory
 {
     private static int _seq;
 
-    /// <summary>Ç¥ÁØ ¸ŞÅ¸ »ı¼º. channel/correlationId´Â ÇÊ¿ä ½Ã¿¡¸¸ ÁöÁ¤.</summary>
+    /// <summary>í‘œì¤€ ë©”íƒ€ ìƒì„±. channel/correlationIdëŠ” í•„ìš” ì‹œì—ë§Œ ì§€ì •.</summary>
     public static GameEventMeta Create(Transform source, string? channel = null, int correlationId = 0)
         => new(++_seq, Time.time, source, channel, correlationId);
 }
 
 #endregion
 
-#region ===== °øÅë: ½ºÅ³ ÂüÁ¶ =====
+#region ===== ê³µí†µ: ìŠ¤í‚¬ ì°¸ì¡° =====
 
 /// <summary>
-/// ½ºÅ³ ÂüÁ¶¸¦ À§ÇÑ °æ·® ±¸Á¶.
-/// - Asset: ScriptableObject(¸ŞÄ«´Ğ/½ºÅ³ µ¥ÀÌÅÍ) ÂüÁ¶. ¾øÀ» ¼ö ÀÖÀ½.
-/// - Id: ¼ıÀÚÇü ½Äº°ÀÚ(³×Æ®¿öÅ·/¼¼ÀÌºê/Ç¥ÁØÈ­ ¿ë).
-/// µÑ Áß ÇÏ³ª¸¸ ½áµµ µÇ°í, µÑ ´Ù ¾µ ¼öµµ ÀÖ½À´Ï´Ù.
+/// ìŠ¤í‚¬ ì°¸ì¡°ë¥¼ ìœ„í•œ ê²½ëŸ‰ êµ¬ì¡°.
+/// - Asset: ScriptableObject(ë©”ì¹´ë‹‰/ìŠ¤í‚¬ ë°ì´í„°) ì°¸ì¡°. ì—†ì„ ìˆ˜ ìˆìŒ.
+/// - Id: ìˆ«ìí˜• ì‹ë³„ì(ë„¤íŠ¸ì›Œí‚¹/ì„¸ì´ë¸Œ/í‘œì¤€í™” ìš©).
+/// ë‘˜ ì¤‘ í•˜ë‚˜ë§Œ ì¨ë„ ë˜ê³ , ë‘˜ ë‹¤ ì“¸ ìˆ˜ë„ ìˆìŠµë‹ˆë‹¤.
 /// </summary>
 public readonly struct SkillRef
 {
-    public readonly Object? Asset; // ScriptableObject(¶Ç´Â ±âÅ¸ UnityEngine.Object)
-    public readonly int Id;                    // ¿ÜºÎ ½Ã½ºÅÛ°úÀÇ È£È¯À» À§ÇÑ Á¤¼öÇü Å°(0ÀÌ¸é ¹Ì»ç¿ëÀ¸·Î °£ÁÖ)
+    public readonly Object? Asset; // ScriptableObject(ë˜ëŠ” ê¸°íƒ€ UnityEngine.Object)
+    public readonly int Id;                    // ì™¸ë¶€ ì‹œìŠ¤í…œê³¼ì˜ í˜¸í™˜ì„ ìœ„í•œ ì •ìˆ˜í˜• í‚¤(0ì´ë©´ ë¯¸ì‚¬ìš©ìœ¼ë¡œ ê°„ì£¼)
 
     public bool HasAsset => Asset != null;
     public bool HasId => Id != 0;
@@ -88,20 +88,20 @@ public readonly struct SkillRef
 
 #endregion
 
-#region ===== ½ÃÀü(Ä³½ºÆÃ) Èå¸§: »ç½Ç ¾Ë¸²(Event) =====
+#region ===== ì‹œì „(ìºìŠ¤íŒ…) íë¦„: ì‚¬ì‹¤ ì•Œë¦¼(Event) =====
 
 /// <summary>
-/// [Event] ½ÃÀü ½ÃÀÛ ¾Ë¸².
-/// - EventBus.Subscribe&lt;CastStarted&gt;(...) ·Î ±¸µ¶.
-/// - ¹ßÇàÀÚ´Â "»ç½Ç"¸¸ ¾Ë¸®°í, UI/VFX/»ç¿îµå´Â ÀÌ¸¦ ±¸µ¶ÇØ ¹İÀÀÇÕ´Ï´Ù.
+/// [Event] ì‹œì „ ì‹œì‘ ì•Œë¦¼.
+/// - EventBus.Subscribe&lt;CastStarted&gt;(...) ë¡œ êµ¬ë….
+/// - ë°œí–‰ìëŠ” "ì‚¬ì‹¤"ë§Œ ì•Œë¦¬ê³ , UI/VFX/ì‚¬ìš´ë“œëŠ” ì´ë¥¼ êµ¬ë…í•´ ë°˜ì‘í•©ë‹ˆë‹¤.
 /// </summary>
 public readonly struct CastStarted
 {
     public readonly GameEventMeta Meta;
-    public readonly SkillRef Skill;       // °­Å¸ÀÔ ÂüÁ¶(¶Ç´Â Id)
-    public readonly ISkillParam Param;    // ½ÃÀü ½ÃÁ¡ÀÇ ÆÄ¶ó¹ÌÅÍ ½º³À¼¦(ÀĞ±â Àü¿ë °è¾à)
-    public readonly Transform Caster;     // ÆíÀÇ»ó º°µµ º¸°­
-    public readonly Transform? TargetOpt; // ´ë»óÇü ½ºÅ³ÀÏ ¶§¸¸ Á¸Àç(¾øÀ¸¸é null)
+    public readonly SkillRef Skill;       // ê°•íƒ€ì… ì°¸ì¡°(ë˜ëŠ” Id)
+    public readonly ISkillParam Param;    // ì‹œì „ ì‹œì ì˜ íŒŒë¼ë¯¸í„° ìŠ¤ëƒ…ìƒ·(ì½ê¸° ì „ìš© ê³„ì•½)
+    public readonly Transform Caster;     // í¸ì˜ìƒ ë³„ë„ ë³´ê°•
+    public readonly Transform? TargetOpt; // ëŒ€ìƒí˜• ìŠ¤í‚¬ì¼ ë•Œë§Œ ì¡´ì¬(ì—†ìœ¼ë©´ null)
 
     public CastStarted(GameEventMeta meta, SkillRef skill, ISkillParam param, Transform caster, Transform? targetOpt)
     { Meta = meta; Skill = skill; Param = param; Caster = caster; TargetOpt = targetOpt; }
@@ -110,8 +110,8 @@ public readonly struct CastStarted
 }
 
 /// <summary>
-/// [Event] ½ÃÀü Á¾·á ¾Ë¸².
-/// - Interrupted: Ãë¼Ò/ÇÇ°İ/CC µî¿¡ ÀÇÇÑ Áß´Ü ¿©ºÎ.
+/// [Event] ì‹œì „ ì¢…ë£Œ ì•Œë¦¼.
+/// - Interrupted: ì·¨ì†Œ/í”¼ê²©/CC ë“±ì— ì˜í•œ ì¤‘ë‹¨ ì—¬ë¶€.
 /// </summary>
 public readonly struct CastEnded
 {
@@ -127,7 +127,7 @@ public readonly struct CastEnded
 }
 
 /// <summary>
-/// [Event] Å¸±ê È®Á¤ ¾Ë¸², 
+/// [Event] íƒ€ê¹ƒ í™•ì • ì•Œë¦¼, 
 /// </summary>
 public readonly struct TargetAcquired
 {
@@ -155,15 +155,15 @@ public readonly struct TargetNotFound
 
 #endregion
 
-#region ===== ÀüÅõ: »ç½Ç ¾Ë¸²(Event) =====
+#region ===== ì „íˆ¬: ì‚¬ì‹¤ ì•Œë¦¼(Event) =====
 
 /// <summary>
-/// [Event] ÇÇÇØ°¡ "Àû¿ëµÈ" »ç½Ç ¾Ë¸²(·Î±×/¿¬Ãâ/UI¿ë).
-/// - RawDamage: ±âº» ÇÇÇØ·®
-/// - FinalDamage: ½ÇÁ¦ °¡ÇÏ´Â ÇÇÇØ·®(ÇÇÇØ·® Áõ°¨ÀÇ È¿°ú¸¦ ¹Ş´Â)
-/// - ArmorPenetration: ÃÑ ¹æ¾î °üÅë °è¼ö(°ö¿¬»ê, <see cref="PlayerStatsBridge.TotalArmorPenetration()"/> ÂüÁ¶)
-/// - DamageType(<see cref="EDamageType"/>): ÀÏ¹İ(Normal)/ºñ·Ê(Percentaged)/°íÁ¤(Fixed)
-/// - HitPoint/HitNormal: ¿¬Ãâ/³Ë¹é ¹æÇâ °è»ê ±Ù°Å
+/// [Event] í”¼í•´ê°€ "ì ìš©ëœ" ì‚¬ì‹¤ ì•Œë¦¼(ë¡œê·¸/ì—°ì¶œ/UIìš©).
+/// - RawDamage: ê¸°ë³¸ í”¼í•´ëŸ‰
+/// - FinalDamage: ì‹¤ì œ ê°€í•˜ëŠ” í”¼í•´ëŸ‰(í”¼í•´ëŸ‰ ì¦ê°ì˜ íš¨ê³¼ë¥¼ ë°›ëŠ”)
+/// - ArmorPenetration: ì´ ë°©ì–´ ê´€í†µ ê³„ìˆ˜(ê³±ì—°ì‚°, <see cref="PlayerStatsBridge.TotalArmorPenetration()"/> ì°¸ì¡°)
+/// - DamageType(<see cref="EDamageType"/>): ì¼ë°˜(Normal)/ë¹„ë¡€(Percentaged)/ê³ ì •(Fixed)
+/// - HitPoint/HitNormal: ì—°ì¶œ/ë„‰ë°± ë°©í–¥ ê³„ì‚° ê·¼ê±°
 /// </summary>
 public readonly struct DamageDealt
 {
@@ -194,26 +194,26 @@ public readonly struct DamageDealt
     }
 
     public override string ToString()
-        => $"DamageDealt {FinalDamage} ({DamageType}) {Attacker.name}¡æ{Target.name}";
+        => $"DamageDealt {FinalDamage} ({DamageType}) {Attacker.name}â†’{Target.name}";
 }
 
-/// <summary>ÇÇÇØ À¯Çü: ÀÏ¹İ ÇÇÇØ Normal, ºñ·Ê ÇÇÇØ Percentaged(ÃÖ´ë Ã¼·ÂÀÇ 1% µî), °íÁ¤ ÇÇÇØ Fixed(ÇÇÇØ·® º¯µ¿ÀÌ ¾øÀ½, ±×°ÍÀÌ °íÁ¤ÀÌ´Ï±î À½)</summary>
+/// <summary>í”¼í•´ ìœ í˜•: ì¼ë°˜ í”¼í•´ Normal, ë¹„ë¡€ í”¼í•´ Percentaged(ìµœëŒ€ ì²´ë ¥ì˜ 1% ë“±), ê³ ì • í”¼í•´ Fixed(í”¼í•´ëŸ‰ ë³€ë™ì´ ì—†ìŒ, ê·¸ê²ƒì´ ê³ ì •ì´ë‹ˆê¹Œ ìŒ)</summary>
 public enum EDamageType { Normal, Percentaged, Fixed }
 
 #endregion
 
-#region ===== ¹öÇÁ/ÀÌÆåÆ®: ¿äÃ»(Request) & Á¦°Å(Remove) =====
-// EventBus¿¡¼­ "¿äÃ»" ÆäÀÌ·Îµå´Â ½Ã½ºÅÛ(¹öÇÁ ¸Å´ÏÀú µî)¿¡°Ô µ¿ÀÛÀ» ÀÇ·ÚÇÕ´Ï´Ù.
-// - ApplyReq: Àû¿ë ¿äÃ»(¼º°ø/½ÇÆĞ ¿©ºÎ´Â º°µµ ÀÀ´ä ÀÌº¥Æ®·Î ¼³°èÇØµµ µÊ)
-// - RemoveReq: Á¦°Å ¿äÃ»(Á¦°Å´Â PlayerEffects¿¡¼­ µû·Î ¼öÇàÇØµµ µÉÁö ¸ğ¸£°ÚÀ½)
-// ¡Ø ¿äÃ»À» "»ç½Ç ¾Ë¸²"°ú ¼¯Áö ¸»°í ºĞ¸®ÇÏ¸é Èå¸§ ÃßÀûÀÌ ½±½À´Ï´Ù.
+#region ===== ë²„í”„/ì´í™íŠ¸: ìš”ì²­(Request) & ì œê±°(Remove) =====
+// EventBusì—ì„œ "ìš”ì²­" í˜ì´ë¡œë“œëŠ” ì‹œìŠ¤í…œ(ë²„í”„ ë§¤ë‹ˆì € ë“±)ì—ê²Œ ë™ì‘ì„ ì˜ë¢°í•©ë‹ˆë‹¤.
+// - ApplyReq: ì ìš© ìš”ì²­(ì„±ê³µ/ì‹¤íŒ¨ ì—¬ë¶€ëŠ” ë³„ë„ ì‘ë‹µ ì´ë²¤íŠ¸ë¡œ ì„¤ê³„í•´ë„ ë¨)
+// - RemoveReq: ì œê±° ìš”ì²­(ì œê±°ëŠ” PlayerEffectsì—ì„œ ë”°ë¡œ ìˆ˜í–‰í•´ë„ ë ì§€ ëª¨ë¥´ê² ìŒ)
+// â€» ìš”ì²­ì„ "ì‚¬ì‹¤ ì•Œë¦¼"ê³¼ ì„ì§€ ë§ê³  ë¶„ë¦¬í•˜ë©´ íë¦„ ì¶”ì ì´ ì‰½ìŠµë‹ˆë‹¤.
 
 /// <summary>
-/// [Request] ¹öÇÁ(½ºÅÈ) Àû¿ë ¿äÃ».
-/// - Target: ´©±¸¿¡°Ô Àû¿ë?
-/// - Mod: ¾î¶² ½ºÅÈ º¯°æ?
-/// - Duration: float.PositiveInfinityÀÏ °æ¿ì¿¡¸¸ ¹«ÇÑ(À½¼ö´Â ¹ö±×ÀÇ ¿ì·Á°¡ ÀÖÀ½)
-/// - Tag: Áßº¹ Á¤Ã¥À» À§ÇÑ ÅÂ±×(¿É¼Ç; µ¿ÀÏ ÅÂ±×´Â °»½Å/´ëÃ¼ µî Á¤Ã¥¿¡ È°¿ë)
+/// [Request] ë²„í”„(ìŠ¤íƒ¯) ì ìš© ìš”ì²­.
+/// - Target: ëˆ„êµ¬ì—ê²Œ ì ìš©?
+/// - Mod: ì–´ë–¤ ìŠ¤íƒ¯ ë³€ê²½?
+/// - Duration: float.PositiveInfinityì¼ ê²½ìš°ì—ë§Œ ë¬´í•œ(ìŒìˆ˜ëŠ” ë²„ê·¸ì˜ ìš°ë ¤ê°€ ìˆìŒ)
+/// - Tag: ì¤‘ë³µ ì •ì±…ì„ ìœ„í•œ íƒœê·¸(ì˜µì…˜; ë™ì¼ íƒœê·¸ëŠ” ê°±ì‹ /ëŒ€ì²´ ë“± ì •ì±…ì— í™œìš©)
 /// </summary>
 public readonly struct BuffApplyReq
 {
@@ -231,8 +231,8 @@ public readonly struct BuffApplyReq
 }
 
 /// <summary>
-/// [Request] ÀÌÆåÆ®(ºñÁÖ¾ó/¿Àµğ¿À/»óÅÂ) Àû¿ë ¿äÃ».
-/// ¹öÇÁ¿Í µ¿ÀÏÇÑ Á¤Ã¥À¸·Î µ¿ÀÛÇÏÁö¸¸, ½Ã°¢/¿Àµğ¿À/»óÅÂ ¿¬Ãâ ÂÊ¿¡ Ä¡¿ìÄ£ ¸ğµğÆÄÀÌ¾î.
+/// [Request] ì´í™íŠ¸(ë¹„ì£¼ì–¼/ì˜¤ë””ì˜¤/ìƒíƒœ) ì ìš© ìš”ì²­.
+/// ë²„í”„ì™€ ë™ì¼í•œ ì •ì±…ìœ¼ë¡œ ë™ì‘í•˜ì§€ë§Œ, ì‹œê°/ì˜¤ë””ì˜¤/ìƒíƒœ ì—°ì¶œ ìª½ì— ì¹˜ìš°ì¹œ ëª¨ë””íŒŒì´ì–´.
 /// </summary>
 public readonly struct EffectApplyReq
 {
@@ -250,9 +250,9 @@ public readonly struct EffectApplyReq
 }
 
 /// <summary>
-/// [Request] ¹öÇÁ Á¦°Å ¿äÃ».
-/// Æ¯Á¤ Mod ÀÎ½ºÅÏ½º¸¦ Á¦°ÅÇÏ´Â ÀüÇüÀûÀÎ ÇüÅÂ.
-/// Á¤Ã¥¿¡ µû¶ó Tag ±â¹İ ´ë»óÀ» Á¦°ÅÇÏ´Â º°µµ ¿äÃ»À» Ãß°¡ÇÒ ¼öµµ ÀÖ½À´Ï´Ù.
+/// [Request] ë²„í”„ ì œê±° ìš”ì²­.
+/// íŠ¹ì • Mod ì¸ìŠ¤í„´ìŠ¤ë¥¼ ì œê±°í•˜ëŠ” ì „í˜•ì ì¸ í˜•íƒœ.
+/// ì •ì±…ì— ë”°ë¼ Tag ê¸°ë°˜ ëŒ€ìƒì„ ì œê±°í•˜ëŠ” ë³„ë„ ìš”ì²­ì„ ì¶”ê°€í•  ìˆ˜ë„ ìˆìŠµë‹ˆë‹¤.
 /// </summary>
 public readonly struct BuffRemoveReq
 {
@@ -268,7 +268,7 @@ public readonly struct BuffRemoveReq
 }
 
 /// <summary>
-/// [Request] ÀÌÆåÆ® Á¦°Å ¿äÃ».
+/// [Request] ì´í™íŠ¸ ì œê±° ìš”ì²­.
 /// </summary>
 public readonly struct EffectRemoveReq
 {
@@ -285,15 +285,15 @@ public readonly struct EffectRemoveReq
 
 #endregion
 
-#region ===== ¿ÜºÎ µµ¸ŞÀÎ °è¾à(ÀÎÅÍÆäÀÌ½º) =====
+#region ===== ì™¸ë¶€ ë„ë©”ì¸ ê³„ì•½(ì¸í„°í˜ì´ìŠ¤) =====
 
-// ¿ÜºÎ µµ¸ŞÀÎ °è¾à(½ºÅÈ/ÀÌÆåÆ® Àû¿ë Á¦°Å).
-// - ÀÌº¥Æ® ÆäÀÌ·Îµå´Â ÀÌ °è¾à¿¡¸¸ ÀÇÁ¸ÇÏ°í, ±¸Ã¼ ±¸ÇöÀº ½Ã½ºÅÛ ³»ºÎ¿¡ ¼û±é´Ï´Ù.
-// - Å×½ºÆ® ´õºí/¸ğÅ·ÀÌ ½¬¿öÁı´Ï´Ù.
+// ì™¸ë¶€ ë„ë©”ì¸ ê³„ì•½(ìŠ¤íƒ¯/ì´í™íŠ¸ ì ìš© ì œê±°).
+// - ì´ë²¤íŠ¸ í˜ì´ë¡œë“œëŠ” ì´ ê³„ì•½ì—ë§Œ ì˜ì¡´í•˜ê³ , êµ¬ì²´ êµ¬í˜„ì€ ì‹œìŠ¤í…œ ë‚´ë¶€ì— ìˆ¨ê¹ë‹ˆë‹¤.
+// - í…ŒìŠ¤íŠ¸ ë”ë¸”/ëª¨í‚¹ì´ ì‰¬ì›Œì§‘ë‹ˆë‹¤.
 public interface IStatModifier
 {
-    void Apply(PlayerStatsBridge s);
-    void Remove(PlayerStatsBridge s);
+    void Apply(PlayerStats s);
+    void Remove(PlayerStats s);
 }
 
 public interface IEffectModifier

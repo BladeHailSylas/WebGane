@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에서는 참조만
 {
-	[SerializeField] readonly CharacterSpec spec;
+	[SerializeReference] readonly CharacterSpec spec;
 	public float BaseHealth { get; private set; }
 	public float MaxHealth { get; private set; }
 	public float Health { get; private set; }
@@ -89,6 +89,8 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, �
 		return (80 / (80 + armor * (1 - apRatio))) * damageRatio;
 	}
 	public float TotalArmorPenetration() //AP를 반환하는 거면 1 - totalAP가 맞는데 그럼 계산이 귀찮아짐, 명칭을 바꾸는 것이 맞지 않나
+										//어쩌면 괜찮을지도 모르겠다, 어차피 AP 계산식은 1 - (80 / (80 + Armor * (1 - TotalAP)))로 이미 정해져 있으니까
+										//오히려 그 공식을 바꾸려 들었다가 수식이 달라 혼란이 올 가능성이 있음, 이름도 ArmorPenetration에서 ArmorRatio로 바꿔야 됨
 	{
 		float totalAP = 1f;
 		foreach (var ap in ArmorPenetration)
@@ -102,8 +104,9 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, �
 		float totalDR = 1f;
 		foreach (var dr in DamageReduction)
 		{
-			totalDR *= (1 - dr / 100); //단일 DR 비율이 100%를 넘으면 맞는데 회복함, AP도 100%를 넘으면 안 되지만 DR은 더더욱 단일 비율이 100%을 넘어서는 안 됨(망겜임)
+			totalDR *= (1 - dr / 100);
 		}
 		return Mathf.Max(0.15f, totalDR); //공격자 우선(하게 두되 대안을 주어라) -> 대미지가 들어가게 두되 다른 생존 수단(체력 회복, 보호막 등)으로 원콤이 안 나게 하라
+											//왜 하한을 두나요? 안 그러면 맞는데 피가 닳는 대신 회복하는 망겜이 되어버림
 	}
 }

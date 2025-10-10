@@ -151,7 +151,7 @@ namespace StatsInterfaces
 	}
 	public interface IStatProvider
 	{
-		float GetStat(StatType stat, StatRef re = StatRef.Current);
+		//float GetStat(StatType stat, StatRef re = StatRef.Current); -> stat이 모두 public get, private set이라 필요 없음
 	}
 	/*public interface IDefensiveStats
 	{
@@ -199,8 +199,8 @@ namespace StatsInterfaces
 	}*/
 	public interface IStatModifier
 	{
-		void Apply(PlayerStatsBridge stats);
-		void Remove(PlayerStatsBridge stats);
+		void Apply(PlayerStats stats);
+		void Remove(PlayerStats stats);
 	}
 }
 #endregion
@@ -210,29 +210,29 @@ namespace SkillInterfaces
 {
 	public enum SkillSlot { Attack, Skill1, Skill2, Ultimate }
 	public interface ISkillParam { }                    // 파라미터 마커
-	public interface IHasCooldown : ISkillParam { float Cooldown { get; } }
+	public interface ICooldownParam : ISkillParam { float Cooldown { get; } }
 
 	public interface ISkillRunner
 	{
 		bool IsBusy { get; }
 		bool IsOnCooldown { get; }
-		void EnqueueRootIntent(ISkillMechanic mech, ISkillParam param, TargetRequest req, int priorityLevel = 0);
+		void EnqueueRootIntent(ISkillMechanism mech, ISkillParam param, TargetRequest req, int priorityLevel = 0);
 	}
 
 	// 메커니즘(공식): "캐스팅 코루틴"을 제공
-	public interface ISkillMechanic
+	public interface ISkillMechanism
 	{
 		System.Type ParamType { get; }
 		IEnumerator Cast(Transform owner, Camera cam, ISkillParam param);
 	}
-	public interface ITargetedMechanic : ISkillMechanic
+	public interface ITargetedMechanic : ISkillMechanism
 	{
 		IEnumerator Cast(Transform owner, Camera cam, ISkillParam param, Transform target);
 	}
 
 	// 제네릭 베이스: 타입 가드 + 제네릭 오버로드
 
-	public abstract class SkillMechanismBase<TParam> : ScriptableObject, ISkillMechanic
+	public abstract class SkillMechanismBase<TParam> : ScriptableObject, ISkillMechanism
 		where TParam : ISkillParam
 	{
 		public System.Type ParamType => typeof(TParam);

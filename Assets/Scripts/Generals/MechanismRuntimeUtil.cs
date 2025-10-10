@@ -113,7 +113,7 @@ public static class MechanismRuntimeUtil
 		return parentRequest;
 	}
 
-	static string BuildTemplateId(string prefix, AbilityHook hook, ISkillMechanic mech)
+	static string BuildTemplateId(string prefix, AbilityHook hook, ISkillMechanism mech)
 	{
 		var mechName = mech != null ? mech.GetType().Name : "<null>";
 		if (string.IsNullOrEmpty(prefix))

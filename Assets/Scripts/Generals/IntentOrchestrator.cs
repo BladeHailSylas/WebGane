@@ -303,7 +303,7 @@ namespace Intents
 			// Busy/CD 점유. 실제 Busy 기간 계산은 메커니즘별 정책 필요.
 			_busyUntilTick[intent.OriginActorId] = _tick + 1;
 
-			if (intent.Param is IHasCooldown hasCd)
+			if (intent.Param is ICooldownParam hasCd)
 			{
 				int cdTicks = Mathf.CeilToInt(hasCd.Cooldown * 60f); // TODO: FrameRate 의존성 조정 필요
 				_cooldownUntilTick[intent.OriginActorId] = _tick + cdTicks;

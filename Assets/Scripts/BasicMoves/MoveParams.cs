@@ -5,7 +5,7 @@ using SkillInterfaces;
 using UnityEditor;
 
 [System.Serializable]
-public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
+public class MeleeParams : ISkillParam, ICooldownParam, IFollowUpProvider
 {
 	[Header("Area")]
 	public float radius = 1.6f;
@@ -54,7 +54,7 @@ public class MeleeParams : ISkillParam, IHasCooldown, IFollowUpProvider
 }
 
 [System.Serializable]
-public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData
+public class MissileParams : ISkillParam, ICooldownParam, IFollowUpProvider, ITargetingData
 {
 	[Header("Projectile")]
 	public float speed = 10f;
@@ -136,7 +136,7 @@ public class MissileParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITarg
 	}
 }
 [System.Serializable]
-public class DashParams : ISkillParam, IHasCooldown, IFollowUpProvider, ITargetingData, IAnchorClearance
+public class DashParams : ISkillParam, ICooldownParam, IFollowUpProvider, ITargetingData, IAnchorClearance
 {
 	[Header("Targeting (Runner가 해석)")]
         [SerializeField] TargetMode _mode = TargetMode.TowardsMovement;

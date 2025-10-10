@@ -6,7 +6,7 @@
 
 using Intents;
 using SkillInterfaces;
-using System;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public sealed class SkillRunner : MonoBehaviour, ISkillRunner
@@ -48,8 +48,8 @@ public sealed class SkillRunner : MonoBehaviour, ISkillRunner
 
 	public bool IsOnCooldown => _orchestrator != null && _orchestrator.IsActorOnCooldown(actorId);
 
-	public void EnqueueRootIntent(ISkillMechanic mech, ISkillParam param, TargetRequest request, int priorityLevel = 0)
-	{	
+	public void EnqueueRootIntent(ISkillMechanism mech, ISkillParam param, TargetRequest request, int priorityLevel = 0)
+	{
 		if (mech == null || param == null)
 		{
 			Debug.LogWarning("EnqueueRootIntent: 메커니즘 또는 파라미터가 null입니다.");
@@ -89,5 +89,54 @@ public sealed class SkillRunner : MonoBehaviour, ISkillRunner
 		{
 			Debug.Log($"[Runner] Root Intent enqueue: {intent}");
 		}
+	}
+	public int SkillPriority(ISkillMechanism mech, ICooldownParam param, SkillSlot slot) 
+	{
+		if(mech == null || param == null)
+		{
+			Debug.LogWarning("SkillPriority: 메커니즘 또는 파라미터가 null입니다. Priority level이 임시로 0이 됩니다.");
+			return 0;
+		}
+		if(!mech.ParamType.IsInstanceOfType(param))
+		{
+			Debug.LogError($"ParamType mismatch: {mech.ParamType.Name} 필요, {param.GetType().Name} 제공. Priority level이 임시로 -1이 됩니다.");
+			return -1;
+		}
+		int weight = 0;
+		switch(mech.ParamType.Name)
+		{
+			case "MeleeParams":
+			case "MissileParams":
+			case "HitscanParams":
+			case "AreaParams":
+				weight += 3;
+				break;
+			case "DashParams":
+			case "TeleportParams":
+				weight += 2;
+				break;
+			default:
+				weight += 1;
+				break;
+		}
+		switch(slot)
+		{
+			case SkillSlot.Attack:
+				weight += 10;
+				break;
+			case SkillSlot.AttackSkill:
+			case SkillSlot.Skill1:
+			case SkillSlot.Skill2:
+				weight += 20;
+				break;
+			case SkillSlot.Ultimate:
+				weight += 30;
+				break;
+			default:
+				weight = 0;
+				break;
+		}
+		Debug.Log($"[Runner] SkillPriority: {slot} 슬롯의 {mech.ParamType.Name} 타입은 {weight * 1000} priority입니다");
+		return weight * 1000;
 	}
 }

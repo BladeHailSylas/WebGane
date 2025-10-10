@@ -9,10 +9,10 @@ public enum AbilityHook { OnCastStart, OnHit, OnCastEnd }
 /// 실행 주문서: 무엇을(메커닉/파라미터), 대상 오버라이드(옵션)
 public readonly struct CastOrder
 {
-    public readonly ISkillMechanic Mech;
+    public readonly ISkillMechanism Mech;
     public readonly ISkillParam Param;
     public readonly Transform TargetOverride;
-    public CastOrder(ISkillMechanic mech, ISkillParam param, Transform targetOverride = null)
+    public CastOrder(ISkillMechanism mech, ISkillParam param, Transform targetOverride = null)
     { Mech = mech; Param = param; TargetOverride = targetOverride; }
 }
 
@@ -41,7 +41,7 @@ public struct MechanicRef
 
     public readonly bool TryBuildOrder(Transform prevTarget, out CastOrder order)
     {
-        if (mechanic is not ISkillMechanic next || param == null || !next.ParamType.IsInstanceOfType(param))
+        if (mechanic is not ISkillMechanism next || param == null || !next.ParamType.IsInstanceOfType(param))
         { order = default; return false; }
 
         order = new CastOrder(next, param, passSameTarget ? prevTarget : null);

@@ -6,21 +6,22 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
 {
-	[SerializeField] PlayerStatsBridge stats;
+	[SerializeField] PlayerStats stats;
 	[SerializeField] PlayerLocomotion locomotion;
 	[SerializeField] PlayerEffects effects;
 
 	[Header("Wiring")]
 	[SerializeField] Rigidbody2D rig;          // Kinematic 본체(모터는 이 트랜스폼을 이동)
-	//[SerializeField] SkillRunner skillRunner;  // 스킬 진행 중 기본 이동 억제용 (Dash 등)  // :contentReference[oaicite:6]{index=6}*/
+											   //[SerializeField] SkillRunner skillRunner;  // 스킬 진행 중 기본 이동 억제용 (Dash 등)  // :contentReference[oaicite:6]{index=6}*/
 
 	[Header("Move")]
-	[SerializeField] float moveSpeed = 8f;     // TODO: stats로 치환 예정
+	[SerializeField] float moveSpeed;
 	Vector2 _moveInput;                        // 입력 버퍼(이벤트 → 프레임 단일 처리)
 
 	void Awake()
 	{
 		if (!rig) rig = GetComponent<Rigidbody2D>();
+		moveSpeed = stats.Speed;
 	}
 
 	// 입력 이벤트에서 방향만 갱신(즉시 이동 금지)
