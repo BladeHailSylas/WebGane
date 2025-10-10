@@ -5,6 +5,7 @@ using System.Text;
 using UnityEngine;
 using SkillInterfaces;
 using ActInterfaces;
+using Unity.VisualScripting;
 
 namespace Intents
 {
@@ -50,11 +51,13 @@ namespace Intents
 		}
 		void Awake()
 		{
-			if (Instance != null && Instance != this)
+			Instance = this;
+			Debug.Log($"Intent Instance(Hash {GetHashCode()})이 생성되었습니다");
+			
+			/*if (Instance != null && Instance != this)
 			{
 				Debug.LogError("중복 IntentOrchestrator 감지 – Determinism이 깨질 수 있습니다.");
-			}
-			Instance = this;
+			}*/
 		}
 
 		public void Enqueue(CastIntent intent)

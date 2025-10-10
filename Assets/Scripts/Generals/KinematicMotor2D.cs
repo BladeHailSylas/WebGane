@@ -1,24 +1,24 @@
-using System;
+﻿using System;
 using UnityEngine;
 using ActInterfaces;
 
 [Serializable]
 public struct CollisionPolicy
 {
-    public LayerMask wallsMask;    
-    public LayerMask enemyMask;  
-    public bool enemyAsBlocker;    
-    public float radius;            
-    public float skin;               
-    public bool allowWallSlide;      
+	public LayerMask wallsMask;    
+	public LayerMask enemyMask;  
+	public bool enemyAsBlocker;    
+	public float radius;            
+	public float skin;               
+	public bool allowWallSlide;      
 }
 
 public struct MoveResult
 {
-    public Vector2 actualDelta;
-    public bool hitWall, hitEnemy;
-    public Transform hitTransform;
-    public Vector2 hitNormal;
+	public Vector2 actualDelta;
+	public bool hitWall, hitEnemy;
+	public Transform hitTransform;
+	public Vector2 hitNormal;
 }
 
 [DisallowMultipleComponent]
@@ -26,39 +26,39 @@ public struct MoveResult
 [RequireComponent(typeof(Collider2D))]
 public class KinematicMotor2D : MonoBehaviour, ISweepable
 {
-    [Header("Defaults")]
-    public CollisionPolicy defaultPolicy = new()
-    {
-        wallsMask = 0,
-        enemyMask = 0,
-        enemyAsBlocker = true,
-        radius = 0.5f,
-        skin = 0.125f,
-        allowWallSlide = true
-    };
+	[Header("Defaults")]
+	public CollisionPolicy defaultPolicy = new()
+	{
+		wallsMask = 0,
+		enemyMask = 0,
+		enemyAsBlocker = true,
+		radius = 0.5f,
+		skin = 0.125f,
+		allowWallSlide = true
+	};
 
-    Rigidbody2D rb;
-    Collider2D col;
-    CollisionPolicy current;
+	Rigidbody2D rb;
+	Collider2D col;
+	CollisionPolicy current;
 	//bool movable = true;
 
-    void Awake()
-    {
-        rb = GetComponent<Rigidbody2D>();
-        rb.bodyType = RigidbodyType2D.Kinematic;
-        rb.gravityScale = 0f;
-        current = defaultPolicy;
-        col = rb.GetComponent<Collider2D>();
+	void Awake()
+	{
+		rb = GetComponent<Rigidbody2D>();
+		rb.bodyType = RigidbodyType2D.Kinematic;
+		rb.gravityScale = 0f;
+		current = defaultPolicy;
+		col = rb.GetComponent<Collider2D>();
 		Debug.Log(col.isTrigger);
-    }
+	}
 
-    public IDisposable With(in CollisionPolicy overridePolicy)
-    {
-        var prev = current;
-        current = overridePolicy;
-        return new Scope(() => current = prev);
-    }
-    sealed class Scope : IDisposable { readonly Action onDispose; public Scope(Action a) { onDispose = a; } public void Dispose() { onDispose?.Invoke(); } }
+	public IDisposable With(in CollisionPolicy overridePolicy)
+	{
+		var prev = current;
+		current = overridePolicy;
+		return new Scope(() => current = prev);
+	}
+	sealed class Scope : IDisposable { readonly Action onDispose; public Scope(Action a) { onDispose = a; } public void Dispose() { onDispose?.Invoke(); } }
 	// [RULE: Depenetrate/MTV] 시작 겹침 탈출(벽+적 모두, 최소 이탈 벡터)
 	public Vector2 RemoveNormalComponent(Vector2 vector, LayerMask mask, MoveResult result)
 	{
@@ -92,19 +92,19 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 		}
 		return vfinal;
 	}
-    public MoveResult SweepMove(Vector2 desiredDelta)
-    {
+	public MoveResult SweepMove(Vector2 desiredDelta)
+	{
 		var result = new MoveResult { actualDelta = Vector2.zero };
-        if (desiredDelta.sqrMagnitude <= 0f) return result;
-        Vector2 origin = transform.position;
-        float remaining = desiredDelta.magnitude;
+		if (desiredDelta.sqrMagnitude <= 0f) return result;
+		Vector2 origin = transform.position;
+		float remaining = desiredDelta.magnitude;
 		Vector2 wishDir = desiredDelta.normalized;
 
 		const int kMaxSlideIters = 4;
-        int iters = 0;
+		int iters = 0;
 
-        while (remaining > 1e-5f && iters++ < kMaxSlideIters)
-        {
+		while (remaining > 1e-5f && iters++ < kMaxSlideIters)
+		{
 			Vector2 vfinal = wishDir * remaining;
 			// 1) 벽 우선
 			//vfinal = wishDir * remaining;
@@ -130,20 +130,20 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 			}
 			// 실제 이동을 여기서 수행, 이동할 수 없는 이유가 있다면 위의 분기점에서 break가 호출되어 실행되지 않음
 			MoveDiscrete(vfinal);
-            remaining = 0f;
-        }
-        result.actualDelta = (Vector2)transform.position - origin;
-        return result;
-    }
+			remaining = 0f;
+		}
+		result.actualDelta = (Vector2)transform.position - origin;
+		return result;
+	}
 
-    void MoveDiscrete(Vector2 delta)
-    {
-        if (delta.sqrMagnitude <= 0f) return;
-        if (rb) rb.MovePosition((Vector2)transform.position + delta);
-        else transform.position += (Vector3)delta;
-    }
+	void MoveDiscrete(Vector2 delta)
+	{
+		if (delta.sqrMagnitude <= 0f) return;
+		if (rb) rb.MovePosition((Vector2)transform.position + delta);
+		else transform.position += (Vector3)delta;
+	}
 
-    public CollisionPolicy CurrentPolicy => current;
+	public CollisionPolicy CurrentPolicy => current;
 	/// <summary>
 	/// 현재 위치에서 Blocker(환경)들과의 겹침을 검사하여
 	/// "한 번"의 최소 이동 벡터(MTD)를 계산해 반환합니다.
@@ -203,20 +203,20 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 		Vector2 mtd = (accum / mag) * (mag + skin);
 
 		/*** 디버그(기본 비활성, 필요시 주석 해제)
-        // 개별 접촉 법선 시각화
-        for (int i = 0; i < count; i++)
-        {
-            var other = hits[i];
-            if (!other) continue;
-            var d = col.Distance(other);
-            if (!d.isOverlapped) continue;
+		// 개별 접촉 법선 시각화
+		for (int i = 0; i < count; i++)
+		{
+			var other = hits[i];
+			if (!other) continue;
+			var d = col.Distance(other);
+			if (!d.isOverlapped) continue;
 
-            Vector2 p = rb.position; // 대략적인 기준점
-            Debug.DrawRay(p, d.normal * Mathf.Max(d.distance, 0.02f), Color.cyan, 0.02f);
-        }
-        // 최종 MTD(주황)
-        Debug.DrawRay(rb.position, mtd, new Color(1f, 0.5f, 0f), 0.02f);
-        ***/
+			Vector2 p = rb.position; // 대략적인 기준점
+			Debug.DrawRay(p, d.normal * Mathf.Max(d.distance, 0.02f), Color.cyan, 0.02f);
+		}
+		// 최종 MTD(주황)
+		Debug.DrawRay(rb.position, mtd, new Color(1f, 0.5f, 0f), 0.02f);
+		***/
 
 		return mtd;
 	}
@@ -276,24 +276,24 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 		}
 
 		/*** 디버그(기본 비활성, 필요시 주석 해제)
-        if (total.sqrMagnitude > 0f)
-        {
-            Debug.DrawRay(rb.position - total, total, Color.yellow, 0.05f); // 전체 보정(노랑)
-        }
-        ***/
+		if (total.sqrMagnitude > 0f)
+		{
+			Debug.DrawRay(rb.position - total, total, Color.yellow, 0.05f); // 전체 보정(노랑)
+		}
+		***/
 	}
 
 	/*
-    // 참고: "최심 침투 우선형" 알고리즘 개요(요구사항 4 — 실제 구현 X, 주석만)
-    //
-    // for (it=0; it<maxIterations; it++):
-    //   overlaps = OverlapCollider(...)
-    //   if overlaps.empty: break
-    //   pick = argmax(overlaps, by d.distance)   // 가장 깊은 침투 1개 선택
-    //   mtd  = pick.normal * (pick.distance + skin)
-    //   rb.MovePosition(rb.position + mtd)
-    //   // 다음 반복에서 겹침 재평가
-    //
-    // 장점: 안정적(최심 해소부터) / 단점: 반복 횟수가 늘 수 있음
-    */
+	// 참고: "최심 침투 우선형" 알고리즘 개요(요구사항 4 — 실제 구현 X, 주석만)
+	//
+	// for (it=0; it<maxIterations; it++):
+	//   overlaps = OverlapCollider(...)
+	//   if overlaps.empty: break
+	//   pick = argmax(overlaps, by d.distance)   // 가장 깊은 침투 1개 선택
+	//   mtd  = pick.normal * (pick.distance + skin)
+	//   rb.MovePosition(rb.position + mtd)
+	//   // 다음 반복에서 겹침 재평가
+	//
+	// 장점: 안정적(최심 해소부터) / 단점: 반복 횟수가 늘 수 있음
+	*/
 }

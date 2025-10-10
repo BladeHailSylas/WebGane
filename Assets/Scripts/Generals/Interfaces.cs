@@ -247,7 +247,7 @@ namespace SkillInterfaces
 		
 		public abstract IEnumerator Cast(Transform owner, Camera cam, TParam param);
 	}
-        public enum TargetMode { TowardsEntity, TowardsCursor, TowardsMovement, TowardsCoordinate }
+		public enum TargetMode { TowardsEntity, TowardsCursor, TowardsMovement, TowardsCoordinate }
 	
 	public interface IAnchorClearance
 	{
@@ -255,14 +255,14 @@ namespace SkillInterfaces
 		float CollisionRadius { get; } // 스킬 충돌 반경(없으면 0)
 		float AnchorSkin { get; }     // 벽 앞 여유(0.03~0.08)
 	}
-        public interface ITargetingData : IAnchorClearance
-        {
-                TargetMode Mode { get; }
-                float FallbackRange { get; }  // FixedForward 거리
-                Vector2 LocalOffset { get; }  // FixedOffset (TowardsCoordinate 모드에서 사용)
-                LayerMask TargetMask { get; } // TowardsEntity 탐색 시 사용할 대상 마스크
-                bool TargetSelf { get; }      // true일 경우 명시적으로 자신을 대상으로 삼습니다.
-                bool CanPenetrate { get; } // 논타깃: 적중 시에도 종료되지 않는가, 타깃: 대상에게 적중하기 전까지 종료되지 않는가
-        }
+		public interface ITargetingData : IAnchorClearance
+		{
+				TargetMode Mode { get; }
+				float FallbackRange { get; }  // FixedForward 거리
+				Vector2 LocalOffset { get; }  // FixedOffset (TowardsCoordinate 모드에서 사용)
+				LayerMask TargetMask { get; } // TowardsEntity 탐색 시 사용할 대상 마스크
+				bool TargetSelf { get; }      // true일 경우 명시적으로 자신을 대상으로 삼습니다.
+				bool CanPenetrate { get; } // 논타깃: 적중 시에도 종료되지 않는가, 타깃: 대상에게 적중하기 전까지 종료되지 않는가
+		}
 }
 #endregion

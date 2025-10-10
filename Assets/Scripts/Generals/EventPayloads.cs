@@ -28,23 +28,23 @@ using UnityEngine;
 /// </summary>
 public readonly struct GameEventMeta
 {
-    public readonly int EventId;
-    public readonly float Time;
-    public readonly Transform Source;
-    public readonly string? Channel;
-    public readonly int CorrelationId;
+	public readonly int EventId;
+	public readonly float Time;
+	public readonly Transform Source;
+	public readonly string? Channel;
+	public readonly int CorrelationId;
 
-    public GameEventMeta(int eventId, float time, Transform source, string? channel, int correlationId)
-    {
-        EventId = eventId;
-        Time = time;
-        Source = source;
-        Channel = channel;
-        CorrelationId = correlationId;
-    }
+	public GameEventMeta(int eventId, float time, Transform source, string? channel, int correlationId)
+	{
+		EventId = eventId;
+		Time = time;
+		Source = source;
+		Channel = channel;
+		CorrelationId = correlationId;
+	}
 
-    public override string ToString()
-        => $"#{EventId} t={Time:F3} src={(Source ? Source.name : null)} ch={Channel ?? null} corr={CorrelationId}";
+	public override string ToString()
+		=> $"#{EventId} t={Time:F3} src={(Source ? Source.name : null)} ch={Channel ?? null} corr={CorrelationId}";
 }
 
 /// <summary>
@@ -54,11 +54,11 @@ public readonly struct GameEventMeta
 /// </summary>
 public static class GameEventMetaFactory
 {
-    private static int _seq;
+	private static int _seq;
 
-    /// <summary>표준 메타 생성. channel/correlationId는 필요 시에만 지정.</summary>
-    public static GameEventMeta Create(Transform source, string? channel = null, int correlationId = 0)
-        => new(++_seq, Time.time, source, channel, correlationId);
+	/// <summary>표준 메타 생성. channel/correlationId는 필요 시에만 지정.</summary>
+	public static GameEventMeta Create(Transform source, string? channel = null, int correlationId = 0)
+		=> new(++_seq, Time.time, source, channel, correlationId);
 }
 
 #endregion
@@ -73,17 +73,17 @@ public static class GameEventMetaFactory
 /// </summary>
 public readonly struct SkillRef
 {
-    public readonly Object? Asset; // ScriptableObject(또는 기타 UnityEngine.Object)
-    public readonly int Id;                    // 외부 시스템과의 호환을 위한 정수형 키(0이면 미사용으로 간주)
+	public readonly Object? Asset; // ScriptableObject(또는 기타 UnityEngine.Object)
+	public readonly int Id;                    // 외부 시스템과의 호환을 위한 정수형 키(0이면 미사용으로 간주)
 
-    public bool HasAsset => Asset != null;
-    public bool HasId => Id != 0;
+	public bool HasAsset => Asset != null;
+	public bool HasId => Id != 0;
 
-    public SkillRef(Object? asset, int id = 0)
-    { Asset = asset; Id = id; }
+	public SkillRef(Object? asset, int id = 0)
+	{ Asset = asset; Id = id; }
 
-    public override string ToString()
-        => HasAsset ? $"{Asset!.name}(#{Id})" : $"SkillId#{Id}";
+	public override string ToString()
+		=> HasAsset ? $"{Asset!.name}(#{Id})" : $"SkillId#{Id}";
 }
 
 #endregion
@@ -97,16 +97,16 @@ public readonly struct SkillRef
 /// </summary>
 public readonly struct CastStarted
 {
-    public readonly GameEventMeta Meta;
-    public readonly SkillRef Skill;       // 강타입 참조(또는 Id)
-    public readonly ISkillParam Param;    // 시전 시점의 파라미터 스냅샷(읽기 전용 계약)
-    public readonly Transform Caster;     // 편의상 별도 보강
-    public readonly Transform? TargetOpt; // 대상형 스킬일 때만 존재(없으면 null)
+	public readonly GameEventMeta Meta;
+	public readonly SkillRef Skill;       // 강타입 참조(또는 Id)
+	public readonly ISkillParam Param;    // 시전 시점의 파라미터 스냅샷(읽기 전용 계약)
+	public readonly Transform Caster;     // 편의상 별도 보강
+	public readonly Transform? TargetOpt; // 대상형 스킬일 때만 존재(없으면 null)
 
-    public CastStarted(GameEventMeta meta, SkillRef skill, ISkillParam param, Transform caster, Transform? targetOpt)
-    { Meta = meta; Skill = skill; Param = param; Caster = caster; TargetOpt = targetOpt; }
+	public CastStarted(GameEventMeta meta, SkillRef skill, ISkillParam param, Transform caster, Transform? targetOpt)
+	{ Meta = meta; Skill = skill; Param = param; Caster = caster; TargetOpt = targetOpt; }
 
-    public override string ToString() => $"CastStarted[{Skill}] by {Caster.name}";
+	public override string ToString() => $"CastStarted[{Skill}] by {Caster.name}";
 }
 
 /// <summary>
@@ -115,15 +115,15 @@ public readonly struct CastStarted
 /// </summary>
 public readonly struct CastEnded
 {
-    public readonly GameEventMeta Meta;
-    public readonly SkillRef Skill;
-    public readonly Transform Caster;
-    public readonly bool Interrupted;
+	public readonly GameEventMeta Meta;
+	public readonly SkillRef Skill;
+	public readonly Transform Caster;
+	public readonly bool Interrupted;
 
-    public CastEnded(GameEventMeta meta, SkillRef skill, Transform caster, bool interrupted)
-    { Meta = meta; Skill = skill; Caster = caster; Interrupted = interrupted; }
+	public CastEnded(GameEventMeta meta, SkillRef skill, Transform caster, bool interrupted)
+	{ Meta = meta; Skill = skill; Caster = caster; Interrupted = interrupted; }
 
-    public override string ToString() => $"CastEnded[{Skill}] by {Caster.name}, interrupted={Interrupted}";
+	public override string ToString() => $"CastEnded[{Skill}] by {Caster.name}, interrupted={Interrupted}";
 }
 
 /// <summary>
@@ -131,26 +131,26 @@ public readonly struct CastEnded
 /// </summary>
 public readonly struct TargetAcquired
 {
-    public readonly GameEventMeta Meta;
-    public readonly SkillRef Skill;
-    public readonly Transform Caster;
-    public readonly Transform Target;
-    public TargetAcquired(GameEventMeta meta, SkillRef skill, Transform caster, Transform target)
-    {
-        Meta = meta; Skill = skill; Caster = caster; Target = target;
-    }
-    public override string ToString() => $"TargetAcquired[{Target.name}] by {Caster.name} to activate {Skill}";
+	public readonly GameEventMeta Meta;
+	public readonly SkillRef Skill;
+	public readonly Transform Caster;
+	public readonly Transform Target;
+	public TargetAcquired(GameEventMeta meta, SkillRef skill, Transform caster, Transform target)
+	{
+		Meta = meta; Skill = skill; Caster = caster; Target = target;
+	}
+	public override string ToString() => $"TargetAcquired[{Target.name}] by {Caster.name} to activate {Skill}";
 }
 public readonly struct TargetNotFound
 {
-    public readonly GameEventMeta Meta;
-    public readonly SkillRef Skill;
-    public readonly Transform Caster;
-    public TargetNotFound(GameEventMeta meta, SkillRef skill, Transform caster)
-    {
-        Meta = meta; Skill = skill; Caster = caster;
-    }
-    public override string ToString() => $"TargetNotFound by {Caster.name} to activate {Skill}";
+	public readonly GameEventMeta Meta;
+	public readonly SkillRef Skill;
+	public readonly Transform Caster;
+	public TargetNotFound(GameEventMeta meta, SkillRef skill, Transform caster)
+	{
+		Meta = meta; Skill = skill; Caster = caster;
+	}
+	public override string ToString() => $"TargetNotFound by {Caster.name} to activate {Skill}";
 }
 
 #endregion
@@ -167,34 +167,34 @@ public readonly struct TargetNotFound
 /// </summary>
 public readonly struct DamageDealt
 {
-    public readonly GameEventMeta Meta;
-    public readonly Transform Attacker;
-    public readonly Transform Target;
-    public readonly float RawDamage;
-    public readonly float FinalDamage;
-    public readonly float ArmorPenetration;
-    public readonly EDamageType DamageType;
-    public readonly Vector2 HitPoint;
-    public readonly Vector2 HitNormal;
+	public readonly GameEventMeta Meta;
+	public readonly Transform Attacker;
+	public readonly Transform Target;
+	public readonly float RawDamage;
+	public readonly float FinalDamage;
+	public readonly float ArmorPenetration;
+	public readonly EDamageType DamageType;
+	public readonly Vector2 HitPoint;
+	public readonly Vector2 HitNormal;
 
-    public DamageDealt(
-        GameEventMeta meta, Transform attacker, Transform target,
-        float rawDamage, float finalDamage, float armorPenetration, EDamageType damageType,
-        Vector2 hitPoint, Vector2 hitNormal)
-    {
-        Meta = meta;
-        Attacker = attacker;
-        Target = target;
-        RawDamage = rawDamage;
-        FinalDamage = finalDamage;
-        ArmorPenetration = armorPenetration;
-        DamageType = damageType;
-        HitPoint = hitPoint;
-        HitNormal = hitNormal;
-    }
+	public DamageDealt(
+		GameEventMeta meta, Transform attacker, Transform target,
+		float rawDamage, float finalDamage, float armorPenetration, EDamageType damageType,
+		Vector2 hitPoint, Vector2 hitNormal)
+	{
+		Meta = meta;
+		Attacker = attacker;
+		Target = target;
+		RawDamage = rawDamage;
+		FinalDamage = finalDamage;
+		ArmorPenetration = armorPenetration;
+		DamageType = damageType;
+		HitPoint = hitPoint;
+		HitNormal = hitNormal;
+	}
 
-    public override string ToString()
-        => $"DamageDealt {FinalDamage} ({DamageType}) {Attacker.name}→{Target.name}";
+	public override string ToString()
+		=> $"DamageDealt {FinalDamage} ({DamageType}) {Attacker.name}→{Target.name}";
 }
 
 /// <summary>피해 유형: 일반 피해 Normal, 비례 피해 Percentaged(최대 체력의 1% 등), 고정 피해 Fixed(피해량 변동이 없음, 그것이 고정이니까 음)</summary>
@@ -217,17 +217,17 @@ public enum EDamageType { Normal, Percentaged, Fixed }
 /// </summary>
 public readonly struct BuffApplyReq
 {
-    public readonly GameEventMeta Meta;
-    public readonly Transform Target;
-    public readonly IStatModifier Mod;
-    public readonly float Duration;
-    public readonly string? Tag;
+	public readonly GameEventMeta Meta;
+	public readonly Transform Target;
+	public readonly IStatModifier Mod;
+	public readonly float Duration;
+	public readonly string? Tag;
 
-    public BuffApplyReq(GameEventMeta meta, Transform target, IStatModifier mod, float duration, string? tag = null)
-    { Meta = meta; Target = target; Mod = mod; Duration = duration; Tag = tag; }
+	public BuffApplyReq(GameEventMeta meta, Transform target, IStatModifier mod, float duration, string? tag = null)
+	{ Meta = meta; Target = target; Mod = mod; Duration = duration; Tag = tag; }
 
-    public override string ToString()
-        => $"BuffApplyReq {Mod?.GetType().Name} to {Target.name}, dur={Duration}, tag={Tag}";
+	public override string ToString()
+		=> $"BuffApplyReq {Mod?.GetType().Name} to {Target.name}, dur={Duration}, tag={Tag}";
 }
 
 /// <summary>
@@ -236,17 +236,17 @@ public readonly struct BuffApplyReq
 /// </summary>
 public readonly struct EffectApplyReq
 {
-    public readonly GameEventMeta Meta;
-    public readonly Transform Target;
-    public readonly IEffectModifier Mod;
-    public readonly float Duration;
-    public readonly string? Tag;
+	public readonly GameEventMeta Meta;
+	public readonly Transform Target;
+	public readonly IEffectModifier Mod;
+	public readonly float Duration;
+	public readonly string? Tag;
 
-    public EffectApplyReq(GameEventMeta meta, Transform target, IEffectModifier mod, float duration, string? tag = null)
-    { Meta = meta; Target = target; Mod = mod; Duration = duration; Tag = tag; }
+	public EffectApplyReq(GameEventMeta meta, Transform target, IEffectModifier mod, float duration, string? tag = null)
+	{ Meta = meta; Target = target; Mod = mod; Duration = duration; Tag = tag; }
 
-    public override string ToString()
-        => $"EffectApplyReq {Mod?.GetType().Name} to {Target.name}, dur={Duration}, tag={Tag}";
+	public override string ToString()
+		=> $"EffectApplyReq {Mod?.GetType().Name} to {Target.name}, dur={Duration}, tag={Tag}";
 }
 
 /// <summary>
@@ -256,15 +256,15 @@ public readonly struct EffectApplyReq
 /// </summary>
 public readonly struct BuffRemoveReq
 {
-    public readonly GameEventMeta Meta;
-    public readonly Transform Target;
-    public readonly IStatModifier Mod;
+	public readonly GameEventMeta Meta;
+	public readonly Transform Target;
+	public readonly IStatModifier Mod;
 
-    public BuffRemoveReq(GameEventMeta meta, Transform target, IStatModifier mod)
-    { Meta = meta; Target = target; Mod = mod; }
+	public BuffRemoveReq(GameEventMeta meta, Transform target, IStatModifier mod)
+	{ Meta = meta; Target = target; Mod = mod; }
 
-    public override string ToString()
-        => $"BuffRemoveReq {Mod?.GetType().Name} from {Target.name}";
+	public override string ToString()
+		=> $"BuffRemoveReq {Mod?.GetType().Name} from {Target.name}";
 }
 
 /// <summary>
@@ -272,15 +272,29 @@ public readonly struct BuffRemoveReq
 /// </summary>
 public readonly struct EffectRemoveReq
 {
-    public readonly GameEventMeta Meta;
-    public readonly Transform Target;
-    public readonly IEffectModifier Mod;
+	public readonly GameEventMeta Meta;
+	public readonly Transform Target;
+	public readonly IEffectModifier Mod;
 
-    public EffectRemoveReq(GameEventMeta meta, Transform target, IEffectModifier mod)
-    { Meta = meta; Target = target; Mod = mod; }
+	public EffectRemoveReq(GameEventMeta meta, Transform target, IEffectModifier mod)
+	{ Meta = meta; Target = target; Mod = mod; }
 
-    public override string ToString()
-        => $"EffectRemoveReq {Mod?.GetType().Name} from {Target.name}";
+	public override string ToString()
+		=> $"EffectRemoveReq {Mod?.GetType().Name} from {Target.name}";
+}
+
+#endregion
+
+#region ===== 시스템 =====
+
+public struct OrchestratorAwake
+{
+	public readonly GameEventMeta Meta;
+}
+
+public struct OnTick
+{
+	public readonly GameEventMeta Meta;
 }
 
 #endregion
@@ -292,14 +306,14 @@ public readonly struct EffectRemoveReq
 // - 테스트 더블/모킹이 쉬워집니다.
 public interface IStatModifier
 {
-    void Apply(PlayerStats s);
-    void Remove(PlayerStats s);
+	void Apply(PlayerStats s);
+	void Remove(PlayerStats s);
 }
 
 public interface IEffectModifier
 {
-    void Apply(PlayerEffects fx);
-    void Remove(PlayerEffects fx);
+	void Apply(PlayerEffects fx);
+	void Remove(PlayerEffects fx);
 }
 
 #endregion
