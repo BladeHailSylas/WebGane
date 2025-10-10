@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using SkillInterfaces;
+using ActInterfaces;
 
 namespace Intents
 {
@@ -37,6 +38,16 @@ namespace Intents
 
 		private readonly StringBuilder _tickLog = new(256);
 
+		public void TieBreaker(params IVulnerable[] damaged)
+		{
+			if (damaged == null || damaged.Length == 0) return;
+			foreach(var d in damaged)
+			{
+				if (d == null) continue;
+				Debug.Log($"TieBreaker hitted");
+				d.Die();
+			}
+		}
 		void Awake()
 		{
 			if (Instance != null && Instance != this)

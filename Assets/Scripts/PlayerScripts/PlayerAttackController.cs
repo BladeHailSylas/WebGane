@@ -54,11 +54,6 @@ public class PlayerAttackController : MonoBehaviour
 		slotBindings[binding.slot] = (mech, binding.param);
 	}
 
-	void Attack() => TryCast(SkillSlot.Attack);
-	void Skill1() => TryCast(SkillSlot.Skill1);
-	void Skill2() => TryCast(SkillSlot.Skill2);
-	void Ultimate() => TryCast(SkillSlot.Ultimate);
-
 	void OnEnable()
 	{
 		if (attackKey)
