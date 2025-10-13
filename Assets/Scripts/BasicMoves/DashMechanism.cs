@@ -77,28 +77,33 @@ public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
 								float elapsed = 0f;
 								float total = Mathf.Max(0.01f, p.duration);
 
-								while (remaining > 0f)
-								{
-										using (motor.With(dashPolicy))
-										{
-												// 센서 기반 확장을 위한 placeholder입니다.
-										}
+                                                                float tickDuration = 1f / Ticker.TicksPerSecond;
 
-										float tNorm = Mathf.Clamp01(elapsed / total);
-										float nominalSpeed = (desiredDist / total) * p.speedCurve.Evaluate(tNorm);
-										float stepDist = Mathf.Min(remaining, nominalSpeed * Time.deltaTime);
+                                                                while (remaining > 0f)
+                                                                {
+                                                                                using (motor.With(dashPolicy))
+                                                                                {
+                                                                                                // 센서 기반 확장을 위한 placeholder입니다.
+                                                                                }
 
-										Vector2 pos = owner.position;
-										Vector2 aim = dashTarget ? (Vector2)dashTarget.position - pos : fallbackDir;
-										Vector2 dir = aim.sqrMagnitude > 1e-4f ? aim.normalized : dir0;
+                                                                                float tNorm = Mathf.Clamp01(elapsed / total);
+                                                                                float nominalSpeed = (desiredDist / total) * p.speedCurve.Evaluate(tNorm);
+                                                                                float stepDist = Mathf.Min(remaining, nominalSpeed / Ticker.TicksPerSecond);
 
-										motor.Depenetration();
-										var res = motor.SweepMove(dir * stepDist);
-										motor.Depenetration();
-										remaining -= res.actualDelta.magnitude;
+                                                                                Vector2 pos = owner.position;
+                                                                                Vector2 aim = dashTarget ? (Vector2)dashTarget.position - pos : fallbackDir;
+                                                                                Vector2 dir = aim.sqrMagnitude > 1e-4f ? aim.normalized : dir0;
 
-										if (p.dealDamage && p.enemyMask.value != 0)
-										{
+                                                                                motor.Depenetration();
+                                                                                int awaitedTick = motor.LastProcessedTick;
+                                                                                motor.SweepMove(new FixedVector2(dir * stepDist));
+                                                                                yield return new WaitUntil(() => motor.LastProcessedTick > awaitedTick);
+                                                                                motor.Depenetration();
+                                                                                var res = motor.LastMoveResult;
+                                                                                remaining -= res.ActualDeltaVector.magnitude;
+
+                                                                                if (p.dealDamage && p.enemyMask.value != 0)
+                                                                                {
 												var hits = Physics2D.OverlapCircleAll(owner.position, p.radius, p.enemyMask);
 												foreach (var c in hits)
 												{
@@ -128,13 +133,12 @@ public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
 														break;
 										}
 
-										elapsed += Time.deltaTime;
-										if (elapsed >= total) break;
+                                                                                elapsed += tickDuration;
+                                                                                if (elapsed >= total) break;
 
-										yield return null;
-								}
+                                                                }
 
-								motor.Depenetration();
+                                                                motor.Depenetration();
 						}
 
 						MechanismRuntimeUtil.QueueFollowUps(p, AbilityHook.OnCastEnd, dashTarget, "Dash");
