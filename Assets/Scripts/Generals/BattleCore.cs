@@ -324,9 +324,9 @@ public sealed class Ticker
 	public void Step()
 	{
 		_tickCount++;
-		if(_tickCount % 60 == 0)
+		if(_tickCount % TicksPerSecond == 0)
 		{
-			Debug.Log($"Tick {_tickCount} at {Time.realtimeSinceStartup:F3}s");
+			Debug.Log($"Tick {_tickCount} at {Time.realtimeSinceStartup:F3}s"); // Time.realtimeSinceStartup is just for debugging, not used for real timing. IT IS NOT QUITE DETERMINISTIC
 		}
 		if (_tickCount == 65535) // wrap around to avoid overflow
 		{
