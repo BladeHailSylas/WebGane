@@ -1,21 +1,13 @@
-using ActInterfaces;
+﻿using ActInterfaces;
 using UnityEngine;
 
-public class PlayerLocomotion : MonoBehaviour, IMovable, IPullable
+public class PlayerLocomotion : MonoBehaviour
 {
-    FixedVector2 _knockbackBudget;                         // ̹ ӿ Һ ߰ ( ǥ)
-        float distancePerTick = Mathf.Max(0f, speed) / Ticker.TicksPerSecond;
-        Vector2 delta = distancePerTick * dir;
-        FixedVector2 fixedDelta = new(delta);
-        if (_knockbackBudget.RawX != 0 || _knockbackBudget.RawY != 0)
-            fixedDelta += _knockbackBudget;
-            _knockbackBudget = new FixedVector2(0, 0);
-        var motor = GetComponentInParent<KinematicMotor2D>();
-        if (!motor) return;
-        motor.Depenetration();
-        motor.SweepMove(fixedDelta);
-        motor.Depenetration();
-        LastMoveDir = direction;
+	public void Move(Vector2 _, Rigidbody2D __, float ___)
+	{
+		//Debug.LogError("HELP!");
+	}
+    /*FixedVector2 _knockbackBudget;                         // ̹ ӿ Һ ߰ ( ǥ)
         float distancePerTick = Mathf.Max(0f, force) / Ticker.TicksPerSecond;
         _knockbackBudget += new FixedVector2(dir * distancePerTick);
             delta += _knockbackBudget;
@@ -42,7 +34,7 @@ public class PlayerLocomotion : MonoBehaviour, IMovable, IPullable
     {
         Vector2 dir = direction.sqrMagnitude > 1e-4f ? direction.normalized : Vector2.zero;
         _knockbackBudget += dir * Mathf.Max(0f, force);
-    }
+    }*/
 
     // (참고) 기존 Jump/Coroutine은 그대로 두되, 실제 수직 이동이 필요하면 별도 모터/레이어로 분리 권장 -> Jump를 계속 사용해야 할지 모르겠음
 }

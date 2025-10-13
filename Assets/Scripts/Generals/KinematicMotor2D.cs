@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using ActInterfaces;
@@ -24,7 +24,7 @@ public struct MoveResult
     /// <summary>
     /// Helper accessor for legacy call sites that expect a float Vector2 delta.
     /// </summary>
-    public Vector2 ActualDeltaVector => actualDelta.ToVector2();
+    public readonly Vector2 ActualDeltaVector => actualDelta.ToVector2();
 }
 
 [DisallowMultipleComponent]

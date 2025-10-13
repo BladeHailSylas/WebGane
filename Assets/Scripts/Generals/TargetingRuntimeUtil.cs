@@ -100,6 +100,7 @@ public static class TargetingRuntimeUtil
 				case TargetMode.TowardsMovement:
 					var mover = owner.GetComponentInChildren<IMovable>(); //owner가 Player가 아니고 SkillRunner임, IMovable은 Player에 붙어있으므로 참조가 불가 => 부모의 자식으로부터 참조하는 건 비효율적인데
 																		//owner가 제대로 Player를 가져오게 만드는 방법?
+																		//Monobehaviour가 아니라서 GetComponentInChildren 같은 건 불가능, 그렇다면 전역적으로 전달해야 한다?
 					if (mover != null && mover.LastMoveDir.sqrMagnitude > MinDirectionSqr)
 					{
 						fallbackDir = mover.LastMoveDir; //직접 참조하려는 과정에서 문제가 발생하는 것 같음

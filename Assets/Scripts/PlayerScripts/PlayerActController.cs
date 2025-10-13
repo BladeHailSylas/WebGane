@@ -52,6 +52,6 @@ public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
 	public void ApplyKnockback(Vector2 direction, float force)
 	{
 		// Kinematic에서는 velocity/Force가 먹지 않으므로 Locomotion 버퍼로 위임
-		locomotion.ApplyKnockback(direction, force);               // :contentReference[oaicite:9]{index=9}
+		//locomotion.ApplyKnockback(direction, force);               // :contentReference[oaicite:9]{index=9}
 	}
 }

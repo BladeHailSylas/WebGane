@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -51,8 +52,8 @@ public readonly struct FixedVector2
 {
     public const int UnitsPerFloat = 1000;
 
-    [SerializeField] private readonly int _rawX;
-    [SerializeField] private readonly int _rawY;
+    [SerializeField] readonly int _rawX;
+    [SerializeField] readonly int _rawY;
 
     /// <summary>
     /// Raw X component (in fixed units).
@@ -141,12 +142,12 @@ public struct HitBox
         HalfSize = halfSize;
     }
 
-    public int MinX => Center.RawX - HalfSize.RawX;
-    public int MaxX => Center.RawX + HalfSize.RawX;
-    public int MinY => Center.RawY - HalfSize.RawY;
-    public int MaxY => Center.RawY + HalfSize.RawY;
+    public readonly int MinX => Center.RawX - HalfSize.RawX;
+    public readonly int MaxX => Center.RawX + HalfSize.RawX;
+    public readonly int MinY => Center.RawY - HalfSize.RawY;
+    public readonly int MaxY => Center.RawY + HalfSize.RawY;
 
-    public bool Overlaps(HitBox other)
+    public readonly bool Overlaps(HitBox other)
     {
         long dx = Math.Abs((long)Center.RawX - other.Center.RawX);
         long dy = Math.Abs((long)Center.RawY - other.Center.RawY);
@@ -156,7 +157,7 @@ public struct HitBox
         return !separated;
     }
 
-    public bool Overlaps(HitCircle circle)
+	public readonly bool Overlaps(HitCircle circle)
     {
         int clampedX = Mathf.Clamp(circle.Center.RawX, MinX, MaxX);
         int clampedY = Mathf.Clamp(circle.Center.RawY, MinY, MaxY);
@@ -183,13 +184,13 @@ public struct HitCircle
         Radius = Mathf.Max(0, radius);
     }
 
-    public bool Overlaps(HitCircle other)
+    public readonly bool Overlaps(HitCircle other)
     {
         long radii = (long)Radius + other.Radius;
         return FixedVector2.DistanceSquared(Center, other.Center) <= radii * radii;
     }
 
-    public bool Overlaps(HitBox box)
+    public readonly bool Overlaps(HitBox box)
     {
         return box.Overlaps(this);
     }
@@ -210,13 +211,13 @@ public struct CoreTransform
         Rotation = rotation;
     }
 
-    public Vector3 ToVector3(float z = 0f)
+    public readonly Vector3 ToVector3(float z = 0f)
     {
         Vector2 pos2 = Position.ToVector2();
         return new Vector3(pos2.x, pos2.y, z);
     }
 
-    public void ApplyTo(Transform transform)
+    public readonly void ApplyTo(Transform transform)
     {
         if (!transform)
         {
@@ -224,7 +225,7 @@ public struct CoreTransform
         }
 
         Vector2 pos2 = Position.ToVector2();
-        Vector3 target = new Vector3(pos2.x, pos2.y, transform.position.z);
+        Vector3 target = new(pos2.x, pos2.y, transform.position.z);
         transform.position = target;
         transform.rotation = Quaternion.Euler(0f, 0f, Rotation);
     }
@@ -289,16 +290,19 @@ internal sealed class BattleCoreTickerRunner : MonoBehaviour
 
     private void Awake()
     {
-        if (_ticker == null)
-        {
-            _ticker = BattleCore.Ticker;
-        }
+        _ticker ??= BattleCore.Ticker;
+		StartCoroutine(TickLoop());
     }
 
-    private void Update()
-    {
-        _ticker?.Step(Time.deltaTime);
-    }
+	IEnumerator TickLoop()
+	{
+		var interval = new WaitForSecondsRealtime(1f / Ticker.TicksPerSecond);
+		while (true)
+		{
+			_ticker.Step();
+			yield return interval;
+		}
+	}
 }
 
 /// <summary>
@@ -306,36 +310,29 @@ internal sealed class BattleCoreTickerRunner : MonoBehaviour
 /// </summary>
 public sealed class Ticker
 {
-    public const int TicksPerSecond = 60;
+	public const int TicksPerSecond = 60;
+	public const int TickIntervalMs = 1000 / TicksPerSecond;
 
-    public event Action<int> OnTick;
+	public event Action<int> OnTick;
 
-    private float _accumulator;
-    private int _tickCount;
+	private ushort _tickCount;
+	public ushort TickCount => _tickCount;
 
-    public int TickCount => _tickCount;
+	public void Reset() => _tickCount = 0;
 
-    public void Reset()
-    {
-        _accumulator = 0f;
-        _tickCount = 0;
-    }
-
-    public void Step(float deltaTime)
-    {
-        if (deltaTime <= 0f)
-        {
-            return;
-        }
-
-        _accumulator += deltaTime;
-        float interval = 1f / TicksPerSecond;
-
-        while (_accumulator >= interval)
-        {
-            _accumulator -= interval;
-            _tickCount++;
-            OnTick?.Invoke(_tickCount);
-        }
-    }
+	// Deterministic: "한번 호출할 때마다 정확히 한 틱"만 진행
+	public void Step()
+	{
+		_tickCount++;
+		if(_tickCount % 60 == 0)
+		{
+			Debug.Log($"Tick {_tickCount} at {Time.realtimeSinceStartup:F3}s");
+		}
+		if (_tickCount == 65535) // wrap around to avoid overflow
+		{
+			Debug.LogError("Overflow has occurred. Perhaps ushort is too short...");
+			_tickCount = 0;
+		}
+		OnTick?.Invoke(_tickCount);
+	}
 }
