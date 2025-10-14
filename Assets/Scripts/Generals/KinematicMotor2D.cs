@@ -6,25 +6,25 @@ using ActInterfaces;
 [Serializable]
 public struct CollisionPolicy
 {
-    public LayerMask wallsMask;
-    public LayerMask enemyMask;
-    public bool enemyAsBlocker;
-    public float radius;
-    public float skin;
-    public bool allowWallSlide;
+	public LayerMask wallsMask;
+	public LayerMask enemyMask;
+	public bool enemyAsBlocker;
+	public int unitradius;
+	public int unitskin;
+	public bool allowWallSlide;
 }
 
 public struct MoveResult
 {
-    public FixedVector2 actualDelta;
-    public bool hitWall, hitEnemy;
-    public Transform hitTransform;
-    public Vector2 hitNormal;
+	public FixedVector2 actualDelta;
+	public bool hitWall, hitEnemy;
+	public Transform hitTransform;
+	public Vector2 hitNormal;
 
-    /// <summary>
-    /// Helper accessor for legacy call sites that expect a float Vector2 delta.
-    /// </summary>
-    public readonly Vector2 ActualDeltaVector => actualDelta.ToVector2();
+	/// <summary>
+	/// Helper accessor for legacy call sites that expect a float Vector2 delta.
+	/// </summary>
+	public readonly Vector2 ActualDeltaVector => actualDelta.ToVector2();
 }
 
 [DisallowMultipleComponent]
@@ -32,394 +32,393 @@ public struct MoveResult
 [RequireComponent(typeof(Collider2D))]
 public class KinematicMotor2D : MonoBehaviour, ISweepable
 {
-    [Header("Defaults")]
-    public CollisionPolicy defaultPolicy = new()
-    {
-        wallsMask = 0,
-        enemyMask = 0,
-        enemyAsBlocker = true,
-        radius = 0.5f,
-        skin = 0.125f,
-        allowWallSlide = true
-    };
+	[Header("Defaults")]
+	public CollisionPolicy defaultPolicy = new()
+	{
+		wallsMask = 0,
+		enemyMask = 0,
+		enemyAsBlocker = true,
+		unitradius = 500,
+		unitskin = 125,
+		allowWallSlide = true
+	};
+	[Obsolete]
+	private Rigidbody2D rb;
+	[Obsolete]
+	private Collider2D col;
+	private CollisionPolicy current;
 
-    private Rigidbody2D rb;
-    private Collider2D col;
-    private CollisionPolicy current;
+	private readonly List<FixedVector2> _pendingMoves = new();
+	private CoreTransform _coreTransform;
+	private MoveResult _lastMoveResult;
+	private int _lastProcessedTick;
+	private bool _needsTransformSync;
 
-    private readonly List<FixedVector2> _pendingMoves = new();
-    private CoreTransform _coreTransform;
-    private MoveResult _lastMoveResult;
-    private int _lastProcessedTick;
-    private bool _needsTransformSync;
+	private void Awake()
+	{
+		rb = GetComponent<Rigidbody2D>();
+		rb.bodyType = RigidbodyType2D.Kinematic;
+		rb.gravityScale = 0f;
+		current = defaultPolicy;
+		col = rb.GetComponent<Collider2D>();
+		Debug.Log(col.isTrigger);
 
-    private void Awake()
-    {
-        BattleCore.Initialize();
+		_coreTransform = CoreTransform.FromTransform(transform);
+		_needsTransformSync = true;
+	}
 
-        rb = GetComponent<Rigidbody2D>();
-        rb.bodyType = RigidbodyType2D.Kinematic;
-        rb.gravityScale = 0f;
-        current = defaultPolicy;
-        col = rb.GetComponent<Collider2D>();
-        Debug.Log(col.isTrigger);
+	private void OnEnable()
+	{
+		BattleCore.Ticker.OnTick += HandleTick;
+	}
 
-        _coreTransform = CoreTransform.FromTransform(transform);
-        _needsTransformSync = true;
-    }
+	private void OnDisable()
+	{
+		BattleCore.Ticker.OnTick -= HandleTick;
+	}
 
-    private void OnEnable()
-    {
-        BattleCore.Ticker.OnTick += HandleTick;
-    }
+	private void HandleTick(int tick)
+	{
+		ProcessPendingMoves();
+		_lastProcessedTick = tick;
+	}
 
-    private void OnDisable()
-    {
-        BattleCore.Ticker.OnTick -= HandleTick;
-    }
+	private void LateUpdate()
+	{
+		if (!_needsTransformSync)
+		{
+			return;
+		}
 
-    private void HandleTick(int tick)
-    {
-        ProcessPendingMoves();
-        _lastProcessedTick = tick;
-    }
+		// Mirror the deterministic CoreTransform to the Unity Transform every frame when movement occurred.
+		_coreTransform.ApplyTo(transform);
+		_needsTransformSync = false;
+	}
 
-    private void LateUpdate()
-    {
-        if (!_needsTransformSync)
-        {
-            return;
-        }
+	public IDisposable With(in CollisionPolicy overridePolicy)
+	{
+		var prev = current;
+		current = overridePolicy;
+		return new Scope(() => current = prev);
+	}
 
-        // Mirror the deterministic CoreTransform to the Unity Transform every frame when movement occurred.
-        _coreTransform.ApplyTo(transform);
-        _needsTransformSync = false;
-    }
+	private sealed class Scope : IDisposable
+	{
+		private readonly Action onDispose;
 
-    public IDisposable With(in CollisionPolicy overridePolicy)
-    {
-        var prev = current;
-        current = overridePolicy;
-        return new Scope(() => current = prev);
-    }
+		public Scope(Action action)
+		{
+			onDispose = action;
+		}
 
-    private sealed class Scope : IDisposable
-    {
-        private readonly Action onDispose;
+		public void Dispose()
+		{
+			onDispose?.Invoke();
+		}
+	}
 
-        public Scope(Action action)
-        {
-            onDispose = action;
-        }
+	/// <summary>
+	/// Queue a deterministic movement request that will resolve on the next BattleCore tick.
+	/// </summary>
+	/// <param name="desiredDelta">Desired displacement expressed in fixed units.</param>
+	public void SweepMove(FixedVector2 desiredDelta)
+	{
+		_pendingMoves.Add(desiredDelta);
+	}
 
-        public void Dispose()
-        {
-            onDispose?.Invoke();
-        }
-    }
+	/// <summary>
+	/// Last resolved move result (updated after each tick).
+	/// </summary>
+	public MoveResult LastMoveResult => _lastMoveResult;
 
-    /// <summary>
-    /// Queue a deterministic movement request that will resolve on the next BattleCore tick.
-    /// </summary>
-    /// <param name="desiredDelta">Desired displacement expressed in fixed units.</param>
-    public void SweepMove(FixedVector2 desiredDelta)
-    {
-        _pendingMoves.Add(desiredDelta);
-    }
+	/// <summary>
+	/// Tick index corresponding to <see cref="LastMoveResult"/>.
+	/// </summary>
+	public int LastProcessedTick => _lastProcessedTick;
 
-    /// <summary>
-    /// Last resolved move result (updated after each tick).
-    /// </summary>
-    public MoveResult LastMoveResult => _lastMoveResult;
+	private Vector2 RemoveNormalComponent(Vector2 vector, LayerMask mask, ref MoveResult result)
+	{
+		Vector2 vfinal = vector;
+		float magnitude = vector.magnitude;
+		if (magnitude <= 0f)
+		{
+			return Vector2.zero;
+		}
 
-    /// <summary>
-    /// Tick index corresponding to <see cref="LastMoveResult"/>.
-    /// </summary>
-    public int LastProcessedTick => _lastProcessedTick;
+		Vector2 origin = _coreTransform.Position.ToVector2();
+		var maskHit = Physics2D.CircleCastAll(origin, current.unitradius, vector.normalized, magnitude, mask);
+		foreach (var hit in maskHit)
+		{
+			if (!hit.collider)
+			{
+				continue;
+			}
 
-    private Vector2 RemoveNormalComponent(Vector2 vector, LayerMask mask, ref MoveResult result)
-    {
-        Vector2 vfinal = vector;
-        float magnitude = vector.magnitude;
-        if (magnitude <= 0f)
-        {
-            return Vector2.zero;
-        }
+			if (mask == current.enemyMask && !current.enemyAsBlocker)
+			{
+				continue;
+			}
 
-        Vector2 origin = _coreTransform.Position.ToVector2();
-        var maskHit = Physics2D.CircleCastAll(origin, current.radius, vector.normalized, magnitude, mask);
-        foreach (var hit in maskHit)
-        {
-            if (!hit.collider)
-            {
-                continue;
-            }
+			if (mask == current.enemyMask)
+			{
+				result.hitEnemy = true;
+			}
+			else
+			{
+				result.hitWall = true;
+			}
 
-            if (mask == current.enemyMask && !current.enemyAsBlocker)
-            {
-                continue;
-            }
+			result.hitTransform = hit.transform;
+			result.hitNormal = hit.normal.normalized;
 
-            if (mask == current.enemyMask)
-            {
-                result.hitEnemy = true;
-            }
-            else
-            {
-                result.hitWall = true;
-            }
+			Vector2 n = hit.normal.normalized;
+			float dot = Vector2.Dot(vfinal, n);
+			if (Mathf.Abs(dot) > 0f)
+			{
+				vfinal -= dot * n;
+			}
+		}
 
-            result.hitTransform = hit.transform;
-            result.hitNormal = hit.normal.normalized;
+		return vfinal;
+	}
 
-            Vector2 n = hit.normal.normalized;
-            float dot = Vector2.Dot(vfinal, n);
-            if (Mathf.Abs(dot) > 0f)
-            {
-                vfinal -= dot * n;
-            }
-        }
+	private void ProcessPendingMoves()
+	{
+		if (_pendingMoves.Count == 0)
+		{
+			_lastMoveResult = default;
+			return;
+		}
 
-        return vfinal;
-    }
+		MoveResult aggregated = default;
+		FixedVector2 totalActual = new(0, 0);
 
-    private void ProcessPendingMoves()
-    {
-        if (_pendingMoves.Count == 0)
-        {
-            _lastMoveResult = default;
-            return;
-        }
+		for (int i = 0; i < _pendingMoves.Count; i++)
+		{
+			FixedVector2 requested = _pendingMoves[i];
+			MoveResult step = ExecuteSweep(requested);
+			totalActual += step.actualDelta;
+			aggregated.hitWall |= step.hitWall;
+			aggregated.hitEnemy |= step.hitEnemy;
+			if (!aggregated.hitTransform && step.hitTransform)
+			{
+				aggregated.hitTransform = step.hitTransform;
+			}
 
-        MoveResult aggregated = default;
-        FixedVector2 totalActual = new(0, 0);
+			if (step.hitNormal != Vector2.zero)
+			{
+				aggregated.hitNormal = step.hitNormal;
+			}
+		}
 
-        for (int i = 0; i < _pendingMoves.Count; i++)
-        {
-            FixedVector2 requested = _pendingMoves[i];
-            MoveResult step = ExecuteSweep(requested);
-            totalActual += step.actualDelta;
-            aggregated.hitWall |= step.hitWall;
-            aggregated.hitEnemy |= step.hitEnemy;
-            if (!aggregated.hitTransform && step.hitTransform)
-            {
-                aggregated.hitTransform = step.hitTransform;
-            }
+		aggregated.actualDelta = totalActual;
+		_lastMoveResult = aggregated;
+		_pendingMoves.Clear();
+	}
 
-            if (step.hitNormal != Vector2.zero)
-            {
-                aggregated.hitNormal = step.hitNormal;
-            }
-        }
+	private MoveResult ExecuteSweep(FixedVector2 desiredDelta)
+	{
+		MoveResult result = new()
+		{
+			actualDelta = new FixedVector2(0, 0)
+		};
 
-        aggregated.actualDelta = totalActual;
-        _lastMoveResult = aggregated;
-        _pendingMoves.Clear();
-    }
+		Vector2 desired = desiredDelta.ToVector2();
+		if (desired.sqrMagnitude <= 0f)
+		{
+			return result;
+		}
 
-    private MoveResult ExecuteSweep(FixedVector2 desiredDelta)
-    {
-        MoveResult result = new()
-        {
-            actualDelta = new FixedVector2(0, 0)
-        };
+		FixedVector2 originFixed = _coreTransform.Position;
+		float remaining = desired.magnitude;
+		Vector2 wishDir = desired.normalized;
 
-        Vector2 desired = desiredDelta.ToVector2();
-        if (desired.sqrMagnitude <= 0f)
-        {
-            return result;
-        }
+		const int kMaxSlideIters = 4;
+		int iters = 0;
 
-        FixedVector2 originFixed = _coreTransform.Position;
-        float remaining = desired.magnitude;
-        Vector2 wishDir = desired.normalized;
+		while (remaining > 1e-5f && iters++ < kMaxSlideIters)
+		{
+			Vector2 vfinal = wishDir * remaining;
+			vfinal = RemoveNormalComponent(vfinal, current.wallsMask, ref result);
+			vfinal = RemoveNormalComponent(vfinal, current.enemyMask, ref result);
 
-        const int kMaxSlideIters = 4;
-        int iters = 0;
+			MoveResult wallProbe = result;
+			Vector2 checkWalls = RemoveNormalComponent(vfinal, current.wallsMask, ref wallProbe);
+			MoveResult enemyProbe = result;
+			Vector2 checkEnemies = RemoveNormalComponent(vfinal, current.enemyMask, ref enemyProbe);
+			if (vfinal != checkWalls || vfinal != checkEnemies)
+			{
+				break;
+			}
+			else if (vfinal.sqrMagnitude > 1e-6f)
+			{
+				wishDir = vfinal.normalized;
+				remaining = vfinal.magnitude;
+			}
+			else
+			{
+				break;
+			}
 
-        while (remaining > 1e-5f && iters++ < kMaxSlideIters)
-        {
-            Vector2 vfinal = wishDir * remaining;
-            vfinal = RemoveNormalComponent(vfinal, current.wallsMask, ref result);
-            vfinal = RemoveNormalComponent(vfinal, current.enemyMask, ref result);
+			MoveDiscrete(new FixedVector2(vfinal));
+			remaining = 0f;
+		}
 
-            MoveResult wallProbe = result;
-            Vector2 checkWalls = RemoveNormalComponent(vfinal, current.wallsMask, ref wallProbe);
-            MoveResult enemyProbe = result;
-            Vector2 checkEnemies = RemoveNormalComponent(vfinal, current.enemyMask, ref enemyProbe);
-            if (vfinal != checkWalls || vfinal != checkEnemies)
-            {
-                break;
-            }
-            else if (vfinal.sqrMagnitude > 1e-6f)
-            {
-                wishDir = vfinal.normalized;
-                remaining = vfinal.magnitude;
-            }
-            else
-            {
-                break;
-            }
+		result.actualDelta = _coreTransform.Position - originFixed;
+		return result;
+	}
 
-            MoveDiscrete(new FixedVector2(vfinal));
-            remaining = 0f;
-        }
+	private void MoveDiscrete(FixedVector2 delta)
+	{
+		Vector2 deltaVector = delta.ToVector2();
+		if (deltaVector.sqrMagnitude <= 0f)
+		{
+			return;
+		}
 
-        result.actualDelta = _coreTransform.Position - originFixed;
-        return result;
-    }
+		_coreTransform.Position += delta;
+		_needsTransformSync = true;
+	}
 
-    private void MoveDiscrete(FixedVector2 delta)
-    {
-        Vector2 deltaVector = delta.ToVector2();
-        if (deltaVector.sqrMagnitude <= 0f)
-        {
-            return;
-        }
+	public CollisionPolicy CurrentPolicy => current;
 
-        _coreTransform.Position += delta;
-        _needsTransformSync = true;
-    }
+	/// <summary>
+	/// 현재 위치에서 Blocker(환경)들과의 겹침을 검사하여
+	/// "한 번"의 최소 이동 벡터(MTD)를 계산해 반환합니다.
+	/// - 실제 위치 이동은 하지 않습니다. (Depenetration()이 적용 담당)
+	/// - 합성형(여러 침투벡터 합산) 방식으로 단일 MTD를 구합니다.
+	/// </summary>
+	public Vector2 DepenVector(LayerMask blockersMask, int maxIterations = 4, float skin = 0.125f, float minEps = 0.001f, float maxTotal = 0.5f)
+	{
+		if (rb == null || col == null)
+		{
+			return Vector2.zero;
+		}
 
-    public CollisionPolicy CurrentPolicy => current;
+		ContactFilter2D filter = new() { useLayerMask = true };
+		filter.SetLayerMask(blockersMask);
+		filter.useTriggers = false;
 
-    /// <summary>
-    /// 현재 위치에서 Blocker(환경)들과의 겹침을 검사하여
-    /// "한 번"의 최소 이동 벡터(MTD)를 계산해 반환합니다.
-    /// - 실제 위치 이동은 하지 않습니다. (Depenetration()이 적용 담당)
-    /// - 합성형(여러 침투벡터 합산) 방식으로 단일 MTD를 구합니다.
-    /// </summary>
-    public Vector2 DepenVector(LayerMask blockersMask, int maxIterations = 4, float skin = 0.125f, float minEps = 0.001f, float maxTotal = 0.5f)
-    {
-        if (rb == null || col == null)
-        {
-            return Vector2.zero;
-        }
+		Collider2D[] hits = new Collider2D[16];
+		int count = col.Overlap(filter, hits);
+		if (count <= 0)
+		{
+			return Vector2.zero;
+		}
 
-        ContactFilter2D filter = new() { useLayerMask = true };
-        filter.SetLayerMask(blockersMask);
-        filter.useTriggers = false;
+		Vector2 accum = Vector2.zero;
+		int validContacts = 0;
 
-        Collider2D[] hits = new Collider2D[16];
-        int count = col.Overlap(filter, hits);
-        if (count <= 0)
-        {
-            return Vector2.zero;
-        }
+		for (int i = 0; i < count; i++)
+		{
+			var other = hits[i];
+			if (!other)
+			{
+				continue;
+			}
 
-        Vector2 accum = Vector2.zero;
-        int validContacts = 0;
+			ColliderDistance2D d = col.Distance(other);
+			if (!d.isOverlapped)
+			{
+				continue;
+			}
 
-        for (int i = 0; i < count; i++)
-        {
-            var other = hits[i];
-            if (!other)
-            {
-                continue;
-            }
+			accum += d.normal * d.distance;
+			validContacts++;
+		}
 
-            ColliderDistance2D d = col.Distance(other);
-            if (!d.isOverlapped)
-            {
-                continue;
-            }
+		if (validContacts == 0)
+		{
+			return Vector2.zero;
+		}
 
-            accum += d.normal * d.distance;
-            validContacts++;
-        }
+		float mag = accum.magnitude;
+		if (mag < minEps)
+		{
+			return Vector2.zero;
+		}
 
-        if (validContacts == 0)
-        {
-            return Vector2.zero;
-        }
+		Vector2 mtd = (accum / mag) * (mag + skin);
 
-        float mag = accum.magnitude;
-        if (mag < minEps)
-        {
-            return Vector2.zero;
-        }
+		/*** Debug helper (disabled by default). Enable for MTV visualization. */
+		//for (int i = 0; i < count; i++)
+		//{
+		//    var other = hits[i];
+		//    if (!other) continue;
+		//    var d = col.Distance(other);
+		//    if (!d.isOverlapped) continue;
+		//    Vector2 p = rb.position;
+		//    Debug.DrawRay(p, d.normal * Mathf.Max(d.distance, 0.02f), Color.cyan, 0.02f);
+		//}
+		//Debug.DrawRay(rb.position, mtd, new Color(1f, 0.5f, 0f), 0.02f);
+		/***/
 
-        Vector2 mtd = (accum / mag) * (mag + skin);
+		return mtd;
+	}
 
-        /*** Debug helper (disabled by default). Enable for MTV visualization. */
-        //for (int i = 0; i < count; i++)
-        //{
-        //    var other = hits[i];
-        //    if (!other) continue;
-        //    var d = col.Distance(other);
-        //    if (!d.isOverlapped) continue;
-        //    Vector2 p = rb.position;
-        //    Debug.DrawRay(p, d.normal * Mathf.Max(d.distance, 0.02f), Color.cyan, 0.02f);
-        //}
-        //Debug.DrawRay(rb.position, mtd, new Color(1f, 0.5f, 0f), 0.02f);
-        /***/
+	/// <summary>
+	/// DepenVector()를 반복 호출하여 실제로 위치 보정(MovePosition)을 수행합니다.
+	/// - 최대 반복 4회
+	/// - 스킨 0.03125
+	/// - 문턱 0.001
+	/// - 총 보정 상한 0.5m
+	/// - 마스크: current.wallsMask | (current.enemyAsBlocker ? current.enemyMask : 0)
+	/// </summary>
+	public void Depenetration()
+	{
+		if (rb == null || col == null)
+		{
+			return;
+		}
 
-        return mtd;
-    }
+		LayerMask blockersMask = current.wallsMask;
+		if (current.enemyAsBlocker)
+		{
+			blockersMask |= current.enemyMask;
+		}
 
-    /// <summary>
-    /// DepenVector()를 반복 호출하여 실제로 위치 보정(MovePosition)을 수행합니다.
-    /// - 최대 반복 4회
-    /// - 스킨 0.03125
-    /// - 문턱 0.001
-    /// - 총 보정 상한 0.5m
-    /// - 마스크: current.wallsMask | (current.enemyAsBlocker ? current.enemyMask : 0)
-    /// </summary>
-    public void Depenetration()
-    {
-        if (rb == null || col == null)
-        {
-            return;
-        }
+		int maxIterations = 4;
+		float skin = 0.125f;
+		float minEps = 0.001f;
+		float maxTotal = 0.5f;
 
-        LayerMask blockersMask = current.wallsMask;
-        if (current.enemyAsBlocker)
-        {
-            blockersMask |= current.enemyMask;
-        }
+		Vector2 total = Vector2.zero;
 
-        int maxIterations = 4;
-        float skin = 0.125f;
-        float minEps = 0.001f;
-        float maxTotal = 0.5f;
+		for (int it = 0; it < maxIterations; it++)
+		{
+			Vector2 mtd = DepenVector(blockersMask, maxIterations, skin, minEps, maxTotal);
+			if (mtd.sqrMagnitude <= (minEps * minEps))
+			{
+				break;
+			}
 
-        Vector2 total = Vector2.zero;
+			if ((total + mtd).magnitude > maxTotal)
+			{
+				Vector2 dir = mtd.normalized;
+				float remain = Mathf.Max(0f, maxTotal - total.magnitude);
+				mtd = dir * remain;
+			}
 
-        for (int it = 0; it < maxIterations; it++)
-        {
-            Vector2 mtd = DepenVector(blockersMask, maxIterations, skin, minEps, maxTotal);
-            if (mtd.sqrMagnitude <= (minEps * minEps))
-            {
-                break;
-            }
+			rb.MovePosition(rb.position + mtd);
 
-            if ((total + mtd).magnitude > maxTotal)
-            {
-                Vector2 dir = mtd.normalized;
-                float remain = Mathf.Max(0f, maxTotal - total.magnitude);
-                mtd = dir * remain;
-            }
+			total += mtd;
 
-            rb.MovePosition(rb.position + mtd);
+			if (Mathf.Abs(maxTotal - total.magnitude) <= 1e-5f)
+			{
+				break;
+			}
+		}
 
-            total += mtd;
+		_coreTransform.Position = new FixedVector2(rb.position);
+		_needsTransformSync = true;
 
-            if (Mathf.Abs(maxTotal - total.magnitude) <= 1e-5f)
-            {
-                break;
-            }
-        }
-
-        _coreTransform.Position = new FixedVector2(rb.position);
-        _needsTransformSync = true;
-
-        /*** Optional debug ray (disabled by default). */
-        //if (total.sqrMagnitude > 0f)
-        //{
-        //    Debug.DrawRay(rb.position - total, total, Color.yellow, 0.05f);
-        //}
-        /***/
-    }
+		/*** Optional debug ray (disabled by default). */
+		//if (total.sqrMagnitude > 0f)
+		//{
+		//    Debug.DrawRay(rb.position - total, total, Color.yellow, 0.05f);
+		//}
+		/***/
+	}
 }
 
 /*

@@ -1,30 +1,31 @@
 ﻿using StatsInterfaces;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에서는 참조만
 {
 	[SerializeReference] readonly CharacterSpec spec;
-	public float BaseHealth { get; private set; }
-	public float MaxHealth { get; private set; }
-	public float Health { get; private set; }
-	public float Shield { get; private set; }
-	public float SpecialShield { get; private set; }
-	public float BaseArmor { get; private set; }
-	public float Armor { get; private set; }
-	public float BaseHealthRegen { get; private set; }
-	public float HealthRegen { get; private set; }
-	public List<float> DamageReduction { get; private set; } = new();
-	public float BaseAttackDamage { get; private set; } = 10f;
-	public float AttackDamage { get; private set; } = 12f;
-	public List<float> ArmorPenetration { get; private set; } = new();
-	public float BaseMana { get; private set; }
-	public float MaxMana { get; private set; }
-	public float Mana { get; private set; }
-	public float BaseManaRegen { get; private set; }
-	public float ManaRegen { get; private set; }
-	public float BaseSpeed { get; private set; } = 8f;
-	public float Speed { get; private set; } = 8f;
-	public float JumpTime { get; private set; }
+	public int BaseHealth { get; private set; }
+	public int MaxHealth { get; private set; }
+	public int Health { get; private set; }
+	public int Shield { get; private set; }
+	public int SpecialShield { get; private set; }
+	public int BaseArmor { get; private set; }
+	public int Armor { get; private set; }
+	public int BaseHealthRegen { get; private set; }
+	public int HealthRegen { get; private set; }
+	public List<int> DamageReduction { get; private set; } = new();
+	public int BaseAttackDamage { get; private set; } = 10;
+	public int AttackDamage { get; private set; } = 12;
+	public List<int> ArmorPenetration { get; private set; } = new();
+	public int BaseMana { get; private set; }
+	public int MaxMana { get; private set; }
+	public int Mana { get; private set; }
+	public int BaseManaRegen { get; private set; }
+	public int ManaRegen { get; private set; }
+	public int BaseSpeed { get; private set; } = 8;
+	public int Speed { get; private set; } = 8;
+	public int JumpTime { get; private set; }
 	public bool OnGround { get; private set; }
 	public bool IsDead { get; private set; }
 	private void Awake()
@@ -37,36 +38,36 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, �
 		BaseManaRegen = spec.baseManaGen;
 		BaseSpeed = spec.baseSpeed;
 	}
-	public void ReduceStat(ReduceType stat, float damage, float apRatio = 0f, DamageType type = DamageType.Normal)
+	public void ReduceStat(ReduceType stat, int amount, int apRatio = 0, DamageType type = DamageType.Normal)
 	{
 		if (stat == ReduceType.Mana) // 1(Mana)이면 마나, 0(Health)이면 체력
 		{
-			Mana = Mathf.Max(0f, Mana - damage);
+			Mana = (int)Math.Max(0f, Mana - amount);
 		}
 		else
 		{
-			GetDamage(damage, apRatio, type);
+			GetDamage(amount, apRatio, type);
 		}
 		if (Health <= 0f) IsDead = true;
 	}
-	void GetDamage(float damage, float apRatio = 0f, DamageType type = DamageType.Normal) //비례 피해를 여기서 계산해야 되나 << 그럴 거 같지 않음
+	void GetDamage(int damage, int apRatio = 0, DamageType type = DamageType.Normal) //비례 피해를 여기서 계산해야 되나 << 그럴 거 같지 않음
 	{
 		if (IsDead || damage <= 0f) return;
 		switch (type) 
 		{ 
 			case DamageType.CurrentPercent:
-				damage = Health * damage / 100f;
+				damage = Health * damage / 100;
 				break;
 			case DamageType.LostPercent:
-				damage = (MaxHealth - Health) * damage / 100f;
+				damage = (MaxHealth - Health) * damage / 100;
 				break;
 			case DamageType.MaxPercent:
-				damage = MaxHealth * damage / 100f;
+				damage = MaxHealth * damage / 100;
 				break;
 			default:
 				break;
 		}
-		if (type != DamageType.Fixed) damage *= DamageReductionCalc(Armor, apRatio, TotalDamageReduction());
+		if (type != DamageType.Fixed) damage *= (int)DamageReductionCalc(Armor, apRatio, TotalDamageReduction());
 		if (SpecialShield > damage)
 		{
 			SpecialShield -= damage;
@@ -84,11 +85,9 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, �
 			IsDead = true;
 		}
 	}
-	float DamageReductionCalc(float armor, float apRatio = 0f, float damageRatio = 1f) //Player가 피해를 받는 경우
-	{
-		return (80 / (80 + armor * (1 - apRatio))) * damageRatio;
-	}
-	public float TotalArmorPenetration() //AP를 반환하는 거면 1 - totalAP가 맞는데 그럼 계산이 귀찮아짐, 명칭을 바꾸는 것이 맞지 않나
+	double DamageReductionCalc(int armor, int apRatio = 0, double damageRatio = 1) //Player가 피해를 받는 경우
+		=> (double)(80 / (80 + armor * (1 - apRatio))) * damageRatio;
+	public double TotalArmorPenetration() //AP를 반환하는 거면 1 - totalAP가 맞는데 그럼 계산이 귀찮아짐, 명칭을 바꾸는 것이 맞지 않나
 										//어쩌면 괜찮을지도 모르겠다, 어차피 AP 계산식은 1 - (80 / (80 + Armor * (1 - TotalAP)))로 이미 정해져 있으니까
 										//오히려 그 공식을 바꾸려 들었다가 수식이 달라 혼란이 올 가능성이 있음, 이름도 ArmorPenetration에서 ArmorRatio로 바꿔야 됨
 	{
@@ -99,7 +98,7 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, �
 		}
 		return 1 - totalAP;
 	}
-	public float TotalDamageReduction()
+	public double TotalDamageReduction()
 	{
 		float totalDR = 1f;
 		foreach (var dr in DamageReduction)

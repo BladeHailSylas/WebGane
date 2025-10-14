@@ -1,13 +1,9 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 
-public sealed class InputBinder : MonoBehaviour
+/*public sealed class InputBinder : MonoBehaviour
 {
     private InputSystem_Actions controls;
-
-    [SerializeField] private PlayerActController playerControl;           // ÀÌµ¿
-    [SerializeField] private PlayerAttackController attackController;     // °ø°Ý/½ºÅ³
-
     void Awake()
     {
         controls = new InputSystem_Actions();
@@ -16,16 +12,8 @@ public sealed class InputBinder : MonoBehaviour
     void OnEnable()
     {
         controls.Player.Enable();
-
-        // ÀÌµ¿ ¡æ PlayerController
         controls.Player.Move.performed += ctx => playerControl.MakeMove(ctx.ReadValue<Vector2>());
         controls.Player.Move.canceled += _ => playerControl.MakeMove(Vector2.zero);
-
-        // °ø°Ý/½ºÅ³ ¡æ AttackController
-        /*controls.Player.Attack.performed += _ => attackController.OnAttack(_);
-        controls.Player.Skill1.performed += _ => attackController.OnSkill1(_);
-        controls.Player.Skill2.performed += _ => attackController.OnSkill2(_);
-        controls.Player.Ultimate.performed += _ => attackController.Ultimate(_);;*/
     }
 
     void OnDisable()
@@ -33,29 +21,26 @@ public sealed class InputBinder : MonoBehaviour
         controls.Player.Move.performed -= ctx => playerControl.MakeMove(ctx.ReadValue<Vector2>());
         controls.Player.Move.canceled -= _ => playerControl.MakeMove(Vector2.zero);
         controls.Player.Disable();
-        // (¼±ÅÃ) ÀÌº¥Æ® ÇÚµé·¯ ÇØÁ¦±îÁö ²Ä²ÄÈ÷ ÇÏ¸é ÀçÈ°¼ºÈ­ ½Ã Áßº¹ ¹æÁö
-        //controls.Player.Move.performed -= ctx => playerController.MakeMove(ctx.ReadValue<Vector2>()); // ¶÷´Ù ÀúÀå ½Ã¸¸ °¡´É
-        // ½ÇÀü¿¡¼­´Â ¶÷´Ù ´ë½Å ¸Þ¼­µå Ä³½Ã¸¦ ¾²¼¼¿ä (¾Æ·¡ Âü°í)
     }
-}
+}*/
 /* Todo
- ¸í·ÉÀ» ICommand·Î Ç¥ÁØÈ­ÇÏ°í CommandBus.Flush¿¡¼­¸¸ ½ÇÇàÇÑ´Ù
+ ëª…ë ¹ì„ ICommandë¡œ í‘œì¤€í™”í•˜ê³  CommandBus.Flushì—ì„œë§Œ ì‹¤í–‰í•œë‹¤
 
- PlayerActs´Â IMovable/IJumpable/IVulnerable/... ±¸ÇöÀ¸·Î¸¸ ³ëÃâÇÑ´Ù
+ PlayerActsëŠ” IMovable/IJumpable/IVulnerable/... êµ¬í˜„ìœ¼ë¡œë§Œ ë…¸ì¶œí•œë‹¤
 
- »óÅÂ °æÇÕ ±ÔÄ¢Àº IStateRule·Î Áß¾ÓÁýÁß °ü¸®ÇÑ´Ù
+ ìƒíƒœ ê²½í•© ê·œì¹™ì€ IStateRuleë¡œ ì¤‘ì•™ì§‘ì¤‘ ê´€ë¦¬í•œë‹¤
 
- SO´Â µ¥ÀÌÅÍ, ·êÀº ScriptableObject Àü·«À¸·Î ºÐ¸®ÇÑ´Ù
+ SOëŠ” ë°ì´í„°, ë£°ì€ ScriptableObject ì „ëžµìœ¼ë¡œ ë¶„ë¦¬í•œë‹¤
 
- PlayerFactory·Î ÄÁÅØ½ºÆ® Á¶¸³(Ä³¸¯ÅÍ ±³Ã¼´Â SO ±³Ã¼·Î)
+ PlayerFactoryë¡œ ì»¨í…ìŠ¤íŠ¸ ì¡°ë¦½(ìºë¦­í„° êµì²´ëŠ” SO êµì²´ë¡œ)
 
- ÀÔ·ÂÀº Ä¿¸Çµå º¯È¯¸¸ ÇÏ°í ·ÎÁ÷Àº ¹ö½º/ÄÁÅØ½ºÆ®·Î Èå¸£°Ô ÇÑ´Ù
+ ìž…ë ¥ì€ ì»¤ë§¨ë“œ ë³€í™˜ë§Œ í•˜ê³  ë¡œì§ì€ ë²„ìŠ¤/ì»¨í…ìŠ¤íŠ¸ë¡œ íë¥´ê²Œ í•œë‹¤
 
- µµ¸ÞÀÎ ·ÎÁ÷À» MonoBehaviour ¹ÛÀ¸·Î »©¼­ Å×½ºÆ® ÀÛ¼º
+ ë„ë©”ì¸ ë¡œì§ì„ MonoBehaviour ë°–ìœ¼ë¡œ ë¹¼ì„œ í…ŒìŠ¤íŠ¸ ìž‘ì„±
 
- Update ·çÇÁ ´ÜÀÏÈ­(ITick) + GC.Alloc(ÇÁ·¹ÀÓ) ¸ð´ÏÅÍ
+ Update ë£¨í”„ ë‹¨ì¼í™”(ITick) + GC.Alloc(í”„ë ˆìž„) ëª¨ë‹ˆí„°
 
- ÀÌº¥Æ® ±¸µ¶/ÇØÁ¦´Â ¸Þ¼­µå ±×·ì/Ä³½Ã¸¸ »ç¿ë
+ ì´ë²¤íŠ¸ êµ¬ë…/í•´ì œëŠ” ë©”ì„œë“œ ê·¸ë£¹/ìºì‹œë§Œ ì‚¬ìš©
 
- README¿¡ ¡°¸í·É/»óÅÂ/µ¥ÀÌÅÍ µå¸®ºì ¼³°è¡±¸¦ 1ÆäÀÌÁö·Î ¼³¸í
+ READMEì— â€œëª…ë ¹/ìƒíƒœ/ë°ì´í„° ë“œë¦¬ë¸ ì„¤ê³„â€ë¥¼ 1íŽ˜ì´ì§€ë¡œ ì„¤ëª…
 */

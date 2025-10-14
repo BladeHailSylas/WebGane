@@ -97,6 +97,39 @@ public class PlayerAttackController : MonoBehaviour
                 };
 
 		// 추후 목표 포인트(조준선/커서 등)를 반영할 경우 TargetRequest를 갱신해야 합니다.
-		runner.EnqueueRootIntent(binding.mech, binding.param, request, priorityLevel: 0);
+		runner.EnqueueRootIntent(binding.mech, binding.param, request, priorityLevel: SkillPriority(binding.mech, binding.param, slot));
+	}
+	public int SkillPriority(ISkillMechanism mech, ISkillParam param, SkillSlot slot)
+	{
+		return SkillPriority(mech, param as ICooldownParam, slot);
+	}
+	public int SkillPriority(ISkillMechanism mech, ICooldownParam param, SkillSlot slot)
+	{
+		if (mech == null || param == null)
+		{
+			Debug.LogWarning("SkillPriority: 메커니즘 또는 파라미터가 null입니다. Priority level이 임시로 0이 됩니다.");
+			return 0;
+		}
+		if (!mech.ParamType.IsInstanceOfType(param))
+		{
+			Debug.LogError($"ParamType mismatch: {mech.ParamType.Name} 필요, {param.GetType().Name} 제공. Priority level이 임시로 -1이 됩니다.");
+			return -1;
+		}
+		int weight = 0;
+		weight += mech.ParamType.Name switch
+		{
+			"MeleeParams" or "MissileParams" or "HitscanParams" or "AreaParams" => 3,
+			"DashParams" or "TeleportParams" => 2,
+			_ => 1,
+		};
+		weight += slot switch
+		{
+			SkillSlot.Attack => 1,
+			SkillSlot.AttackSkill or SkillSlot.Skill1 or SkillSlot.Skill2 => 2,
+			SkillSlot.Ultimate => 3,
+			_ => 0,
+		};
+		//Debug.Log($"[Runner] SkillPriority: {slot} 슬롯의 {mech.ParamType.Name} 타입은 {weight * 1000} priority입니다");
+		return weight * 1000 + (int)param.Cooldown;
 	}
 }

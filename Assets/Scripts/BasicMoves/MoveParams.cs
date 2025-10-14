@@ -8,7 +8,7 @@ using UnityEditor;
 public class MeleeParams : ISkillParam, ICooldownParam, IFollowUpProvider
 {
 	[Header("Area")]
-	public float radius = 1.6f;
+	public int unitradius = 1600;
 	[Range(0, 360)] public float angleDeg = 120f;
 	public LayerMask enemyMask;
 
@@ -16,7 +16,7 @@ public class MeleeParams : ISkillParam, ICooldownParam, IFollowUpProvider
 	public float attack = 10f, apRatio = 0f, knockback = 0f, attackPercent = 1.0f;
 
 	[Header("Timing")]
-	public float windup = 0.05f, recover = 0.08f, cooldown = 8f;
+	public float windup = 0.05f, recover = 0.08f, cooldown = 8f; // Change to Tick rate(1s = 60 Tick, so 1 Tick = 0.01667s) so that it can be easily synced with Ticker
 	public float Cooldown => cooldown;
 
 	// ★ FollowUp(예: 2타)을 Param에 직접 둠 — 필요 시 인스펙터에서 설정
@@ -162,7 +162,8 @@ public class DashParams : ISkillParam, ICooldownParam, IFollowUpProvider, ITarge
 	[Header("Collision Volume")]
 	public float radius = 0.5f;              // 내 몸의 반경(적/벽 체크 모두에 사용)
 	public float skin = 0.05f;               // 충돌면 살짝 넘기는 여유
-
+	public int unitradius = 500;
+	public int unitskin = 50;
 	// IAnchorClearance
 	public float CollisionRadius => radius;
 	public float AnchorSkin => Mathf.Max(0.01f, skin);

@@ -53,7 +53,8 @@ namespace ActInterfaces
 {
 	public interface IVulnerable //피해를 받아 죽을 수 있음
 	{
-		void TakeDamage(float damage, float apratio = 1f, StatsInterfaces.DamageType type = 0);
+		void TakeDamage(int damage, int apratio = 1, StatsInterfaces.DamageType type = 0);
+		void TakeDamage(float damage, float apratio = 1, StatsInterfaces.DamageType type = 0);
 		void Die();
 	}
 
@@ -96,13 +97,13 @@ namespace ActInterfaces
 	{
 		void ApplyKnockback(Vector2 direction, float force);
 	}
-        public interface ISweepable
-        {
-                Vector2 DepenVector(LayerMask blockersMask, int maxIterations = 4, float skin = 0.03125F, float minEps = 0.001F, float maxTotal = 0.5F);
-                void SweepMove(FixedVector2 vec);
-                MoveResult LastMoveResult { get; }
-                int LastProcessedTick { get; }
-        }
+		public interface ISweepable
+		{
+				Vector2 DepenVector(LayerMask blockersMask, int maxIterations = 4, float skin = 0.03125F, float minEps = 0.001F, float maxTotal = 0.5F);
+				void SweepMove(FixedVector2 vec);
+				MoveResult LastMoveResult { get; }
+				int LastProcessedTick { get; }
+		}
 	public interface IMovable
 	{
 		Vector2 LastMoveDir { get; }
@@ -210,7 +211,7 @@ namespace StatsInterfaces
 #region ===== Skill =====
 namespace SkillInterfaces
 {
-	public enum SkillSlot { Attack, Skill1, Skill2, Ultimate }
+	public enum SkillSlot { Attack, AttackSkill, Skill1, Skill2, Ultimate }
 	public interface ISkillParam { }                    // 파라미터 마커
 	public interface ICooldownParam : ISkillParam { float Cooldown { get; } }
 

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
 public class WallsPushEntity : MonoBehaviour
@@ -9,7 +9,7 @@ public class WallsPushEntity : MonoBehaviour
 	{
 		//col = Physics2D.OverlapBox((Vector2)transform.position, transform.localScale, playerMask);
 		var userData = col?.transform.GetComponent<KinematicMotor2D>();
-		col.transform.position += transform.TransformDirection(Vector3.forward) * userData.defaultPolicy.radius;
+		col.transform.position += transform.TransformDirection(Vector3.forward) * userData.defaultPolicy.unitradius;
 		//var oe = Physics2D.OverlapCircleAll(transform.position, current.radius, current.enemyMask);
 	}
 	private void Awake()

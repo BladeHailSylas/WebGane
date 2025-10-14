@@ -16,11 +16,11 @@ public class PlayerStatsBridge : MonoBehaviour, IStatProvider
 			_ => 0f,
 		};
 	}
-	public float GetArmorRatio() //플레이어가 피해를 가하는 경우에만 쓰임
+	public double GetArmorRatio() //플레이어가 피해를 가하는 경우에만 쓰임
 	{
 		return stats.TotalArmorPenetration();
 	}
-	public void ReduceStat(ReduceType stat, float damage, float armorRatio = 1f, DamageType type = DamageType.Normal) //The only way to access stats
+	public void ReduceStat(ReduceType stat, int damage, int armorRatio = 1, DamageType type = DamageType.Normal) //The only way to access stats
 	{
 		stats.ReduceStat(stat, damage, armorRatio, type);
 	}

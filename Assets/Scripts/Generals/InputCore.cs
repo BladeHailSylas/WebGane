@@ -2,7 +2,7 @@
 // 0) 공용 정의: 버튼/입력/고정좌표/상태
 // ------------------------------------------------------------
 
-using System;
+/*using System;
 using System.Collections.Generic;
 namespace System.Runtime.CompilerServices { public static class IsExternalInit { } } // C# 9 record 용
 
@@ -361,4 +361,4 @@ public sealed class SimulationCore : IInputPort
 			return h;
 		}
 	}
-}
+}*/

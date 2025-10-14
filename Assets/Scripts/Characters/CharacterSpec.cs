@@ -13,6 +13,6 @@ public struct SkillBinding
 public class CharacterSpec : ScriptableObject
 {
 	public string displayName;
-	public float baseHP, baseHPGen, baseMana, baseManaGen, baseAttack, baseDefense, baseSpeed;
+	public int baseHP, baseHPGen, baseMana, baseManaGen, baseAttack, baseDefense, baseSpeed;
 	public SkillBinding attack, skill1, skill2, ultimate;
 }
