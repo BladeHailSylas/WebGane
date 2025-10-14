@@ -97,13 +97,13 @@ namespace ActInterfaces
 	{
 		void ApplyKnockback(Vector2 direction, float force);
 	}
-		public interface ISweepable
-		{
-				Vector2 DepenVector(LayerMask blockersMask, int maxIterations = 4, float skin = 0.03125F, float minEps = 0.001F, float maxTotal = 0.5F);
-				void SweepMove(FixedVector2 vec);
-				MoveResult LastMoveResult { get; }
-				int LastProcessedTick { get; }
-		}
+        public interface ISweepable
+        {
+                FixedVector2 DepenVector(LayerMask blockersMask, int maxIterations = 4, float skin = 0.125f, float minEps = 0.001f, float maxTotal = 0.5f);
+                void SweepMove(FixedVector2 vec);
+                MoveResult LastMoveResult { get; }
+                int LastProcessedTick { get; }
+        }
 	public interface IMovable
 	{
 		Vector2 LastMoveDir { get; }
