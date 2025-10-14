@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using UnityEditor;
 using UnityEngine;
+using static UnityEditor.ShaderData;
 
 #region ===== Core =====
 /// <summary>
@@ -267,6 +268,76 @@ public sealed class FixedCollision
 			_ => false,
 		};
 	}
+	/// <summary>
+	/// 두 충돌체 사이의 법선(normal)과 침투 깊이(depth)를 계산합니다.
+	/// 겹치지 않은 경우 null을 반환합니다.
+	/// </summary>
+	public static ContactInfo? ComputeContact(IHitShape shape1, IHitShape shape2)
+	{
+		switch (shape1)
+		{
+			case HitCircle a when shape2 is HitCircle b:
+				return ComputeCircleCircle(a, b);
+			case HitCircle a when shape2 is HitBox b:
+				return ComputeCircleBox(a, b);
+			default:
+				return null;
+		}
+	}
+
+	private static ContactInfo? ComputeCircleCircle(HitCircle a, HitCircle b)
+	{
+		FixedVector2 diff = b.Center - a.Center;
+		long distSq = (long)diff.RawX * diff.RawX + (long)diff.RawY * diff.RawY;
+		long radii = (long)a.Radius + b.Radius;
+		long radiiSq = radii * radii;
+		if (distSq >= radiiSq)
+			return null;
+
+		double dist = Math.Sqrt(distSq);
+		double depth = radii - dist;
+		FixedVector2 normal = (dist > 1e-6)
+			? new FixedVector2((int)(diff.RawX / dist), (int)(diff.RawY / dist))
+			: new FixedVector2(0, 0);
+
+		return new ContactInfo
+		{
+			normal = normal,
+			depth = (int)Math.Round(depth),
+			owner = b
+		};
+	}
+
+	private static ContactInfo? ComputeCircleBox(HitCircle circle, HitBox box)
+	{
+		int clampedX = Math.Max(box.MinX, Math.Min(circle.Center.RawX, box.MaxX));
+		int clampedY = Math.Max(box.MinY, Math.Min(circle.Center.RawY, box.MaxY));
+		FixedVector2 closest = new FixedVector2(clampedX, clampedY);
+		FixedVector2 diff = circle.Center - closest;
+
+		long distSq = (long)diff.RawX * diff.RawX + (long)diff.RawY * diff.RawY;
+		if (distSq > (long)circle.Radius * circle.Radius)
+			return null;
+
+		double dist = Math.Sqrt(distSq);
+		double depth = circle.Radius - dist;
+		FixedVector2 normal = (dist > 1e-6)
+			? new FixedVector2((int)(diff.RawX / dist), (int)(diff.RawY / dist))
+			: new FixedVector2(0, 0);
+
+		return new ContactInfo
+		{
+			normal = normal,
+			depth = (int)Math.Round(depth),
+			owner = box
+		};
+	}
+}
+public struct ContactInfo
+{
+	public FixedVector2 normal; // 침투 방향 (정규화)
+	public int depth;           // 침투 깊이 (fixed 단위)
+	public object owner;        // 충돌체 소유자 (선택적)
 }
 #endregion
 
