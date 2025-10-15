@@ -11,7 +11,7 @@ public class PlayerLocomotion : MonoBehaviour
 	}
 	public void MoveIntent(FixedVector2 direction, int speedUnit)
 	{
-		Debug.Log("Move");
+		//Debug.Log("Move");
 	}
 	/*FixedVector2 _knockbackBudget;                         // ̹ ӿ Һ ߰ ( ǥ)
 		float distancePerTick = Mathf.Max(0f, force) / Ticker.TicksPerSecond;

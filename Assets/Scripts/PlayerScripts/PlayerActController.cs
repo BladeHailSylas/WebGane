@@ -40,7 +40,7 @@ public class PlayerActController : MonoBehaviour, IVulnerable, IPullable
 		controls.Player.Disable();
 		BattleCore.Ticker.OnTick -= TickHandler;
 	}
-	public void TickHandler(int tick)
+	public void TickHandler(ushort tick)
 	{
 		// 스킬(대시 등) 진행 중엔 기본 이동을 잠시 억제해 프레임 이중 스윕을 차단
 		if (controls is null) return;             // :contentReference[oaicite:7]{index=7}

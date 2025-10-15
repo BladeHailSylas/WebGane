@@ -98,7 +98,7 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
 	{
 		BattleCore.Ticker.OnTick -= TickHandler;
 	}
-	public void TickHandler(int tick)
+	public void TickHandler(ushort tick)
 	{
 		return;
 	}

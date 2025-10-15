@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ActInterfaces;
 using UnityEngine;
@@ -185,7 +185,7 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
                 return list;
         }
 
-        private void HandleTick(int tick)
+        private void HandleTick(ushort tick)
         {
                 ProcessPendingMoves();
                 _lastProcessedTick = tick;
@@ -276,7 +276,7 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
                         return result;
                 }
 
-                FixedVector2 origin = _coreTransform.Position;
+                FixedVector2 origin = _coreTransform.position;
                 FixedVector2 remaining = desiredDelta;
                 const int MaxSlideIterations = 4;
 
@@ -298,7 +298,7 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
 
                         MoveDiscrete(adjusted);
 
-                        FixedVector2 progressed = _coreTransform.Position - origin;
+                        FixedVector2 progressed = _coreTransform.position - origin;
                         if (progressed.RawX == desiredDelta.RawX && progressed.RawY == desiredDelta.RawY)
                         {
                                 remaining = ZeroVector;
@@ -314,7 +314,7 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
                         remaining = newRemaining;
                 }
 
-                result.actualDelta = _coreTransform.Position - origin;
+                result.actualDelta = _coreTransform.position - origin;
                 return result;
         }
 
@@ -325,7 +325,7 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
                         return vector;
                 }
 
-                HitCircle motorShape = new HitCircle(_coreTransform.Position + vector, _currentPolicy.unitradius);
+                HitCircle motorShape = new HitCircle(_coreTransform.position + vector, _currentPolicy.unitradius);
 
                 foreach (CollisionBody body in EnumerateBodies(mask))
                 {
@@ -380,7 +380,7 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
 
                                 FixedVector2 removal = ProjectOntoNormal(vector, normal);
                                 vector -= removal;
-                                motorShape.Center = _coreTransform.Position + vector;
+                                motorShape.center = _coreTransform.position + vector;
                         }
                 }
 
@@ -394,7 +394,7 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
                         return;
                 }
 
-                _coreTransform.Position += delta;
+                _coreTransform.position += delta;
                 _needsTransformSync = true;
         }
 
@@ -405,7 +405,7 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
                         return ZeroVector;
                 }
 
-                HitCircle motorShape = new HitCircle(_coreTransform.Position, _currentPolicy.unitradius);
+                HitCircle motorShape = new HitCircle(_coreTransform.position, _currentPolicy.unitradius);
                 int skinRaw = ToRaw(skin);
                 int minEpsRaw = ToRaw(minEps);
                 int maxTotalRaw = ToRaw(maxTotal);
@@ -565,21 +565,21 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
                 switch (other)
                 {
                         case HitCircle circle:
-                                return circle.Center - self.Center;
+                                return circle.center - self.center;
                         case HitBox box:
-                                int clampedX = Clamp(self.Center.RawX, box.MinX, box.MaxX);
-                                int clampedY = Clamp(self.Center.RawY, box.MinY, box.MaxY);
+                                int clampedX = Clamp(self.center.RawX, box.MinX, box.MaxX);
+                                int clampedY = Clamp(self.center.RawY, box.MinY, box.MaxY);
                                 FixedVector2 closest = new FixedVector2(clampedX, clampedY);
-                                FixedVector2 diff = self.Center - closest;
+                                FixedVector2 diff = self.center - closest;
                                 if (!IsZero(diff))
                                 {
                                         return diff;
                                 }
 
-                                int left = self.Center.RawX - box.MinX;
-                                int right = box.MaxX - self.Center.RawX;
-                                int down = self.Center.RawY - box.MinY;
-                                int up = box.MaxY - self.Center.RawY;
+                                int left = self.center.RawX - box.MinX;
+                                int right = box.MaxX - self.center.RawX;
+                                int down = self.center.RawY - box.MinY;
+                                int up = box.MaxY - self.center.RawY;
 
                                 int min = Math.Min(Math.Min(left, right), Math.Min(down, up));
                                 if (min == left)

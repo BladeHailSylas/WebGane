@@ -1,9 +1,7 @@
 ﻿using Intents;
 using System;
 using System.Collections;
-using UnityEditor;
 using UnityEngine;
-using static UnityEditor.ShaderData;
 
 #region ===== Core =====
 /// <summary>
@@ -15,10 +13,12 @@ public static class BattleCore
 {
 	private static bool _initialized;
 	private static GameObject _runner;
+	private static TheWorld _world;
 
 	static BattleCore()
 	{
 		Initialize();
+		_world = new TheWorld();
 	}
 
 	/// <summary>
@@ -167,19 +167,19 @@ public interface IHitShape
 [Serializable]
 public struct HitBox : IHitShape
 {
-	public FixedVector2 Center;
-	public FixedVector2 HalfSize;
+	public FixedVector2 center;
+	public FixedVector2 halfSize;
 
 	public HitBox(FixedVector2 center, FixedVector2 halfSize)
 	{
-		Center = center;
-		HalfSize = halfSize;
+		this.center = center;
+		this.halfSize = halfSize;
 	}
 
-	public readonly int MinX => Center.RawX - HalfSize.RawX;
-	public readonly int MaxX => Center.RawX + HalfSize.RawX;
-	public readonly int MinY => Center.RawY - HalfSize.RawY;
-	public readonly int MaxY => Center.RawY + HalfSize.RawY;
+	public readonly int MinX => center.RawX - halfSize.RawX;
+	public readonly int MaxX => center.RawX + halfSize.RawX;
+	public readonly int MinY => center.RawY - halfSize.RawY;
+	public readonly int MaxY => center.RawY + halfSize.RawY;
 
 	public readonly bool Overlaps(IHitShape shape)
 	{
@@ -192,22 +192,22 @@ public struct HitBox : IHitShape
 	}
 	public readonly bool Overlaps(HitBox box)
 	{
-		long dx = Math.Abs((long)Center.RawX - box.Center.RawX);
-		long dy = Math.Abs((long)Center.RawY - box.Center.RawY);
-		long limitX = (long)HalfSize.RawX + box.HalfSize.RawX;
-		long limitY = (long)HalfSize.RawY + box.HalfSize.RawY;
+		long dx = Math.Abs((long)center.RawX - box.center.RawX);
+		long dy = Math.Abs((long)center.RawY - box.center.RawY);
+		long limitX = (long)halfSize.RawX + box.halfSize.RawX;
+		long limitY = (long)halfSize.RawY + box.halfSize.RawY;
 		bool separated = dx > limitX || dy > limitY;
 		return !separated;
 	}
 
 	public readonly bool Overlaps(HitCircle circle)
 	{
-		int clampedX = Mathf.Clamp(circle.Center.RawX, MinX, MaxX);
-		int clampedY = Mathf.Clamp(circle.Center.RawY, MinY, MaxY);
+		int clampedX = Mathf.Clamp(circle.center.RawX, MinX, MaxX);
+		int clampedY = Mathf.Clamp(circle.center.RawY, MinY, MaxY);
 
-		long dx = circle.Center.RawX - clampedX;
-		long dy = circle.Center.RawY - clampedY;
-		long radius = circle.Radius;
+		long dx = circle.center.RawX - clampedX;
+		long dy = circle.center.RawY - clampedY;
+		long radius = circle.radius;
 		return (dx * dx + dy * dy) <= radius * radius;
 	}
 	public readonly IHitShape[] OverlapShapes()
@@ -222,13 +222,13 @@ public struct HitBox : IHitShape
 [Serializable]
 public struct HitCircle : IHitShape
 {
-	public FixedVector2 Center;
-	public int Radius; // in fixed units
+	public FixedVector2 center;
+	public int radius; // in fixed units
 
 	public HitCircle(FixedVector2 center, int radius)
 	{
-		Center = center;
-		Radius = Math.Max(0, radius);
+		this.center = center;
+		this.radius = Math.Max(0, radius);
 	}
 	public readonly bool Overlaps(IHitShape shape)
 	{
@@ -241,8 +241,8 @@ public struct HitCircle : IHitShape
 	}
 	public readonly bool Overlaps(HitCircle circle)
 	{
-		long radii = (long)Radius + circle.Radius;
-		return FixedVector2.DistanceSquared(Center, circle.Center) <= radii * radii;
+		long radii = (long)radius + circle.radius;
+		return FixedVector2.DistanceSquared(center, circle.center) <= radii * radii;
 	}
 
 	public readonly bool Overlaps(HitBox box)
@@ -287,9 +287,9 @@ public sealed class FixedCollision
 
 	private static ContactInfo? ComputeCircleCircle(HitCircle a, HitCircle b)
 	{
-		FixedVector2 diff = b.Center - a.Center;
+		FixedVector2 diff = b.center - a.center;
 		long distSq = (long)diff.RawX * diff.RawX + (long)diff.RawY * diff.RawY;
-		long radii = (long)a.Radius + b.Radius;
+		long radii = (long)a.radius + b.radius;
 		long radiiSq = radii * radii;
 		if (distSq >= radiiSq)
 			return null;
@@ -310,17 +310,17 @@ public sealed class FixedCollision
 
 	private static ContactInfo? ComputeCircleBox(HitCircle circle, HitBox box)
 	{
-		int clampedX = Math.Max(box.MinX, Math.Min(circle.Center.RawX, box.MaxX));
-		int clampedY = Math.Max(box.MinY, Math.Min(circle.Center.RawY, box.MaxY));
+		int clampedX = Math.Max(box.MinX, Math.Min(circle.center.RawX, box.MaxX));
+		int clampedY = Math.Max(box.MinY, Math.Min(circle.center.RawY, box.MaxY));
 		FixedVector2 closest = new FixedVector2(clampedX, clampedY);
-		FixedVector2 diff = circle.Center - closest;
+		FixedVector2 diff = circle.center - closest;
 
 		long distSq = (long)diff.RawX * diff.RawX + (long)diff.RawY * diff.RawY;
-		if (distSq > (long)circle.Radius * circle.Radius)
+		if (distSq > (long)circle.radius * circle.radius)
 			return null;
 
 		double dist = Math.Sqrt(distSq);
-		double depth = circle.Radius - dist;
+		double depth = circle.radius - dist;
 		FixedVector2 normal = (dist > 1e-6)
 			? new FixedVector2((int)(diff.RawX / dist), (int)(diff.RawY / dist))
 			: new FixedVector2(0, 0);
@@ -348,18 +348,18 @@ public struct ContactInfo
 [Serializable]
 public struct CoreTransform
 {
-	public FixedVector2 Position;
-	public float Rotation;
+	public FixedVector2 position;
+	public float rotation;
 
 	public CoreTransform(FixedVector2 position, float rotation = 0f)
 	{
-		Position = position;
-		Rotation = rotation;
+		this.position = position;
+		this.rotation = rotation;
 	}
 
 	public readonly Vector3 ToVector3(float z = 0f)
 	{
-		Vector2 pos2 = Position.ToVector2();
+		Vector2 pos2 = position.ToVector2();
 		return new Vector3(pos2.x, pos2.y, z);
 	}
 
@@ -370,10 +370,10 @@ public struct CoreTransform
 			return;
 		}
 
-		Vector2 pos2 = Position.ToVector2();
+		Vector2 pos2 = position.ToVector2();
 		Vector3 target = new(pos2.x, pos2.y, transform.position.z);
 		transform.position = target;
-		transform.rotation = Quaternion.Euler(0f, 0f, Rotation);
+		transform.rotation = Quaternion.Euler(0f, 0f, rotation);
 	}
 
 	public static CoreTransform FromTransform(Transform transform)
@@ -395,14 +395,14 @@ public struct CoreTransform
 public sealed class TransformSync : MonoBehaviour
 {
 	[Tooltip("Deterministic transform data that should be mirrored to the Unity Transform.")]
-	public CoreTransform CoreTransform;
+	public CoreTransform coreTransform;
 
 	[Tooltip("Automatically initializes the BattleCore singleton if necessary.")]
-	public bool AutoInitializeBattleCore = true;
+	public bool autoInitializeBattleCore = true;
 
 	private void Awake()
 	{
-		if (AutoInitializeBattleCore)
+		if (autoInitializeBattleCore)
 		{
 			BattleCore.Initialize();
 		}
@@ -413,12 +413,12 @@ public sealed class TransformSync : MonoBehaviour
 
 	private void LateUpdate()
 	{
-		CoreTransform.ApplyTo(transform);
+		coreTransform.ApplyTo(transform);
 	}
 
 	public void SyncFromUnityTransform()
 	{
-		CoreTransform = CoreTransform.FromTransform(transform);
+		coreTransform = CoreTransform.FromTransform(transform);
 	}
 }
 #endregion
@@ -450,6 +450,7 @@ internal sealed class BattleCoreTickerRunner : MonoBehaviour
 			_ticker.Step();
 			yield return interval;
 		}
+		
 	}
 }
 
@@ -458,30 +459,47 @@ internal sealed class BattleCoreTickerRunner : MonoBehaviour
 /// </summary>
 public sealed class Ticker
 {
-	public const int TicksPerSecond = 60;
-	public const int TickIntervalMs = 1000 / TicksPerSecond;
+	public const byte TicksPerSecond = 60;
+	public const byte TickIntervalMs = 1000 / TicksPerSecond;
 
-	public event Action<int> OnTick;
+	public event Action<ushort> OnTick;
 
-	private ushort _tickCount;
-	public ushort TickCount => _tickCount;
+	public ushort TickCount { get; private set; }
 
-	public void Reset() => _tickCount = 0;
+	public void Schedule(byte ticksFromNow, Action<int> action) //ticksFromNow is byte since max delay is 120 ticks(2 seconds), the smaller the better for memory and packet size
+	{
+		if (ticksFromNow <= 0)
+		{
+			throw new ArgumentOutOfRangeException(nameof(ticksFromNow), "Must be greater than zero.");
+		}
+		ushort targetTick = (TickCount + ticksFromNow < TickCount) ? (ushort)(TickCount + ticksFromNow) : (ushort)1;
+		OnTick += Handler;
+		return;
+
+		void Handler(ushort currentTick)
+		{
+			
+			if (currentTick < targetTick) return;
+			action(currentTick);
+			OnTick -= Handler;
+		}
+	}
+	public void Reset() => TickCount = 0;
 
 	// Deterministic: "한번 호출할 때마다 정확히 한 틱"만 진행
 	public void Step()
 	{
-		_tickCount++;
-		if(_tickCount % TicksPerSecond == 0)
+		TickCount++;
+		if(TickCount % TicksPerSecond == 0)
 		{
-			Debug.Log($"Tick {_tickCount} at {Time.realtimeSinceStartup:F3}s"); // Time.realtimeSinceStartup is just for debugging, not used for real timing. IT IS NOT QUITE DETERMINISTIC
+			Debug.Log($"Tick {TickCount} at {Time.realtimeSinceStartup:F3}s"); // Time.realtimeSinceStartup is just for debugging, not used for real timing. IT IS NOT QUITE DETERMINISTIC
 		}
-		if (_tickCount == 65535) // wrap around to avoid overflow, though unlikely to happen in practice(it needs a battle that lasts more than 18 minutes)
+		if (TickCount == 65535) // wrap around to avoid overflow, though unlikely to happen in practice(it needs a battle that lasts more than 18 minutes)
 		{
 			Debug.LogError("Overflow has occurred. Perhaps ushort is too short...");
-			_tickCount = 0;
+			TickCount = 0;
 		}
-		OnTick?.Invoke(_tickCount);
+		OnTick?.Invoke(TickCount);
 	}
 }
 #endregion

@@ -708,8 +708,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e98055def49fee449be0102741f9d62c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InputBinder
-  playerControl: {fileID: 1725135782}
-  attackController: {fileID: 1725135783}
 --- !u!1 &855105501
 GameObject:
   m_ObjectHideFlags: 0
@@ -1567,7 +1565,6 @@ GameObject:
   - component: {fileID: 1725135781}
   - component: {fileID: 1725135782}
   - component: {fileID: 1725135783}
-  - component: {fileID: 1725135784}
   - component: {fileID: 1725135785}
   m_Layer: 6
   m_Name: Player
@@ -1695,29 +1692,6 @@ MonoBehaviour:
   skill1Key: {fileID: -7471211009204490832, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   skill2Key: {fileID: 2411907206095950430, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   ultimateKey: {fileID: 1781555164194001046, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
---- !u!114 &1725135784
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1725135777}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f94fd30e2cfdae7418892b578a9cd2c3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::KinematicMotor2D
-  defaultPolicy:
-    wallsMask:
-      serializedVersion: 2
-      m_Bits: 8
-    enemyMask:
-      serializedVersion: 2
-      m_Bits: 128
-    enemyAsBlocker: 1
-    unitradius: 500
-    unitskin: 125
-    allowWallSlide: 1
 --- !u!114 &1725135785
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1734,7 +1708,7 @@ MonoBehaviour:
   boundCamera: {fileID: 519420031}
   respectBusyCooldown: 1
   defaultPriority: 0
-  verbose: 1
+  verbose: 0
 --- !u!1 &1752660213
 GameObject:
   m_ObjectHideFlags: 0

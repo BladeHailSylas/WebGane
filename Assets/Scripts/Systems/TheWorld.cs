@@ -1,6 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
+#region ===== Entity Definitions =====
 /// <summary>
 /// Pure deterministic system contract. Implementations must avoid random generators,
 /// floating point math, or Unity API access to guarantee replay stability.
@@ -10,7 +12,19 @@ public interface IWorldSystem
 	string Name { get; }
 	void Execute(TheWorld world);
 }
-
+public enum EntityType : byte
+{
+	None = 0,
+	Player = 1,
+	Projectile = 2,
+	Walls = 3,
+}
+public enum Team : byte
+{
+	Me = 0,
+	Ally = 1,
+	Enemy = 2,
+}
 /// <summary>
 /// Serializable snapshot of the entire world state. Used for rollback, save/load,
 /// or deterministic verification between peers.
@@ -18,10 +32,12 @@ public interface IWorldSystem
 [Serializable]
 public struct WorldSnapshot
 {
-	public int Tick;
-	public ulong WorldVersion;
-	public EntityData[] Entities;
+	public int tick;
+	public ulong worldVersion;
+	public EntityData[] entities;
 }
+#endregion
+
 
 /// <summary>
 /// Deterministic container responsible for owning every <see cref="EntityData"/> instance.
@@ -34,11 +50,23 @@ public sealed class TheWorld
 	[SerializeField] private readonly List<EntityData> _entities = new();
 	[SerializeField] private readonly List<int> _freeIds = new();
 	[NonSerialized] private readonly List<SystemRegistration> _systems = new();
+	[SerializeField] private ulong worldVersion;
 
-	[SerializeField] private ulong _worldVersion;
-
+	public TheWorld()
+	{
+		Initialize();
+	}
+	public void Initialize()
+	{
+		_entities.Clear();
+		_freeIds.Clear();
+		_systems.Clear();
+		ActiveEntityCount = 0;
+		worldVersion = 0;
+		Debug.Log("The World!");
+	}
 	public int CurrentTick { get; private set; }
-	public ulong WorldVersion => _worldVersion;
+	public ulong WorldVersion => worldVersion;
 	public int ActiveEntityCount { get; private set; }
 
 	/// <summary>
@@ -116,7 +144,7 @@ public sealed class TheWorld
 		template.LastProcessedTick = CurrentTick;
 		_entities[index] = template;
 		ActiveEntityCount++;
-		_worldVersion++;
+		worldVersion++;
 		return template.Id;
 	}
 
@@ -135,7 +163,7 @@ public sealed class TheWorld
 		_entities[id.Value] = entity;
 		ActiveEntityCount--;
 		_freeIds.Add(id.Value);
-		_worldVersion++;
+		worldVersion++;
 		return true;
 	}
 
@@ -168,7 +196,7 @@ public sealed class TheWorld
 			throw new IndexOutOfRangeException("Entity identifier exceeds buffer capacity.");
 		}
 		_entities[entity.Id.Value] = entity;
-		_worldVersion++;
+		worldVersion++;
 	}
 
 	/// <summary>
@@ -176,7 +204,7 @@ public sealed class TheWorld
 	/// 1) Integrate velocity for every active entity.
 	/// 2) Invoke registered systems in ascending order.
 	/// </summary>
-	public void UpdateWorld()
+	public void UpdateWorld() // Call once per tick by the Ticker
 	{
 		CurrentTick++;
 
@@ -199,7 +227,7 @@ public sealed class TheWorld
 			_systems[i].System.Execute(this);
 		}
 
-		_worldVersion++;
+		worldVersion++;
 	}
 
 	/// <summary>
@@ -209,9 +237,9 @@ public sealed class TheWorld
 	{
 		return new WorldSnapshot
 		{
-			Tick = CurrentTick,
-			WorldVersion = _worldVersion,
-			Entities = _entities.ToArray()
+			tick = CurrentTick,
+			worldVersion = worldVersion,
+			entities = _entities.ToArray()
 		};
 	}
 
@@ -220,13 +248,13 @@ public sealed class TheWorld
 	/// </summary>
 	public void ApplySnapshot(WorldSnapshot snapshot)
 	{
-		if (snapshot.Entities == null)
+		if (snapshot.entities == null)
 		{
 			throw new ArgumentException("Snapshot must contain entity data.", nameof(snapshot));
 		}
 
 		_entities.Clear();
-		_entities.AddRange(snapshot.Entities);
+		_entities.AddRange(snapshot.entities);
 		_freeIds.Clear();
 		for (int i = 0; i < _entities.Count; i++)
 		{
@@ -236,8 +264,8 @@ public sealed class TheWorld
 			}
 		}
 
-		CurrentTick = snapshot.Tick;
-		_worldVersion = snapshot.WorldVersion;
+		CurrentTick = snapshot.tick;
+		worldVersion = snapshot.worldVersion;
 		ActiveEntityCount = CountActiveEntities();
 	}
 
@@ -264,7 +292,7 @@ public sealed class TheWorld
 		_freeIds.Clear();
 		ActiveEntityCount = 0;
 		CurrentTick = 0;
-		_worldVersion = 0;
+		worldVersion = 0;
 	}
 
 	/// <summary>
@@ -285,9 +313,9 @@ public sealed class TheWorld
 	private int CountActiveEntities()
 	{
 		int count = 0;
-		for (int i = 0; i < _entities.Count; i++)
+		foreach(var entity in _entities)
 		{
-			if (_entities[i].IsActive)
+			if (entity.IsActive)
 			{
 				count++;
 			}

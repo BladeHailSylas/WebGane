@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using UnityEngine;
 
+#region ===== Entity ID =====
 /// <summary>
 /// Represents a deterministic identifier for entities managed by <see cref="TheWorld"/>.
 /// Using a dedicated struct avoids accidental misuse of raw integers and keeps the
@@ -16,10 +17,11 @@ public readonly struct EntityId : IEquatable<EntityId>, IComparable<EntityId>
 
 	[SerializeField]
 	private readonly int _value;
-
-	public EntityId(int value)
+	[SerializeField] private readonly bool _isRoot; // Prevents compiler from auto-generating equality operators
+	public EntityId(int value, bool isRoot = false)
 	{
 		_value = value;
+		_isRoot = isRoot;
 	}
 
 	/// <summary>
@@ -64,7 +66,9 @@ public readonly struct EntityId : IEquatable<EntityId>, IComparable<EntityId>
 		return IsValid ? $"EntityId({_value})" : "EntityId(Invalid)";
 	}
 }
+#endregion
 
+#region ===== Entity Data =====
 /// <summary>
 /// Atomic, fully deterministic state for a single simulation entity. The struct contains
 /// both persistent attributes (team, stats) and transient integrators (velocity, impulse).
@@ -218,3 +222,4 @@ public struct EntityData
 		Version++;
 	}
 }
+#endregion

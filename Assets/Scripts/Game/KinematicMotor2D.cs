@@ -86,7 +86,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 		BattleCore.Ticker.OnTick -= HandleTick;
 	}
 
-	private void HandleTick(int tick)
+	private void HandleTick(ushort tick)
 	{
 		ProcessPendingMoves();
 		_lastProcessedTick = tick;
@@ -155,7 +155,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                         return new FixedVector2(0, 0);
                 }
 
-                Vector2 origin = _coreTransform.Position.ToVector2();
+                Vector2 origin = _coreTransform.position.ToVector2();
                 Vector2 direction = vfinalFloat.normalized;
                 var maskHit = Physics2D.CircleCastAll(origin, current.unitradius, direction, magnitude, mask);
                 foreach (var hit in maskHit)
@@ -241,7 +241,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                         return result;
                 }
 
-                FixedVector2 originFixed = _coreTransform.Position;
+                FixedVector2 originFixed = _coreTransform.position;
                 float remaining = desiredFloat.magnitude;
                 Vector2 wishDirFloat = desiredFloat.normalized;
 
@@ -278,7 +278,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                         remaining = 0f;
                 }
 
-		result.actualDelta = _coreTransform.Position - originFixed;
+		result.actualDelta = _coreTransform.position - originFixed;
 		return result;
 	}
 
@@ -290,7 +290,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 			return;
 		}
 
-		_coreTransform.Position += delta;
+		_coreTransform.position += delta;
 		_needsTransformSync = true;
 	}
 
@@ -426,7 +426,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                         }
                 }
 
-                _coreTransform.Position = new FixedVector2(rb.position);
+                _coreTransform.position = new FixedVector2(rb.position);
 		_needsTransformSync = true;
 
 		/*** Optional debug ray (disabled by default). */
