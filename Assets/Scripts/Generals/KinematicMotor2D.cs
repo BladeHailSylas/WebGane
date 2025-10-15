@@ -35,6 +35,7 @@ public struct MoveResult
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
+[Obsolete]
 public class KinematicMotor2D : MonoBehaviour, ISweepable
 {
 	[Header("Defaults")]
@@ -47,9 +48,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 		unitskin = 125,
 		allowWallSlide = true
 	};
-        [Obsolete]
         private Rigidbody2D rb;
-        [Obsolete]
         private Collider2D col;
         /*** Migration note:
          * 1) Replace the obsolete Rigidbody2D usage with a deterministic CoreTransform source (e.g., inject via CoreTransform.FromTransform).
