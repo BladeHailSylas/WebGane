@@ -8,7 +8,7 @@ public class SwitchSkillMechanism : SkillMechanismBase<SwitchControllerParams>
 {
 	public override IEnumerator Cast(Transform owner, Camera cam, SwitchControllerParams p)
 	{
-		if (p == null)
+		/*if (p == null)
 		{
 			Debug.LogWarning("SwitchSkillMechanism: 파라미터가 null입니다.");
 			yield break;
@@ -25,13 +25,13 @@ public class SwitchSkillMechanism : SkillMechanismBase<SwitchControllerParams>
 		{
 			var followTarget = order.TargetOverride != null ? order.TargetOverride : prevTarget;
 			MechanismRuntimeUtil.QueueCastOrder(order, AbilityHook.OnCastEnd, reference.delay, reference.respectBusyCooldown, "Switch", followTarget);
-			/** 필요 시 switch 단계별로 UI를 갱신하려면 이 지점에서 이벤트를 브로드캐스트하십시오. */
+			//필요 시 switch 단계별로 UI를 갱신하려면 이 지점에서 이벤트를 브로드캐스트하십시오.
 		}
 		else
 		{
 			Debug.LogWarning("SwitchSkillMechanism: 실행할 스텝을 찾지 못했습니다.");
-		}
-
+		}*/
+	
 		yield break;
 	}
 }

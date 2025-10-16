@@ -10,14 +10,31 @@ namespace Intents
     public sealed class IntentRouter
     {
         private readonly CoreMotor2D _coreMotor;
-        private readonly SkillRunner _skillRunner;
-
-        public IntentRouter(CoreMotor2D coreMotor, SkillRunner skillRunner)
+        //private readonly SkillRunner _skillRunner;
+        private readonly IntentValidator _validator;
+        private readonly Ticker _ticker;
+        public IntentRouter(CoreMotor2D coreMotor/*, SkillRunner skillRunner*/)
         {
             _coreMotor = coreMotor ?? throw new ArgumentNullException(nameof(coreMotor));
-            _skillRunner = skillRunner ?? throw new ArgumentNullException(nameof(skillRunner));
+            //_skillRunner = skillRunner ?? throw new ArgumentNullException(nameof(skillRunner));
+            _validator = BattleCore.Validator;
+            _ticker = BattleCore.Ticker;
         }
 
+        void OnEnable()
+        {
+            _ticker.OnTick += TickHandler;
+        }
+
+        void OnDisable()
+        {
+            _ticker.OnTick -= TickHandler;
+        }
+
+        void TickHandler(ushort tick)
+        {
+            RouteIntent(_validator.ValidatedIntents);
+        }
         /// <summary>
         ///     Routes every supplied intent to the subsystem responsible for handling it.
         ///     Null entries are ignored but reported so upstream collectors can be verified.
@@ -70,7 +87,7 @@ namespace Intents
                 throw new InvalidCastException("Intent type Move must be a MoveIntent instance.");
             }
 
-            _coreMotor.Move(moveIntent);
+            _coreMotor.SweepMove(moveIntent.Movement);
         }
 
         private void RouteCastIntent(IIntent intent)
@@ -80,7 +97,7 @@ namespace Intents
                 throw new InvalidCastException("Intent type Cast must be a CastIntent instance.");
             }
 
-            _skillRunner.Cast(castIntent);
+            //_skillRunner.Cast(castIntent);
         }
     }
 }

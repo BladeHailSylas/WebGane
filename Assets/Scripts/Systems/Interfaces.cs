@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EffectInterfaces;
-using Intents;
 
 #region ===== Effect =====
 namespace EffectInterfaces
@@ -219,7 +218,7 @@ namespace SkillInterfaces
 	{
 		bool IsBusy { get; }
 		bool IsOnCooldown { get; }
-		void EnqueueRootIntent(ISkillMechanism mech, ISkillParam param, TargetRequest req, int priorityLevel = 0);
+		//void EnqueueRootIntent(ISkillMechanism mech, ISkillParam param, TargetRequest req, int priorityLevel = 0);
 	}
 
 	// 메커니즘(공식): "캐스팅 코루틴"을 제공

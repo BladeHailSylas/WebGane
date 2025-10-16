@@ -9,7 +9,7 @@ using SkillInterfaces;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public sealed class SkillRunner : MonoBehaviour, ISkillRunner
+/*public sealed class SkillRunner : MonoBehaviour, ISkillRunner
 {
 	[Header("Actor")]
         [SerializeField] ushort actorIdValue = 1;
@@ -96,4 +96,4 @@ public sealed class SkillRunner : MonoBehaviour, ISkillRunner
 			Debug.Log($"[Runner] Root Intent enqueue: {intent}");
 		}
 	}
-}
+}*/

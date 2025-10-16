@@ -22,7 +22,7 @@ public static class MechanismRuntimeUtil
 	/// <param name="templateIdPrefix">FollowUp TemplateId에 붙일 접두사입니다.</param>
 	public static void QueueFollowUps(IFollowUpProvider provider, AbilityHook hook, Transform prevTarget = null, string templateIdPrefix = null)
 	{
-		if (provider == null) return;
+		/*if (provider == null) return;
 		if (!CastScope.TryGetContext(out var parent, out _))
 		{
 			Debug.LogWarning("CastScope 컨텍스트 없이 FollowUp을 생성할 수 없습니다.");
@@ -53,14 +53,14 @@ public static class MechanismRuntimeUtil
 				priority: parent.PriorityLevel);
 
 			CastScope.AddIntent(followUp);
-		}
+		}*/
 	}
 
 	/// <summary>
 	///     Switch 메커니즘 등에서 임의의 CastOrder를 FollowUp으로 등록할 때 사용합니다.
 	/// </summary>
 	public static void QueueCastOrder(CastOrder order, AbilityHook hook, float delaySeconds, bool respectBusyCooldown, string templateIdPrefix = null, Transform prevTarget = null)
-	{
+	{/*
 		if (order.Mech == null || order.Param == null) return;
 		if (!CastScope.TryGetContext(out var parent, out _))
 		{
@@ -86,9 +86,9 @@ public static class MechanismRuntimeUtil
 			dedupKey: null,
 			priority: parent.PriorityLevel);
 
-		CastScope.AddIntent(followUp);
+		CastScope.AddIntent(followUp);*/
 	}
-
+	/*
 	static (IntentTiming timing, int delayTicks) ConvertSecondsToTiming(float delaySeconds)
 	{
 		if (delaySeconds <= 0f)
@@ -98,9 +98,8 @@ public static class MechanismRuntimeUtil
 
 		int ticks = Mathf.Max(1, Mathf.RoundToInt(delaySeconds * TickRate));
 		return (IntentTiming.Delayed, ticks);
-	}
-
-	static TargetRequest ResolveTargetRequest(Transform overrideTarget, TargetRequest parentRequest, Transform fallbackTarget)
+	}*/
+	/*static TargetRequest ResolveTargetRequest(Transform overrideTarget, TargetRequest parentRequest, Transform fallbackTarget)
 	{
 		if (overrideTarget != null)
 		{
@@ -111,7 +110,7 @@ public static class MechanismRuntimeUtil
 			return TargetRequest.SameActor(fallbackTarget);
 		}
 		return parentRequest;
-	}
+	}*/
 
 	static string BuildTemplateId(string prefix, AbilityHook hook, ISkillMechanism mech)
 	{
@@ -123,5 +122,5 @@ public static class MechanismRuntimeUtil
 		return $"{prefix}:{hook}:{mechName}";
 	}
 
-	/** 향후 디버그를 위해 FollowUp 생성 이벤트를 로깅하려면 여기서 UnityEvent 또는 CustomLogger를 연결하십시오. */
+	// 향후 디버그를 위해 FollowUp 생성 이벤트를 로깅하려면 여기서 UnityEvent 또는 CustomLogger를 연결하십시오.
 }

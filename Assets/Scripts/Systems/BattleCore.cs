@@ -553,7 +553,7 @@ public sealed class IntentValidator
 		_validIntents.Clear();
 		foreach (var intent in intents.Where(intent => !(_immovableIDs.Contains(intent.OwnerID) || _unattackableIDs.Contains(intent.OwnerID))))
 		{
-			_validIntents.Add(intent);
+			if(intent.Type == IntentType.Move || intent.Type == IntentType.Cast) _validIntents.Add(intent);
 		}
 	}
 }
