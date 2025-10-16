@@ -23,7 +23,7 @@ namespace Intents
 		//matchSeed는 도박꾼 특성에 필요하다, seed + tick + castId로 RNG를 결정하는 게 합리적으로 보임(그래야 나중에 재현 가능)
 		//아마 castId를 안 쓸 수도 있고, RNG 생성은 간단하게 MOD를 쓸 수도 있겠음
 		//도박꾼 특성은 딱히 복잡한 RNG가 필요하지 않음(정해진 풀에서 랜덤하게 뽑기 때문)
-
+		//추가: 플레이어 생성 위치의 프리셋이 있는데 이걸 확정하기 위해 시드가 필요하다
 		[Header("Diagnostics")]
 		[SerializeField] bool verboseLog;
 

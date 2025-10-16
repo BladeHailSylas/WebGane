@@ -1,68 +1,78 @@
 # Goal
-Refactor all code that uses `int` for `EntityId` to use `ushort` instead, reducing network packet size while maintaining system integrity and avoiding overflow or compatibility issues.
+Design a simplified and maintainable **IntentRouter** system to replace the overly complex **IntentOrchestrator** and **CastIntent** architecture, focusing on minimal routing behavior for modular extensibility.
 
 # Context
-- The existing codebase defines `EntityId` as an `int` type.
-- You want to change it to `ushort` to reduce bandwidth usage (smaller packet size).
-- The total number of entities is small enough to safely fit within `ushort` (0–65535).
-- You want to avoid risky underflow/overflow edge cases that could occur with `byte`.
-- The code may involve serialization, deserialization, network transmission, and database or file persistence.
+The current `IntentOrchestrator` and `CastIntent` structures were built to support complex, skill-based intent pipelines involving multiple chained executions, follow-ups, and RNG.  
+However, the new design goal is **simplicity** and **deterministic intent routing** for a single-module environment (`CoreMotor2D`), starting with only `MoveIntent`.
+
+Thus, the following simplifications are applied:
+
+- **Rename**: `IntentOrchestrator → IntentRouter`
+- **Reduce responsibility**: Only routes intents to modules based on their type.
+- **Remove complexity**: Eliminate `CastIntent`, `CastContext`, `FollowUp`, `GuardKey`, and `DedupKey`.
+- **Preserve determinism**: Keep routing order predictable and per-tick consistent.
+- **Keep IntentCollector**: It remains responsible for gathering intents per tick and passing them to the router.
 
 # Input
-- The codebase where `EntityId` (currently an `int`) is used — including:
-    - Class or struct definitions (`Entity`, `Component`, etc.)
-    - Network serialization/deserialization code.
-    - Packet and protocol structures.
-    - Dictionaries, maps, and arrays keyed by `EntityId`.
-    - Any numeric casts, arithmetic, or range checks involving `EntityId`.
+- **Previous system files**:
+    - `IntentOrchestrator.cs`: A monolithic orchestrator handling scheduling, deduplication, and validation.
+    - `IntentTypes.cs`: Defines complex intent data (`CastIntent`, `FollowUpTemplate`, etc.).
+    - `IntentCollector.cs`: Already designed to collect and flush intents per tick.
+
+- **Requirements**:
+    1. Create a new, modular `IntentRouter` that:
+        - Accepts an array or list of `IIntent` from `IntentCollector`.
+        - Routes each intent to its target subsystem based on `IntentType`.
+    2. Initially support only `MoveIntent`.
+    3. Retain clear extension points for future intents (e.g., `SkillIntent`).
+    4. Enforce deterministic operation (no randomization, no async, no coroutines).
 
 # Output
-A complete refactoring plan or code transformation that:
-1. Replaces all occurrences of `int` used for entity identifiers with `ushort`.
-2. Ensures compatibility in serialization/deserialization layers (convert between `ushort` and network byte order correctly).
-3. Preserves API clarity (e.g., define a strong typedef/alias for `EntityId`).
-4. Adds range assertions or compile-time checks to prevent overflow (e.g., entity count exceeding `ushort.MaxValue`).
-5. Optionally includes a migration utility if persistence format or save files use `int`.
+A simplified architecture:
+- `IntentRouter`: Central routing component.
+- `IIntent` and its implementations (`MoveIntent`, etc.) remain minimal.
+- `IntentCollector`: Unchanged, responsible for gathering intents.
+- No CastIntent or CastContext logic remains.
+
+System data flow per tick:  
+`IntentCollector → BattleCore → IntentRouter → Target Module (CoreMotor2D)`
 
 # Constraints
-- Do **not** change unrelated `int` usages (only those representing `EntityId`).
-- Ensure no implicit cast warnings or truncation errors occur.
-- Maintain deterministic behavior in network or ECS logic.
-- No output examples required.
-- Code must remain compatible with existing networking or ECS architecture.
+- **Deterministic**: Behavior must be identical for the same input sequence.
+- **Single responsibility**: IntentRouter only routes; does not validate, queue, or schedule.
+- **No dependencies**: Avoid coupling with gameplay or RNG systems.
+- **Extensible**: Must allow future addition of new Intent types via clean branching logic.
+- **Minimal runtime overhead**: Operates per-tick with predictable performance.
 
 # Procedure
-1. **Define a Type Alias:**  
-   Create a typedef or alias, e.g.,
-   ```csharp
-   using EntityId = ushort;
-   ```  
-   This allows easy modification later if type needs to change again.
+1. **Deprecate and remove**:
+    - `IntentOrchestrator.cs` (and its MonoBehaviour dependency).
+    - `CastIntent`, `CastContext`, and all related types from `IntentTypes.cs`.
 
-2. **Global Replacement:**  
-   Replace all direct usages of `int` for entity identifiers with `EntityId`.  
-   Search for:
-    - Field declarations (`public int Id;`)
-    - Function signatures (`void Spawn(int entityId)`)
-    - Network structs (`Packet { int entityId; }`)
+2. **Introduce `IntentRouter`**:
+    - A pure C# class that takes a list of `IIntent` and routes them by intent type.
+    - Example routing flow:
+        - `MoveIntent` → Calls `CoreMotor2D.Move()`.
+        - Unrecognized types → Log a warning, skip processing.
 
-3. **Serialization Layer Update:**
-    - Update serializers to read/write `ushort` instead of `int`.
-    - Adjust network byte order (e.g., `BinaryWriter.Write((ushort)entityId)` and `BinaryReader.ReadUInt16()`).
+3. **Keep `IntentCollector`**:
+    - Continue using it to gather all `IIntent` objects each tick.
+    - Pass the collected list to `IntentRouter` during the fixed update or tick event.
 
-4. **Validation Logic:**
-    - Add assertions:
-      ```csharp
-      Debug.Assert(entityId <= ushort.MaxValue);
-      ```  
-    - During entity creation, check that the entity pool doesn’t exceed the `ushort` limit.
+4. **Integrate deterministically**:
+    - Each tick executes the routing step exactly once.
+    - Ensure that all intents are processed in the same order they were collected.
 
-5. **Refactor Hash Structures:**
-    - If using hash-based structures (`Dictionary<int, Entity>`), redefine them as `Dictionary<EntityId, Entity>`.
+5. **Future expansion**:
+    - Extend with `SkillIntent`, `InteractionIntent`, etc.
+    - Add modular handler methods or a handler registry in `IntentRouter`.
+    - Maintain isolation: each handler should only touch its own subsystem.
 
-6. **Test Serialization Compatibility:**
-    - Verify that network clients using the new type still parse packets correctly.
-    - Optionally maintain backward compatibility via versioned packets.
+---
 
-7. **Optional Migration Utility:**
-    - If data files or saves used `int`, write a conversion step that safely reads `int` and writes `ushort`.  
+✅ **End Result:**
+A clean, deterministic intent handling flow:
+- **Simple:** Only one router; no orchestration logic.
+- **Extensible:** Future intents can be added via straightforward routing.
+- **Maintainable:** Minimal complexity, no unnecessary data objects.
+- **Deterministic:** Predictable per-tick intent behavior for all actors.
