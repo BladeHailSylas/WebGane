@@ -12,8 +12,8 @@ using UnityEngine;
 public sealed class SkillRunner : MonoBehaviour, ISkillRunner
 {
 	[Header("Actor")]
-	[SerializeField] int actorId = 1;
-	[SerializeField] Camera boundCamera;
+        [SerializeField] ushort actorIdValue = 1;
+        [SerializeField] Camera boundCamera;
 
 	[Header("Queueing")]
 	[SerializeField] bool respectBusyCooldown = true;
@@ -22,31 +22,37 @@ public sealed class SkillRunner : MonoBehaviour, ISkillRunner
 	[Header("Debug")]
 	[SerializeField] bool verbose;
 
-	int _rootSequence;
-	IntentOrchestrator _orchestrator;
+        int _rootSequence;
+        IntentOrchestrator _orchestrator;
+        EntityId _actorId;
 
 	void Awake()
 	{
-		_orchestrator = IntentOrchestrator.Instance;
-		if (_orchestrator == null)
-		{
-			Debug.LogError("IntentOrchestrator 인스턴스를 찾을 수 없습니다. Runner가 작동하지 않습니다.");
-		}
-		boundCamera ??= Camera.main;
+                _orchestrator = IntentOrchestrator.Instance;
+                if (_orchestrator == null)
+                {
+                        Debug.LogError("IntentOrchestrator 인스턴스를 찾을 수 없습니다. Runner가 작동하지 않습니다.");
+                }
+                _actorId = new EntityId(actorIdValue);
+                boundCamera ??= Camera.main;
 	}
 
 	void OnEnable()
 	{
-		_orchestrator ??= IntentOrchestrator.Instance;
-		if (_orchestrator == null)
-		{
-			Debug.LogWarning("Orchestrator 부재: Intent를 큐잉할 수 없습니다.");
-		}
-	}
+                _orchestrator ??= IntentOrchestrator.Instance;
+                if (_orchestrator == null)
+                {
+                        Debug.LogWarning("Orchestrator 부재: Intent를 큐잉할 수 없습니다.");
+                }
+                if (!_actorId.IsValid)
+                {
+                        _actorId = new EntityId(actorIdValue);
+                }
+        }
 
-	public bool IsBusy => _orchestrator != null && _orchestrator.IsActorBusy(actorId);
+        public bool IsBusy => _orchestrator != null && _orchestrator.IsActorBusy(_actorId);
 
-	public bool IsOnCooldown => _orchestrator != null && _orchestrator.IsActorOnCooldown(actorId);
+        public bool IsOnCooldown => _orchestrator != null && _orchestrator.IsActorOnCooldown(_actorId);
 
 	public void EnqueueRootIntent(ISkillMechanism mech, ISkillParam param, TargetRequest request, int priorityLevel = 0)
 	{
@@ -68,20 +74,21 @@ public sealed class SkillRunner : MonoBehaviour, ISkillRunner
 			return;
 		}
 
-		var intent = CastIntent.Root(
-			actorId,
-			++_rootSequence,
-			mech,
-			param,
-			request,
-			respectBusyCooldown,
-			priorityLevel == 0 ? defaultPriority : priorityLevel,
-			transform,
-			boundCamera);
+                var intent = CastIntent.Root(
+                        _actorId,
+                        ++_rootSequence,
+                        mech,
+                        param,
+                        request,
+                        respectBusyCooldown,
+                        priorityLevel == 0 ? defaultPriority : priorityLevel,
+                        transform,
+                        boundCamera,
+                        BattleCore.Ticker.TickCount); // Intent 생성 시점의 틱 값을 함께 보관합니다.
 
 		// Guard/Dedup 기본값 설정. 실제 프로젝트에서는 Skill 고유 키로 치환 필요.
-		intent.DedupKey ??= $"root:{actorId}:{intent.RootCastId}";
-		intent.GuardKey ??= $"guard:{actorId}:{intent.RootCastId}";
+                intent.DedupKey ??= $"root:{_actorId.Value}:{intent.RootCastId}";
+                intent.GuardKey ??= $"guard:{_actorId.Value}:{intent.RootCastId}";
 
 		_orchestrator.Enqueue(intent);
 		if (verbose)

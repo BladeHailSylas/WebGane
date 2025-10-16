@@ -31,10 +31,10 @@ namespace Intents
 		private readonly Queue<CastIntent> _immediateQueue = new();
 		private readonly List<CastIntent> _tickBuffer = new();
 		private readonly List<CastIntent> _followUpBuffer = new();
-		private readonly HashSet<string> _guardSet = new();
-		private readonly HashSet<string> _tickDedup = new();
-		private readonly Dictionary<int, int> _busyUntilTick = new();
-		private readonly Dictionary<int, int> _cooldownUntilTick = new();
+                private readonly HashSet<string> _guardSet = new();
+                private readonly HashSet<string> _tickDedup = new();
+                private readonly Dictionary<EntityId, int> _busyUntilTick = new();
+                private readonly Dictionary<EntityId, int> _cooldownUntilTick = new();
 
 		private int _tick;
 		private int _bufferIndex;
@@ -95,15 +95,17 @@ namespace Intents
 			}
 		}
 
-		public bool IsActorBusy(int actorId)
-		{
-			return _busyUntilTick.TryGetValue(actorId, out var until) && until > _tick;
-		}
+                public bool IsActorBusy(EntityId actorId)
+                {
+                        if (!actorId.IsValid) return false;
+                        return _busyUntilTick.TryGetValue(actorId, out var until) && until > _tick;
+                }
 
-		public bool IsActorOnCooldown(int actorId)
-		{
-			return _cooldownUntilTick.TryGetValue(actorId, out var until) && until > _tick;
-		}
+                public bool IsActorOnCooldown(EntityId actorId)
+                {
+                        if (!actorId.IsValid) return false;
+                        return _cooldownUntilTick.TryGetValue(actorId, out var until) && until > _tick;
+                }
 
 		void FixedUpdate()
 		{
@@ -269,14 +271,14 @@ namespace Intents
 			return true;
 		}
 
-		private CastContext BuildContext(CastIntent intent)
-		{
-			var rngSeed = matchSeed ^ _tick ^ intent.RootCastId;
-			return new CastContext(intent, _tick, new System.Random(rngSeed));
-		}
+                private IntentExecutionContext BuildContext(CastIntent intent)
+                {
+                        var rngSeed = matchSeed ^ _tick ^ intent.RootCastId;
+                        return new IntentExecutionContext(intent, _tick, new System.Random(rngSeed));
+                }
 
-		private bool Validate(CastIntent intent, CastContext context)
-		{
+                private bool Validate(CastIntent intent, IntentExecutionContext context)
+                {
 			if (intent.Mechanism == null)
 			{
 				Debug.LogWarning($"{intent} 메커니즘이 없습니다.");
@@ -295,8 +297,8 @@ namespace Intents
 			return true;
 		}
 
-		private bool BeginCost(CastIntent intent, CastContext context)
-		{
+                private bool BeginCost(CastIntent intent, IntentExecutionContext context)
+                {
 			if (!string.IsNullOrEmpty(intent.GuardKey))
 			{
 				if (!_guardSet.Add(intent.GuardKey))
@@ -317,8 +319,8 @@ namespace Intents
 			return true;
 		}
 
-		private Transform ResolveTarget(CastIntent intent, CastContext context)
-		{
+                private Transform ResolveTarget(CastIntent intent, IntentExecutionContext context)
+                {
 			switch (intent.TargetRequest.Policy)
 			{
 				case TargetPolicy.SameAsCast:
@@ -333,15 +335,15 @@ namespace Intents
 			return intent.TargetRequest.ExplicitActor;
 		}
 
-		private ExecutionResult Execute(CastIntent intent, CastContext context, Transform target)
-		{
+                private ExecutionResult Execute(CastIntent intent, IntentExecutionContext context, Transform target)
+                {
 			_followUpBuffer.Clear();
 			using (CastScope.Enter(this, intent, context, target))
 			{
 				try
 				{
 					IEnumerator routine;
-					var owner = context.Owner != null ? context.Owner : transform;
+                                        var owner = context.Owner != null ? context.Owner : transform;
 					// 잠재적 문제: Owner null 시 Orchestrator의 Transform을 사용하므로, 멀티 액터 환경에서 오동작 가능.
 					if (intent.Mechanism is ITargetedMechanic targeted && target != null)
 					{
@@ -365,14 +367,14 @@ namespace Intents
 			return new ExecutionResult(true, _followUpBuffer.ToArray());
 		}
 
-		private void Apply(CastIntent intent, CastContext context, ExecutionResult result)
-		{
+                private void Apply(CastIntent intent, IntentExecutionContext context, ExecutionResult result)
+                {
 			// Apply 단계는 실제 게임 로직에 맞게 확장 필요.
 			// 현재는 Determinism을 위한 placeholder만 제공합니다.
 		}
 
-		private void ScheduleFollowUps(CastIntent intent, CastContext context, ExecutionResult result)
-		{
+                private void ScheduleFollowUps(CastIntent intent, IntentExecutionContext context, ExecutionResult result)
+                {
 			if (result.FollowUps == null) return;
 			foreach (var follow in result.FollowUps)
 			{
@@ -397,8 +399,8 @@ namespace Intents
 			}
 		}
 
-		private void Finalize(CastIntent intent, CastContext context, ExecutionResult result)
-		{
+                private void Finalize(CastIntent intent, IntentExecutionContext context, ExecutionResult result)
+                {
 			if (!string.IsNullOrEmpty(intent.GuardKey))
 			{
 				_guardSet.Remove(intent.GuardKey);
@@ -437,24 +439,4 @@ namespace Intents
 		}
 	}
 
-	/// <summary>
-	///     CastContext는 파이프라인 중 생성되는 실행 환경입니다.
-	/// </summary>
-	public sealed class CastContext
-	{
-		public readonly CastIntent Intent;
-		public readonly int Tick;
-		public readonly System.Random Rng;
-		public readonly Transform Owner;
-		public readonly Camera Camera;
-
-		public CastContext(CastIntent intent, int tick, System.Random rng)
-		{
-			Intent = intent;
-			Tick = tick;
-			Rng = rng;
-			Owner = intent.OriginTransform;
-			Camera = intent.Camera != null ? intent.Camera : Camera.main;
-		}
-	}
 }
