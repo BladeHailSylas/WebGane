@@ -1,78 +1,76 @@
 # Goal
-Design a simplified and maintainable **IntentRouter** system to replace the overly complex **IntentOrchestrator** and **CastIntent** architecture, focusing on minimal routing behavior for modular extensibility.
-
-# Context
-The current `IntentOrchestrator` and `CastIntent` structures were built to support complex, skill-based intent pipelines involving multiple chained executions, follow-ups, and RNG.  
-However, the new design goal is **simplicity** and **deterministic intent routing** for a single-module environment (`CoreMotor2D`), starting with only `MoveIntent`.
-
-Thus, the following simplifications are applied:
-
-- **Rename**: `IntentOrchestrator → IntentRouter`
-- **Reduce responsibility**: Only routes intents to modules based on their type.
-- **Remove complexity**: Eliminate `CastIntent`, `CastContext`, `FollowUp`, `GuardKey`, and `DedupKey`.
-- **Preserve determinism**: Keep routing order predictable and per-tick consistent.
-- **Keep IntentCollector**: It remains responsible for gathering intents per tick and passing them to the router.
-
-# Input
-- **Previous system files**:
-    - `IntentOrchestrator.cs`: A monolithic orchestrator handling scheduling, deduplication, and validation.
-    - `IntentTypes.cs`: Defines complex intent data (`CastIntent`, `FollowUpTemplate`, etc.).
-    - `IntentCollector.cs`: Already designed to collect and flush intents per tick.
-
-- **Requirements**:
-    1. Create a new, modular `IntentRouter` that:
-        - Accepts an array or list of `IIntent` from `IntentCollector`.
-        - Routes each intent to its target subsystem based on `IntentType`.
-    2. Initially support only `MoveIntent`.
-    3. Retain clear extension points for future intents (e.g., `SkillIntent`).
-    4. Enforce deterministic operation (no randomization, no async, no coroutines).
-
-# Output
-A simplified architecture:
-- `IntentRouter`: Central routing component.
-- `IIntent` and its implementations (`MoveIntent`, etc.) remain minimal.
-- `IntentCollector`: Unchanged, responsible for gathering intents.
-- No CastIntent or CastContext logic remains.
-
-System data flow per tick:  
-`IntentCollector → BattleCore → IntentRouter → Target Module (CoreMotor2D)`
-
-# Constraints
-- **Deterministic**: Behavior must be identical for the same input sequence.
-- **Single responsibility**: IntentRouter only routes; does not validate, queue, or schedule.
-- **No dependencies**: Avoid coupling with gameplay or RNG systems.
-- **Extensible**: Must allow future addition of new Intent types via clean branching logic.
-- **Minimal runtime overhead**: Operates per-tick with predictable performance.
-
-# Procedure
-1. **Deprecate and remove**:
-    - `IntentOrchestrator.cs` (and its MonoBehaviour dependency).
-    - `CastIntent`, `CastContext`, and all related types from `IntentTypes.cs`.
-
-2. **Introduce `IntentRouter`**:
-    - A pure C# class that takes a list of `IIntent` and routes them by intent type.
-    - Example routing flow:
-        - `MoveIntent` → Calls `CoreMotor2D.Move()`.
-        - Unrecognized types → Log a warning, skip processing.
-
-3. **Keep `IntentCollector`**:
-    - Continue using it to gather all `IIntent` objects each tick.
-    - Pass the collected list to `IntentRouter` during the fixed update or tick event.
-
-4. **Integrate deterministically**:
-    - Each tick executes the routing step exactly once.
-    - Ensure that all intents are processed in the same order they were collected.
-
-5. **Future expansion**:
-    - Extend with `SkillIntent`, `InteractionIntent`, etc.
-    - Add modular handler methods or a handler registry in `IntentRouter`.
-    - Maintain isolation: each handler should only touch its own subsystem.
+Create an **IntentRouter system** for a Unity project that receives multiple `IIntent` objects and routes them to appropriate subsystems (`CoreMotor2D`, `SkillRunner`) using a simple switch-based routing mechanism.  
+Also, extend the existing `IntentType` enumeration and intent definitions to include a new `CastIntent`.
 
 ---
 
-✅ **End Result:**
-A clean, deterministic intent handling flow:
-- **Simple:** Only one router; no orchestration logic.
-- **Extensible:** Future intents can be added via straightforward routing.
-- **Maintainable:** Minimal complexity, no unnecessary data objects.
-- **Deterministic:** Predictable per-tick intent behavior for all actors.
+# Context
+The project uses an intent-driven architecture where subsystems act upon specific `IIntent` types.  
+
+Each intent carries metadata such as its `OwnerID`, `IntentID`, and `GeneratedTick`.  
+Currently, `MoveIntent` and `CastIntent` exist as concrete implementations.  
+
+Routing rules:  
+- `IntentType.Move` → handled by **CoreMotor2D** subsystem.  
+- `IntentType.Cast` → handled by **SkillRunner** subsystem.  
+- Any unrecognized or invalid intent type → **throw an exception** (non-critical) and skip that intent.
+
+The `SkillRunner` exposes a single `Cast(CastIntent intent)` method.  
+`CastIntent` contains both target references and skill metadata encapsulated in a `SkillInfo` struct.  
+
+`SkillInfo` holds information about a skill’s mechanism and parameters.
+
+---
+
+# Input
+**Provided interfaces and components:**
+- `IIntent` interface and `IntentType` enum (`None`, `Move`, `Cast`).
+- Subsystems: `CoreMotor2D` and `SkillRunner`.
+
+**Routing requirements:**
+- Each intent specifies an `IntentType`.
+- The router should use a switch-case approach to determine routing.
+- Subsystems are injected through the `IntentRouter` constructor.
+
+---
+
+# Output
+**Deliverables:**
+1. Add `Cast` to the `IntentType` enumeration.
+2. Implement a new `CastIntent` class that:
+   - Implements `IIntent`.
+   - Contains `OwnerID`, `IntentID`, `GeneratedTick`, `TargetID`, `TargetPosition`, and `SkillInfo` properties.
+   - Uses `FixedVector2D` instead of Unity’s `Vector2`.
+3. Implement an `IntentRouter` class that:
+   - Has a single public method `RouteIntent(IIntent[] intents)`.
+   - Routes each intent based on its `IntentType`.
+   - Delegates to the appropriate subsystem (`CoreMotor2D.Move()` or `SkillRunner.Cast()`).
+   - Logs warnings for any failed intent routing attempts but continues processing others.
+
+---
+
+# Constraints
+- Must be deterministic and Unity-friendly.  
+- Do **not** use Unity engine types like `Vector2` inside intents.  
+- `FixedVector2D` should be used for positional data.  
+- The router must remain simple and non-reflective (use switch-case).  
+- Should log warnings using `Debug.LogWarning()` when an intent fails to route.  
+- Throw a non-critical exception when an unknown `IntentType` is encountered but continue processing remaining intents.
+
+---
+
+# Procedure
+1. Extend the `IntentType` enum to include a `Cast` type.  
+2. Define a `SkillInfo` struct containing `Mechanism` and `Param` fields.  
+3. Implement the `CastIntent` class that carries `SkillInfo` and target information.  
+4. Implement the `IntentRouter` class:
+   - Accept `CoreMotor2D` and `SkillRunner` through its constructor.
+   - Implement the `RouteIntent(IIntent[] intents)` method.
+   - Use a switch on `IntentType` to delegate intent handling.
+   - Catch any exceptions, log warnings, and safely continue.  
+5. Integrate the router into your intent-handling pipeline so that all received intents are passed into `RouteIntent()` for dispatch.
+
+---
+
+# Summary
+This specification defines how to implement a deterministic, subsystem-based `IntentRouter` that cleanly distributes intents to the correct Unity gameplay systems. It also introduces the `CastIntent` for skill activation and integrates clean error handling for robustness.
