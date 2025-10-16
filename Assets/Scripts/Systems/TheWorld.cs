@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 #region ===== Entity Definitions =====
@@ -32,7 +33,7 @@ public enum Team : byte
 [Serializable]
 public struct WorldSnapshot
 {
-	public int tick;
+	public ushort tick;
 	public ulong worldVersion;
 	public EntityData[] entities;
 }
@@ -47,8 +48,8 @@ public struct WorldSnapshot
 [Serializable]
 public sealed class TheWorld
 {
-	[SerializeField] private readonly List<EntityData> _entities = new();
-	[SerializeField] private readonly List<int> _freeIds = new();
+	private readonly List<EntityData> _entities = new();
+	private readonly List<int> _freeIds = new();
 	[NonSerialized] private readonly List<SystemRegistration> _systems = new();
 	[SerializeField] private ulong worldVersion;
 
@@ -65,12 +66,13 @@ public sealed class TheWorld
 		worldVersion = 0;
 		Debug.Log("The World!");
 	}
-	public int CurrentTick { get; private set; }
+	public ushort CurrentTick { get; private set; }
 	public ulong WorldVersion => worldVersion;
-	public int ActiveEntityCount { get; private set; }
+	public ushort ActiveEntityCount { get; private set; }
 
 	/// <summary>
-	/// Optional deterministic random access for the Unity bridge. The list reference must never be mutated externally.
+	/// Optional deterministic random access for the Unity bridge.
+	/// The list reference must never be mutated externally.
 	/// </summary>
 	public IReadOnlyList<EntityData> Entities => _entities;
 
@@ -310,15 +312,12 @@ public sealed class TheWorld
 	/// <summary>
 	/// Calculates the deterministic number of active entities, used when restoring snapshots.
 	/// </summary>
-	private int CountActiveEntities()
+	private ushort CountActiveEntities()
 	{
-		int count = 0;
-		foreach(var entity in _entities)
+		ushort count = 0;
+		foreach (var entity in _entities.Where(entity => entity.IsActive))
 		{
-			if (entity.IsActive)
-			{
-				count++;
-			}
+			count++;
 		}
 		return count;
 	}

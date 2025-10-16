@@ -13,7 +13,7 @@ namespace Intents
 	///     전역 Orchestrator. FixedUpdate 단일 소비자로 Intent 파이프라인을 처리합니다.
 	/// </summary>
 	public sealed class IntentOrchestrator : MonoBehaviour, IIntentSink
-	{
+	{ //No MonoBehaviour
 		public static IntentOrchestrator Instance { get; private set; }
 
 		[Header("Determinism")]

@@ -13,12 +13,12 @@ public readonly struct EntityId : IEquatable<EntityId>, IComparable<EntityId>
 	/// <summary>
 	/// Sentinel value representing an invalid or unassigned entity reference.
 	/// </summary>
-	public static readonly EntityId Invalid = new(-1);
+	public static readonly EntityId Invalid = new(0);
 
 	[SerializeField]
-	private readonly int _value;
+	private readonly ushort _value;
 	[SerializeField] private readonly bool _isRoot; // Prevents compiler from auto-generating equality operators
-	public EntityId(int value, bool isRoot = false)
+	public EntityId(ushort value, bool isRoot = false)
 	{
 		_value = value;
 		_isRoot = isRoot;
@@ -27,9 +27,9 @@ public readonly struct EntityId : IEquatable<EntityId>, IComparable<EntityId>
 	/// <summary>
 	/// Raw integer handle used for deterministic array indexing. Intended for serialization only.
 	/// </summary>
-	public int Value => _value;
+	public ushort Value => _value;
 
-	public bool IsValid => _value >= 0;
+	public bool IsValid => _value > 0;
 
 	public bool Equals(EntityId other)
 	{

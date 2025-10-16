@@ -72,10 +72,11 @@ namespace Intents
 		public ISkillParam Param;
 		public TargetRequest TargetOverride;
 	}
-
+	
 	/// <summary>
 	///     CastIntent 데이터 오브젝트. Origin/Depth/Guard/Dedup를 모두 포함합니다.
 	/// </summary>
+	[Obsolete("Old Intent Type")]
 	public sealed class CastIntent
 	{
 		public enum IntentOrigin

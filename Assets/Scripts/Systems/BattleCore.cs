@@ -1,6 +1,8 @@
 ﻿using Intents;
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 #region ===== Core =====
@@ -14,7 +16,7 @@ public static class BattleCore
 	private static bool _initialized;
 	private static GameObject _runner;
 	private static TheWorld _world;
-
+	
 	static BattleCore()
 	{
 		Initialize();
@@ -25,6 +27,8 @@ public static class BattleCore
 	/// Global ticker operating with 60 ticks per real-time second.
 	/// </summary>
 	public static Ticker Ticker { get; } = new();
+
+	public static IntentValidator Validator { get; } = new();
 
 	/// <summary>
 	/// Creates an invisible runner GameObject (if required) and keeps it alive across scenes.
@@ -55,7 +59,7 @@ public static class BattleCore
 /// Represents a deterministic 2D vector where 1.0f equals 1000 fixed units.
 /// </summary>
 [Serializable]
-public readonly struct FixedVector2
+public readonly struct FixedVector2 : IEquatable<FixedVector2>
 {
 	public const int UnitsPerFloat = 1000;
 
@@ -150,6 +154,21 @@ public readonly struct FixedVector2
 		long dx = (long)a._rawX - b._rawX;
 		long dy = (long)a._rawY - b._rawY;
 		return (int)Math.Sqrt(dx * dx + dy * dy);
+	}
+
+	public bool Equals(FixedVector2 other)
+	{
+		return _rawX == other._rawX && _rawY == other._rawY;
+	}
+
+	public override bool Equals(object obj)
+	{
+		return obj is FixedVector2 other && Equals(other);
+	}
+
+	public override int GetHashCode()
+	{
+		return HashCode.Combine(_rawX, _rawY);
 	}
 }
 
@@ -447,7 +466,14 @@ internal sealed class BattleCoreTickerRunner : MonoBehaviour
 		var interval = new WaitForSecondsRealtime(1f / Ticker.TicksPerSecond);
 		while (true)
 		{
-			_ticker.Step();
+			try
+			{
+				_ticker.Step();
+			}
+			catch (TickCountOverflowException ex)
+			{
+				
+			}
 			yield return interval;
 		}
 		
@@ -490,16 +516,45 @@ public sealed class Ticker
 	public void Step()
 	{
 		TickCount++;
-		if(TickCount % TicksPerSecond == 0)
-		{
-			Debug.Log($"Tick {TickCount} at {Time.realtimeSinceStartup:F3}s"); // Time.realtimeSinceStartup is just for debugging, not used for real timing. IT IS NOT QUITE DETERMINISTIC
-		}
 		if (TickCount == 65535) // wrap around to avoid overflow, though unlikely to happen in practice(it needs a battle that lasts more than 18 minutes)
 		{
-			Debug.LogError("Overflow has occurred. Perhaps ushort is too short...");
 			TickCount = 0;
+			throw new TickCountOverflowException("It seems ushort was too short");
 		}
 		OnTick?.Invoke(TickCount);
+	}
+}
+public class TickCountOverflowException : Exception
+{
+	public TickCountOverflowException()
+	{
+		
+	}
+
+	public TickCountOverflowException(string msg) : base(msg)
+	{
+		
+	}
+}
+#endregion
+
+#region ===== Intent Validate =====
+/// <summary>
+/// This filters the available intents
+/// </summary>
+public sealed class IntentValidator
+{
+	private List<IIntent> _validIntents;
+	private ushort[] _immovableIDs;
+	private ushort[] _unattackableIDs;
+	public IIntent[] ValidatedIntents => _validIntents.ToArray();
+	public void GetFlush(IIntent[] intents)
+	{
+		_validIntents.Clear();
+		foreach (var intent in intents.Where(intent => !(_immovableIDs.Contains(intent.OwnerID) || _unattackableIDs.Contains(intent.OwnerID))))
+		{
+			_validIntents.Add(intent);
+		}
 	}
 }
 #endregion
@@ -507,7 +562,7 @@ public sealed class Ticker
 #region ===== Battle Module =====
 public static class BattleModule
 {
-	public static void ResolvePriority(params CastIntent[] intents)
+	/*public static void ResolvePriority(params CastIntent[] intents)
 	{
 		CastIntent best = null;
 		// Simple priority resolution example (to be replaced with actual logic)
@@ -524,7 +579,7 @@ public static class BattleModule
 		{
 			Debug.Log($"Best intent: {best}");
 		}
-	}
+	}*/
 	// Placeholder for future battle-related utilities and systems.
 }
 #endregion
