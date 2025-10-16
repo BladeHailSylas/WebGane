@@ -48,8 +48,8 @@ public struct WorldSnapshot
 [Serializable]
 public sealed class TheWorld
 {
-	private readonly List<EntityData> _entities = new();
-	private readonly List<int> _freeIds = new();
+        private readonly List<EntityData> _entities = new();
+        private readonly List<int> _freeIds = new();
 	[NonSerialized] private readonly List<SystemRegistration> _systems = new();
 	[SerializeField] private ulong worldVersion;
 
@@ -127,25 +127,30 @@ public sealed class TheWorld
 	/// </summary>
 	public EntityId SpawnEntity(EntityData template)
 	{
-		int index;
+                int index;
                 if (_freeIds.Count > 0)
                 {
                         int last = _freeIds.Count - 1;
                         index = _freeIds[last];
                         _freeIds.RemoveAt(last);
                 }
-		else
-		{
-			index = _entities.Count;
-			_entities.Add(default);
-		}
+                else
+                {
+                        index = _entities.Count;
+                        if (index >= ushort.MaxValue)
+                        {
+                                // Guard against overflowing the ushort-backed EntityId range.
+                                throw new InvalidOperationException("Entity capacity exceeded: cannot allocate more than ushort.MaxValue entries.");
+                        }
+                        _entities.Add(default);
+                }
 
-		template.Id = new EntityId(index);
-		template.IsActive = true;
-		template.Version++;
-		template.LastProcessedTick = CurrentTick;
-		_entities[index] = template;
-		ActiveEntityCount++;
+                template.Id = EntityId.FromIndex(index);
+                template.IsActive = true;
+                template.Version++;
+                template.LastProcessedTick = CurrentTick;
+                _entities[index] = template;
+                ActiveEntityCount++;
 		worldVersion++;
 		return template.Id;
 	}
@@ -155,51 +160,60 @@ public sealed class TheWorld
 	/// </summary>
 	public bool DespawnEntity(EntityId id)
 	{
-		if (!TryGetEntity(id, out var entity) || !entity.IsActive)
-		{
-			return false;
-		}
+                if (!TryGetEntity(id, out var entity) || !entity.IsActive)
+                {
+                        return false;
+                }
 
-		entity.IsActive = false;
-		entity.Version++;
-		_entities[id.Value] = entity;
-		ActiveEntityCount--;
-		_freeIds.Add(id.Value);
-		worldVersion++;
-		return true;
-	}
+                entity.IsActive = false;
+                entity.Version++;
+                int index = id.ToIndex();
+                _entities[index] = entity;
+                ActiveEntityCount--;
+                _freeIds.Add(index);
+                worldVersion++;
+                return true;
+        }
 
 	/// <summary>
 	/// Attempts to fetch a copy of the entity. Use <see cref="WriteEntity"/> to commit mutations.
 	/// </summary>
 	public bool TryGetEntity(EntityId id, out EntityData entity)
 	{
-		if (!id.IsValid || id.Value >= _entities.Count)
-		{
-			entity = default;
-			return false;
-		}
+                if (!id.IsValid)
+                {
+                        entity = default;
+                        return false;
+                }
 
-		entity = _entities[id.Value];
-		return entity.IsActive;
-	}
+                int index = id.ToIndex();
+                if ((uint)index >= (uint)_entities.Count)
+                {
+                        entity = default;
+                        return false;
+                }
+
+                entity = _entities[index];
+                return entity.IsActive;
+        }
 
 	/// <summary>
 	/// Commits an updated entity struct back into the world buffer. The identifier must remain unchanged.
 	/// </summary>
 	public void WriteEntity(EntityData entity)
 	{
-		if (!entity.Id.IsValid)
-		{
-			throw new ArgumentException("Entity must have a valid identifier before writing.", nameof(entity));
-		}
-		if (entity.Id.Value >= _entities.Count)
-		{
-			throw new IndexOutOfRangeException("Entity identifier exceeds buffer capacity.");
-		}
-		_entities[entity.Id.Value] = entity;
-		worldVersion++;
-	}
+                if (!entity.Id.IsValid)
+                {
+                        throw new ArgumentException("Entity must have a valid identifier before writing.", nameof(entity));
+                }
+                int index = entity.Id.ToIndex();
+                if ((uint)index >= (uint)_entities.Count)
+                {
+                        throw new IndexOutOfRangeException("Entity identifier exceeds buffer capacity.");
+                }
+                _entities[index] = entity;
+                worldVersion++;
+        }
 
 	/// <summary>
 	/// Executes the deterministic tick loop. Order of operations:
@@ -210,9 +224,9 @@ public sealed class TheWorld
 	{
 		CurrentTick++;
 
-		for (int i = 0; i < _entities.Count; i++)
-		{
-			var entity = _entities[i];
+                for (int i = 0; i < _entities.Count; i++)
+                {
+                        var entity = _entities[i];
 			if (!entity.IsActive)
 			{
 				continue;
@@ -276,13 +290,13 @@ public sealed class TheWorld
 	/// </summary>
 	public IEnumerable<EntityId> EnumerateActiveEntities()
 	{
-		for (int i = 0; i < _entities.Count; i++)
-		{
-			if (_entities[i].IsActive)
-			{
-				yield return new EntityId(i);
-			}
-		}
+                for (int i = 0; i < _entities.Count; i++)
+                {
+                        if (_entities[i].IsActive)
+                        {
+                                yield return EntityId.FromIndex(i);
+                        }
+                }
 	}
 
 	/// <summary>
