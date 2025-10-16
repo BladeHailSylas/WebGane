@@ -11,9 +11,10 @@ using UnityEngine;
 public readonly struct EntityId : IEquatable<EntityId>, IComparable<EntityId>
 {
 	/// <summary>
-	/// Sentinel value representing an invalid or unassigned entity reference.
-	/// </summary>
-	public static readonly EntityId Invalid = new(0);
+        /// Sentinel value representing an invalid or unassigned entity reference.
+        /// This maps to index 0 so that default(EntityId) is also treated as invalid.
+        /// </summary>
+        public static readonly EntityId Invalid = new(0);
 
 	[SerializeField]
 	private readonly ushort _value;
@@ -25,11 +26,39 @@ public readonly struct EntityId : IEquatable<EntityId>, IComparable<EntityId>
 	}
 
 	/// <summary>
-	/// Raw integer handle used for deterministic array indexing. Intended for serialization only.
-	/// </summary>
-	public ushort Value => _value;
+        /// Raw identifier stored as a 1-based index for deterministic array access. Intended for serialization only.
+        /// </summary>
+        public ushort Value => _value;
 
-	public bool IsValid => _value > 0;
+        public bool IsValid => _value > 0;
+
+        /// <summary>
+        /// Converts the identifier into the zero-based index used by the world buffers.
+        /// Throws if invoked on an invalid identifier to avoid silent underflow.
+        /// </summary>
+        public int ToIndex()
+        {
+                if (!IsValid)
+                {
+                        throw new InvalidOperationException("Cannot convert an invalid EntityId to an index.");
+                }
+
+                return _value - 1;
+        }
+
+        /// <summary>
+        /// Factory helper that converts a zero-based buffer index into an <see cref="EntityId"/>.
+        /// Ensures we never overflow the ushort range when assigning identifiers.
+        /// </summary>
+        public static EntityId FromIndex(int index)
+        {
+                if (index < 0 || index >= ushort.MaxValue)
+                {
+                        throw new ArgumentOutOfRangeException(nameof(index), index, "Entity index must map into the ushort range.");
+                }
+
+                return new EntityId((ushort)(index + 1));
+        }
 
 	public bool Equals(EntityId other)
 	{
