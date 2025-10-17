@@ -5,60 +5,60 @@ using System.Collections.Generic;
 
 public class ProjectileMovement : MonoBehaviour, IExpirable
 {
-	MissileParams P;
-	Transform owner, target;
-	Vector2 dir;
-	float speed, traveled, life;
-	public float Lifespan => life;
+	MissileParams _p;
+	Transform _owner, _target;
+	Vector2 _dir;
+	float _speed, _traveled, _life;
+	public float Lifespan => _life;
 
 	// ¡Ú ÀÌ¹Ì ¸ÂÃá ÄÝ¶óÀÌ´õ ÀçÅ¸°Ý ¹æÁö
 	readonly HashSet<int> _hitIds = new();
-	const float SKIN = 0.01f; // Ãæµ¹¸éÀ» »ìÂ¦ ³Ñ¾î°¡µµ·Ï
+	const float Skin = 0.01f; // Ãæµ¹¸éÀ» »ìÂ¦ ³Ñ¾î°¡µµ·Ï
 
 	public void Init(MissileParams p, Transform owner, Transform target)
 	{
-		P = p; this.owner = owner; this.target = target;
+		_p = p; this._owner = owner; this._target = target;
 		Vector2 start = owner.position;
 		Vector2 tgt = target ? (Vector2)target.position : start + Vector2.right;
-		dir = (tgt - start).normalized;
-		speed = P.speed;
+		_dir = (tgt - start).normalized;
+		_speed = _p.speed;
 
 		var sr = gameObject.AddComponent<SpriteRenderer>();
 		sr.sprite = GenerateDotSprite();
 		sr.sortingOrder = 1000;
-		transform.localScale = Vector3.one * (P.radius * 2f);
+		transform.localScale = Vector3.one * (_p.radius * 2f);
 		//Debug.Log($"target {this.target.name}");
 	}
 
 	void Update()
 	{
 		float dt = Time.deltaTime;
-		life += dt; if (life > P.maxLife) { Expire(); }
+		_life += dt; if (_life > _p.maxLife) { Expire(); }
 
 		// °¡¼Ó
-		speed = Mathf.Max(0f, speed + P.acceleration * dt);
+		_speed = Mathf.Max(0f, _speed + _p.acceleration * dt);
 
 		// Å¸±ê À¯È¿¼º È®ÀÎ + ÀçÅ¸±êÆÃ
-		if (target == null && P.retargetOnLost)
+		if (_target == null && _p.retargetOnLost)
 			TryRetarget();
 
 		Vector2 pos = transform.position;
 
 		// ¿øÇÏ´Â ¹æÇâ(À¯µµ)
 		//Vector2 desired = target ? ((Vector2)target.position - pos).normalized : dir;
-		Vector2 desired = target != null && target.name == TargetingRuntimeUtil.AnchorName ? dir : ((Vector2)target.position - pos).normalized;
-		float maxTurnRad = P.maxTurnDegPerSec * Mathf.Deg2Rad * dt;
-		dir = Vector3.RotateTowards(dir, desired, maxTurnRad, 0f).normalized;
+		Vector2 desired = _target != null && _target.name == TargetingRuntimeUtil.AnchorName ? _dir : ((Vector2)_target.position - pos).normalized;
+		float maxTurnRad = _p.maxTurnDegPerSec * Mathf.Deg2Rad * dt;
+		_dir = Vector3.RotateTowards(_dir, desired, maxTurnRad, 0f).normalized;
 
 		// === ÀÌµ¿/Ãæµ¹(¿©·¯ ¹ø) Ã³¸® ===
-		float remaining = speed * dt;
+		float remaining = _speed * dt;
 
 		while (remaining > 0f)
 		{
 			pos = transform.position;
 
 			// 1) º® Ã¼Å©
-			var wallHit = Physics2D.CircleCast(pos, P.radius, dir, remaining, P.blockerMask);
+			var wallHit = Physics2D.CircleCast(pos, _p.radius, _dir, remaining, _p.blockerMask);
 			if (wallHit.collider)
 			{
 				// º®±îÁö ÀÌµ¿ ÈÄ ¼Ò¸ê
@@ -68,7 +68,7 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
 			}
 
 			// 2) Àû Ã¼Å©
-			var enemyHit = Physics2D.CircleCast(pos, P.radius, dir, remaining, P.enemyMask);
+			var enemyHit = Physics2D.CircleCast(pos, _p.radius, _dir, remaining, _p.enemyMask);
 			if (enemyHit.collider)
 			{
 				var c = enemyHit.collider;
@@ -82,14 +82,14 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
 
 					// ÇÇÇØ/³Ë¹é Àû¿ë
 					if (c.TryGetComponent(out IVulnerable v))
-						v.TakeDamage(P.damage, P.apRatio);
+						v.TakeDamage(_p.damage, _p.apRatio);
 					if (c.attachedRigidbody)
-						c.attachedRigidbody.AddForce(dir * P.knockback, ForceMode2D.Impulse);
+						c.attachedRigidbody.AddForce(_dir * _p.knockback, ForceMode2D.Impulse);
 
 					_hitIds.Add(id); // ±â·Ï
 
 					// °üÅë ºÒ°¡ÀÌ°Å³ª(=¸íÁß Áï½Ã ¼Ò¸ê) / Å¸±ê ±× ÀÚÃ¼¸é ¼Ò¸ê
-					if (!P.CanPenetrate || (target != null && c.transform == target))
+					if (!_p.CanPenetrate || (_target != null && c.transform == _target))
 					{
 						Expire();
 						return;
@@ -102,10 +102,10 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
 				}
 
 				// Ãæµ¹¸éÀ» »ìÂ¦ ³Ñ¾î°¡ ´ÙÀ½ Ä³½ºÆ®¿¡¼­ °°Àº ¸é¿¡ °É¸®Áö ¾Ê°Ô
-				Move(SKIN);
+				Move(Skin);
 
 				// ÀÜ¿© °Å¸® °»½Å
-				remaining -= enemyHit.distance + SKIN;
+				remaining -= enemyHit.distance + Skin;
 				continue; // ´ÙÀ½ Ãæµ¹/ÀÌµ¿ Ã³¸®
 			}
 
@@ -115,25 +115,25 @@ public class ProjectileMovement : MonoBehaviour, IExpirable
 		}
 
 		// »ç°Å¸® Ã¼Å©
-		if (traveled >= P.maxRange) Expire();
+		if (_traveled >= _p.maxRange) Expire();
 	}
 
 	void Move(float d)
 	{
-		transform.position += (Vector3)(dir * d);
-		traveled += d;
+		transform.position += (Vector3)(_dir * d);
+		_traveled += d;
 	}
 
 	void TryRetarget()
 	{
-		var hits = Physics2D.OverlapCircleAll(transform.position, P.retargetRadius, P.enemyMask);
+		var hits = Physics2D.OverlapCircleAll(transform.position, _p.retargetRadius, _p.enemyMask);
 		float best = float.PositiveInfinity; Transform bestT = null;
 		foreach (var h in hits)
 		{
 			float d = Vector2.SqrMagnitude((Vector2)h.bounds.center - (Vector2)transform.position);
 			if (d < best) { best = d; bestT = h.transform; }
 		}
-		if (bestT) target = bestT;
+		if (bestT) _target = bestT;
 	}
 
 	Sprite GenerateDotSprite()

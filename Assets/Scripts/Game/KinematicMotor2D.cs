@@ -48,14 +48,14 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 		unitskin = 125,
 		allowWallSlide = true
 	};
-        private Rigidbody2D rb;
-        private Collider2D col;
+        private Rigidbody2D _rb;
+        private Collider2D _col;
         /*** Migration note:
          * 1) Replace the obsolete Rigidbody2D usage with a deterministic CoreTransform source (e.g., inject via CoreTransform.FromTransform).
          * 2) Introduce an IHitShape implementation matching the current Collider2D to provide overlap queries without relying on Unity physics components.
          * 3) Redirect DepenVector/Depenetration logic to operate on the new IHitShape while mirroring the resulting CoreTransform back to the scene when required.
          */
-	private CollisionPolicy current;
+	private CollisionPolicy _current;
 
 	private readonly List<FixedVector2> _pendingMoves = new();
 	private CoreTransform _coreTransform;
@@ -65,12 +65,12 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 
 	private void Awake()
 	{
-		rb = GetComponent<Rigidbody2D>();
-		rb.bodyType = RigidbodyType2D.Kinematic;
-		rb.gravityScale = 0f;
-		current = defaultPolicy;
-		col = rb.GetComponent<Collider2D>();
-		Debug.Log(col.isTrigger);
+		_rb = GetComponent<Rigidbody2D>();
+		_rb.bodyType = RigidbodyType2D.Kinematic;
+		_rb.gravityScale = 0f;
+		_current = defaultPolicy;
+		_col = _rb.GetComponent<Collider2D>();
+		Debug.Log(_col.isTrigger);
 
 		_coreTransform = CoreTransform.FromTransform(transform);
 		_needsTransformSync = true;
@@ -106,23 +106,23 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 
 	public IDisposable With(in CollisionPolicy overridePolicy)
 	{
-		var prev = current;
-		current = overridePolicy;
-		return new Scope(() => current = prev);
+		var prev = _current;
+		_current = overridePolicy;
+		return new Scope(() => _current = prev);
 	}
 
 	private sealed class Scope : IDisposable
 	{
-		private readonly Action onDispose;
+		private readonly Action _onDispose;
 
 		public Scope(Action action)
 		{
-			onDispose = action;
+			_onDispose = action;
 		}
 
 		public void Dispose()
 		{
-			onDispose?.Invoke();
+			_onDispose?.Invoke();
 		}
 	}
 
@@ -130,7 +130,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 	/// Queue a deterministic movement request that will resolve on the next BattleCore tick.
 	/// </summary>
 	/// <param name="desiredDelta">Desired displacement expressed in fixed units.</param>
-	public void SweepMove(FixedVector2 desiredDelta)
+	public void Move(FixedVector2 desiredDelta)
 	{
 		_pendingMoves.Add(desiredDelta);
 	}
@@ -157,7 +157,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 
                 Vector2 origin = _coreTransform.position.ToVector2();
                 Vector2 direction = vfinalFloat.normalized;
-                var maskHit = Physics2D.CircleCastAll(origin, current.unitradius, direction, magnitude, mask);
+                var maskHit = Physics2D.CircleCastAll(origin, _current.unitradius, direction, magnitude, mask);
                 foreach (var hit in maskHit)
                 {
                         if (!hit.collider)
@@ -165,12 +165,12 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                                 continue;
                         }
 
-                        if (mask == current.enemyMask && !current.enemyAsBlocker)
+                        if (mask == _current.enemyMask && !_current.enemyAsBlocker)
                         {
                                 continue;
                         }
 
-                        if (mask == current.enemyMask)
+                        if (mask == _current.enemyMask)
                         {
                                 result.hitEnemy = true;
                         }
@@ -252,13 +252,13 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                 {
                         Vector2 vfinalFloat = wishDirFloat * remaining;
                         FixedVector2 vfinal = FixedVector2.FromVector2(vfinalFloat);
-                        vfinal = RemoveNormalComponent(vfinal, current.wallsMask, ref result);
-                        vfinal = RemoveNormalComponent(vfinal, current.enemyMask, ref result);
+                        vfinal = RemoveNormalComponent(vfinal, _current.wallsMask, ref result);
+                        vfinal = RemoveNormalComponent(vfinal, _current.enemyMask, ref result);
 
                         MoveResult wallProbe = result;
-                        FixedVector2 checkWalls = RemoveNormalComponent(vfinal, current.wallsMask, ref wallProbe);
+                        FixedVector2 checkWalls = RemoveNormalComponent(vfinal, _current.wallsMask, ref wallProbe);
                         MoveResult enemyProbe = result;
-                        FixedVector2 checkEnemies = RemoveNormalComponent(vfinal, current.enemyMask, ref enemyProbe);
+                        FixedVector2 checkEnemies = RemoveNormalComponent(vfinal, _current.enemyMask, ref enemyProbe);
                         Vector2 vfinalCheck = vfinal.ToVector2();
                         if (vfinalCheck != checkWalls.ToVector2() || vfinalCheck != checkEnemies.ToVector2())
                         {
@@ -294,7 +294,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 		_needsTransformSync = true;
 	}
 
-	public CollisionPolicy CurrentPolicy => current;
+	public CollisionPolicy CurrentPolicy => _current;
 
 	/// <summary>
 	/// 현재 위치에서 Blocker(환경)들과의 겹침을 검사하여
@@ -304,7 +304,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 	/// </summary>
         public FixedVector2 DepenVector(LayerMask blockersMask, int maxIterations = 4, float skin = 0.125f, float minEps = 0.001f, float maxTotal = 0.5f)
         {
-                if (rb == null || col == null)
+                if (_rb == null || _col == null)
                 {
                         return new FixedVector2(0, 0);
                 }
@@ -314,7 +314,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                 filter.useTriggers = false;
 
                 Collider2D[] hits = new Collider2D[16];
-                int count = col.Overlap(filter, hits);
+                int count = _col.Overlap(filter, hits);
                 if (count <= 0)
                 {
                         return new FixedVector2(0, 0);
@@ -331,7 +331,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 				continue;
 			}
 
-			ColliderDistance2D d = col.Distance(other);
+			ColliderDistance2D d = _col.Distance(other);
                         if (!d.isOverlapped)
                         {
                                 continue;
@@ -380,15 +380,15 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
 	/// </summary>
 	public void Depenetration()
 	{
-		if (rb == null || col == null)
+		if (_rb == null || _col == null)
 		{
 			return;
 		}
 
-		LayerMask blockersMask = current.wallsMask;
-		if (current.enemyAsBlocker)
+		LayerMask blockersMask = _current.wallsMask;
+		if (_current.enemyAsBlocker)
 		{
-			blockersMask |= current.enemyMask;
+			blockersMask |= _current.enemyMask;
 		}
 
 		int maxIterations = 4;
@@ -416,7 +416,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                                 mtdFloat = mtd.ToVector2();
                         }
 
-                        rb.MovePosition(rb.position + mtdFloat);
+                        _rb.MovePosition(_rb.position + mtdFloat);
 
                         total += mtd;
 
@@ -426,7 +426,7 @@ public class KinematicMotor2D : MonoBehaviour, ISweepable
                         }
                 }
 
-                _coreTransform.position = new FixedVector2(rb.position);
+                _coreTransform.position = new FixedVector2(_rb.position);
 		_needsTransformSync = true;
 
 		/*** Optional debug ray (disabled by default). */

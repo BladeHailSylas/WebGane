@@ -1,17 +1,24 @@
 ﻿using ActInterfaces;
 using UnityEngine;
 using System;
+using Intents;
 
 public class PlayerLocomotion : MonoBehaviour
 {
+	private IntentCollector _col;// = BattleCore.Collector;
 	[Obsolete]
-	public void MoveIntent(Vector2 _, Rigidbody2D __, float ___)
+	public void MoveIntent(Vector2 _, Rigidbody2D __)
 	{
-		MoveIntent(new FixedVector2(_), (int)___);
+		MoveIntent(new FixedVector2(_), (byte)1, (ushort)1);
 	}
-	public void MoveIntent(FixedVector2 direction, int speedUnit)
+	public void MoveIntent(FixedVector2 movement, byte mySID, ushort tick)
 	{
-		//Debug.Log("Move");
+		_col.QueueIntent(new MoveIntent(mySID, 0, tick, movement));
+	}
+
+	void Awake()
+	{
+		_col = BattleCore.Collector;
 	}
 	/*FixedVector2 _knockbackBudget;                         // ̹ ӿ Һ ߰ ( ǥ)
 		float distancePerTick = Mathf.Max(0f, force) / Ticker.TicksPerSecond;

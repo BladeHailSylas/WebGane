@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using ActInterfaces;
 using UnityEngine;
 
 /// <summary>
@@ -10,7 +9,7 @@ using UnityEngine;
 /// <see cref="CoreTransform.ApplyTo"/>.
 /// </summary>
 [DisallowMultipleComponent]
-public sealed class CoreMotor2D : MonoBehaviour, ISweepable
+public sealed class CoreMotor2D : MonoBehaviour
 {
         /// <summary>
         /// Represents a deterministic collision body registered in the local collision world.
@@ -71,6 +70,8 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
         [Tooltip("Default deterministic collision configuration.")]
         public CollisionPolicy defaultPolicy = new()
         {
+                //Would LayerMasks be replaced after all?
+                //Since our EntityData doesn't deal with LayerMasks, I think that's true
                 wallsMask = 1 << 0,
                 enemyMask = 1 << 1,
                 enemyAsBlocker = true,
@@ -213,7 +214,7 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
                 }
         }
 
-        public void SweepMove(FixedVector2 desiredDelta)
+        public void Move(FixedVector2 desiredDelta, ushort entityID)
         {
                 _pendingMoves.Add(desiredDelta);
         }
@@ -278,9 +279,9 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
 
                 FixedVector2 origin = _coreTransform.position;
                 FixedVector2 remaining = desiredDelta;
-                const int MaxSlideIterations = 4;
+                const int maxSlideIterations = 4;
 
-                for (int iteration = 0; iteration < MaxSlideIterations; iteration++)
+                for (int iteration = 0; iteration < maxSlideIterations; iteration++)
                 {
                         if (IsZero(remaining))
                         {
@@ -466,15 +467,15 @@ public sealed class CoreMotor2D : MonoBehaviour, ISweepable
                         blockersMask |= _currentPolicy.enemyMask;
                 }
 
-                const int MaxIterations = 4;
+                const int maxIterations = 4;
                 int minEpsRaw = ToRaw(0.001f);
                 int maxTotalRaw = ToRaw(0.5f);
 
                 FixedVector2 total = ZeroVector;
 
-                for (int iteration = 0; iteration < MaxIterations; iteration++)
+                for (int iteration = 0; iteration < maxIterations; iteration++)
                 {
-                        FixedVector2 mtd = DepenVector(blockersMask, MaxIterations, 0.03125f, 0.001f, 0.5f);
+                        FixedVector2 mtd = DepenVector(blockersMask, maxIterations, 0.03125f, 0.001f, 0.5f);
                         if (mtd.Magnitude <= minEpsRaw)
                         {
                                 break;

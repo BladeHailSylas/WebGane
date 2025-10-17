@@ -3,23 +3,23 @@ using System.Collections.Generic;
 
 public static class TargetAnchorPool
 {
-    static readonly Stack<Transform> pool = new();
-    static Transform root;
+    static readonly Stack<Transform> Pool = new();
+    static Transform _root;
 	public static bool IsAnchor(Transform target)
 	{
-		return pool.Contains(target);
+		return Pool.Contains(target);
 	}
     public static Transform Acquire(Vector3 pos)
     {
-        if (!root)
+        if (!_root)
         {
             var go = new GameObject("_TargetAnchors");
             Object.DontDestroyOnLoad(go);
-            root = go.transform;
+            _root = go.transform;
         }
 
-        var t = pool.Count > 0 ? pool.Pop() : new GameObject("Anchor").transform;
-        t.SetParent(root, false);
+        var t = Pool.Count > 0 ? Pool.Pop() : new GameObject("Anchor").transform;
+        t.SetParent(_root, false);
         t.position = pos;
         t.gameObject.SetActive(true);
         //Display(for debug)
@@ -30,9 +30,9 @@ public static class TargetAnchorPool
 
     public static void Release(Transform t)
     {
-        if (!t || pool.Contains(t)) return;
+        if (!t || Pool.Contains(t)) return;
         t.gameObject.SetActive(false);
-        t.SetParent(root, false);
-        pool.Push(t);
+        t.SetParent(_root, false);
+        Pool.Push(t);
     }
 }

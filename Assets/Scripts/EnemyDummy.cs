@@ -16,23 +16,23 @@ public class EnemyDummy : MonoBehaviour, IVulnerable//, ITargetable //그냥 임
 	public bool IsDead { get; private set; }
 	//[SerializeField] Transform myTransform;
 	private float _armorIncreaseRate = 0f; //방어력 버프
-	private Rigidbody2D rb;
-	private SpriteRenderer sr;
+	private Rigidbody2D _rb;
+	private SpriteRenderer _sr;
 
 	void Awake()
 	{
-		rb = GetComponent<Rigidbody2D>();
-		sr = GetComponentInChildren<SpriteRenderer>();
+		_rb = GetComponent<Rigidbody2D>();
+		_sr = GetComponentInChildren<SpriteRenderer>();
 		Health = MaxHealth;
 		Armor = BasicArmor * (1 + _armorIncreaseRate);
 		Debug.Log($"Enemy info: Health {Health}, Armor {Armor}");
 	}
 	void Update()
 	{
-		float _tempArmor = BasicArmor * (1 + _armorIncreaseRate);
-		if (Armor != _tempArmor)
+		float tempArmor = BasicArmor * (1 + _armorIncreaseRate);
+		if (Armor != tempArmor)
 		{
-			Armor = _tempArmor;
+			Armor = tempArmor;
 			Debug.Log($"Enemy info: Health {Health}, Armor {Armor}");
 		}
 	}
@@ -62,10 +62,10 @@ public class EnemyDummy : MonoBehaviour, IVulnerable//, ITargetable //그냥 임
 	}*/
 	System.Collections.IEnumerator Flash()
 	{
-		var original = sr.color;
-		sr.color = Color.white;
+		var original = _sr.color;
+		_sr.color = Color.white;
 		yield return new WaitForSeconds(0.06f);
-		sr.color = original;
+		_sr.color = original;
 	}
 	public void Die()
 	{

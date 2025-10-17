@@ -12,7 +12,8 @@ namespace Intents
         {
             try
             {
-                _intentCluster.Add(intent);
+                if (intent.Type == IntentType.Cast || intent.Type == IntentType.Move) _intentCluster.Add(intent);
+                else throw new UndefinedIntentTypeException($"Cannot find such Intent Type: {intent.Type}. Probably typo.");
                 return true;
             }
             catch (Exception ex)
@@ -38,6 +39,19 @@ namespace Intents
                 BattleCore.Validator.GetFlush(_intentCluster.ToArray());
             }
             _intentCluster.Clear();
+        }
+    }
+
+    public class UndefinedIntentTypeException : Exception
+    {
+        public UndefinedIntentTypeException()
+        {
+            
+        }
+
+        public UndefinedIntentTypeException(string msg) : base(msg)
+        {
+            
         }
     }
 }

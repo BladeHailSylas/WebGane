@@ -4,7 +4,7 @@ using System;
 using UnityEngine;
 public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, 다른 곳에서는 참조만
 {
-	[SerializeReference] readonly CharacterSpec spec;
+	[SerializeReference] readonly CharacterSpec _spec;
 	public int BaseHealth { get; private set; }
 	public int MaxHealth { get; private set; }
 	public int Health { get; private set; }
@@ -30,13 +30,14 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, �
 	public bool IsDead { get; private set; }
 	private void Awake()
 	{
-		BaseHealth = spec.baseHP;
-		BaseHealthRegen = spec.baseHPGen;
-		BaseArmor = spec.baseDefense;
-		BaseAttackDamage = spec.baseAttack;
-		BaseMana = spec.baseMana;
-		BaseManaRegen = spec.baseManaGen;
-		BaseSpeed = spec.baseSpeed;
+		/*BaseHealth = _spec.baseHp;
+		BaseHealthRegen = _spec.baseHpGen;
+		BaseArmor = _spec.baseDefense;
+		BaseAttackDamage = _spec.baseAttack;
+		BaseMana = _spec.baseMana;
+		BaseManaRegen = _spec.baseManaGen;
+		BaseSpeed = _spec.baseSpeed;*/
+		BaseSpeed = 8000;
 	}
 	public void ReduceStat(ReduceType stat, int amount, int apRatio = 0, DamageType type = DamageType.Normal)
 	{
@@ -100,12 +101,12 @@ public sealed class PlayerStats : MonoBehaviour // 플레이어 스탯 관리, �
 	}
 	public double TotalDamageReduction()
 	{
-		float totalDR = 1f;
+		float totalDr = 1f;
 		foreach (var dr in DamageReduction)
 		{
-			totalDR *= (1 - dr / 100);
+			totalDr *= (1 - dr / 100);
 		}
-		return Mathf.Max(0.15f, totalDR); //공격자 우선(하게 두되 대안을 주어라) -> 대미지가 들어가게 두되 다른 생존 수단(체력 회복, 보호막 등)으로 원콤이 안 나게 하라
+		return Mathf.Max(0.15f, totalDr); //공격자 우선(하게 두되 대안을 주어라) -> 대미지가 들어가게 두되 다른 생존 수단(체력 회복, 보호막 등)으로 원콤이 안 나게 하라
 											//왜 하한을 두나요? 안 그러면 맞는데 피가 닳는 대신 회복하는 망겜이 되어버림
 	}
 }

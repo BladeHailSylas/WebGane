@@ -111,86 +111,87 @@ public struct EntityData
 	/// Identifier assigned by <see cref="TheWorld"/>.
 	/// </summary>
 	[SerializeField]
-	public EntityId Id;
+	public EntityId id;
 
 	/// <summary>
 	/// Whether the slot is currently owned by a live entity.
 	/// </summary>
 	[SerializeField]
-	public bool IsActive;
-
+	public bool isActive;
+	
 	/// <summary>
 	/// World-space position expressed in fixed units.
 	/// </summary>
 	[SerializeField]
-	public FixedVector2 Position;
-
+	public FixedVector2 transform;
+	
 	/// <summary>
 	/// Per-tick velocity delta in fixed units.
 	/// </summary>
 	[SerializeField]
-	public FixedVector2 Velocity;
+	public FixedVector2 velocity;
 
 	/// <summary>
 	/// Additional forces accumulated during the tick. Cleared automatically once applied.
 	/// </summary>
 	[SerializeField]
-	public FixedVector2 ExternalImpulse;
+	public FixedVector2 externalImpulse;
 
 	/// <summary>
 	/// Facing direction stored as milli-degrees (1000 equals one real degree).
 	/// </summary>
 	[SerializeField]
-	public int FacingMilliDegrees;
+	public int facingMilliDegrees;
 
 	/// <summary>
 	/// Entity faction/team identifier. Systems use it for deterministic filtering.
 	/// </summary>
 	[SerializeField]
-	public int TeamId;
+	public int teamId;
 
 	/// <summary>
 	/// Hit points represented as fixed raw units (avoid floats for determinism).
 	/// </summary>
 	[SerializeField]
-	public int HitPoints;
+	public int hitPoints;
 
 	/// <summary>
 	/// Maximum hit points for clamping purposes.
 	/// </summary>
 	[SerializeField]
-	public int MaxHitPoints;
+	public int maxHitPoints;
 
 	/// <summary>
 	/// Optional custom flags used by deterministic systems (bit-packed state machine).
 	/// </summary>
 	[SerializeField]
-	public uint StateFlags;
+	public uint stateFlags;
 
 	/// <summary>
 	/// Size descriptor primarily consumed by deterministic collision systems.
 	/// </summary>
 	[SerializeField]
-	public HitCircle CollisionShape;
+	public HitCircle collisionShape;
 
 	/// <summary>
 	/// User-defined metadata slot reserved for simulation subsystems.
 	/// </summary>
 	[SerializeField]
-	public int CustomData;
+	public int customData;
 
 	/// <summary>
 	/// Tick index of the most recent deterministic update.
 	/// </summary>
 	[SerializeField]
-	public int LastProcessedTick;
+	public int lastProcessedTick;
 
 	/// <summary>
 	/// Version counter incremented every time the entity is mutated. Enables rollback validation.
 	/// </summary>
 	[SerializeField]
-	public ulong Version;
-
+	public ulong version;
+	
+	
 	/// <summary>
 	/// Factory helper that creates a clean entity template. Callers may further customize the
 	/// struct before submitting it to <see cref="TheWorld.SpawnEntity"/>.
@@ -199,20 +200,20 @@ public struct EntityData
 	{
 		return new EntityData
 		{
-			Id = EntityId.Invalid,
-			IsActive = false,
-			Position = position,
-			Velocity = new FixedVector2(0, 0),
-			ExternalImpulse = new FixedVector2(0, 0),
-			FacingMilliDegrees = 0,
-			TeamId = teamId,
-			HitPoints = 0,
-			MaxHitPoints = 0,
-			StateFlags = 0,
-			CollisionShape = collision,
-			CustomData = 0,
-			LastProcessedTick = -1,
-			Version = 0
+			id = EntityId.Invalid, //?
+			isActive = false,
+			transform = position,
+			velocity = new FixedVector2(0, 0),
+			externalImpulse = new FixedVector2(0, 0),
+			facingMilliDegrees = 0,
+			teamId = teamId,
+			hitPoints = 0,
+			maxHitPoints = 0,
+			stateFlags = 0,
+			collisionShape = collision,
+			customData = 0,
+			lastProcessedTick = -1,
+			version = 0
 		};
 	}
 
@@ -221,8 +222,8 @@ public struct EntityData
 	/// </summary>
 	public void IntegrateMotion()
 	{
-		Position = Position + Velocity + ExternalImpulse;
-		ExternalImpulse = new FixedVector2(0, 0);
+		transform = transform + velocity + externalImpulse;
+		externalImpulse = new FixedVector2(0, 0);
 	}
 
 	/// <summary>
@@ -230,16 +231,16 @@ public struct EntityData
 	/// </summary>
 	public void ApplyDamage(int delta)
 	{
-		int newValue = HitPoints + delta;
+		int newValue = hitPoints + delta;
 		if (newValue < 0)
 		{
 			newValue = 0;
 		}
-		else if (MaxHitPoints > 0 && newValue > MaxHitPoints)
+		else if (maxHitPoints > 0 && newValue > maxHitPoints)
 		{
-			newValue = MaxHitPoints;
+			newValue = maxHitPoints;
 		}
-		HitPoints = newValue;
+		hitPoints = newValue;
 	}
 
 	/// <summary>
@@ -247,8 +248,14 @@ public struct EntityData
 	/// </summary>
 	public void Deactivate()
 	{
-		IsActive = false;
-		Version++;
+		isActive = false;
+		version++;
+	}
+
+	public void ApplyTransform(FixedVector2 newTransform)
+	{
+		if (transform.Equals(newTransform)) return;
+		transform = newTransform;
 	}
 }
 #endregion

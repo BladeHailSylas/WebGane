@@ -75,7 +75,7 @@ namespace Intents
                 catch (Exception ex)
                 {
                     Debug.LogWarning($"[IntentRouter] Failed to route intent {intent.IntentID}: {ex.Message}");
-                    /** Consider promoting this to a structured logger once diagnostics tooling is ready. */
+                    // Consider promoting this to a structured logger once diagnostics tooling is ready. 
                 }
             }
         }
@@ -87,7 +87,7 @@ namespace Intents
                 throw new InvalidCastException("Intent type Move must be a MoveIntent instance.");
             }
 
-            _coreMotor.SweepMove(moveIntent.Movement);
+            _coreMotor.Move(moveIntent.Movement, moveIntent.MoverID);
         }
 
         private void RouteCastIntent(IIntent intent)

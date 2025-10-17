@@ -145,14 +145,14 @@ public sealed class TheWorld
                         _entities.Add(default);
                 }
 
-                template.Id = EntityId.FromIndex(index);
-                template.IsActive = true;
-                template.Version++;
-                template.LastProcessedTick = CurrentTick;
+                template.id = EntityId.FromIndex(index);
+                template.isActive = true;
+                template.version++;
+                template.lastProcessedTick = CurrentTick;
                 _entities[index] = template;
                 ActiveEntityCount++;
 		worldVersion++;
-		return template.Id;
+		return template.id;
 	}
 
 	/// <summary>
@@ -160,13 +160,13 @@ public sealed class TheWorld
 	/// </summary>
 	public bool DespawnEntity(EntityId id)
 	{
-                if (!TryGetEntity(id, out var entity) || !entity.IsActive)
+                if (!TryGetEntity(id, out var entity) || !entity.isActive)
                 {
                         return false;
                 }
 
-                entity.IsActive = false;
-                entity.Version++;
+                entity.isActive = false;
+                entity.version++;
                 int index = id.ToIndex();
                 _entities[index] = entity;
                 ActiveEntityCount--;
@@ -194,7 +194,7 @@ public sealed class TheWorld
                 }
 
                 entity = _entities[index];
-                return entity.IsActive;
+                return entity.isActive;
         }
 
 	/// <summary>
@@ -202,11 +202,11 @@ public sealed class TheWorld
 	/// </summary>
 	public void WriteEntity(EntityData entity)
 	{
-                if (!entity.Id.IsValid)
+                if (!entity.id.IsValid)
                 {
                         throw new ArgumentException("Entity must have a valid identifier before writing.", nameof(entity));
                 }
-                int index = entity.Id.ToIndex();
+                int index = entity.id.ToIndex();
                 if ((uint)index >= (uint)_entities.Count)
                 {
                         throw new IndexOutOfRangeException("Entity identifier exceeds buffer capacity.");
@@ -227,14 +227,14 @@ public sealed class TheWorld
                 for (int i = 0; i < _entities.Count; i++)
                 {
                         var entity = _entities[i];
-			if (!entity.IsActive)
+			if (!entity.isActive)
 			{
 				continue;
 			}
 
-			entity.LastProcessedTick = CurrentTick;
+			entity.lastProcessedTick = CurrentTick;
 			entity.IntegrateMotion();
-			entity.Version++;
+			entity.version++;
 			_entities[i] = entity;
 		}
 
@@ -274,7 +274,7 @@ public sealed class TheWorld
 		_freeIds.Clear();
 		for (int i = 0; i < _entities.Count; i++)
 		{
-			if (!_entities[i].IsActive)
+			if (!_entities[i].isActive)
 			{
 				_freeIds.Add(i);
 			}
@@ -292,7 +292,7 @@ public sealed class TheWorld
 	{
                 for (int i = 0; i < _entities.Count; i++)
                 {
-                        if (_entities[i].IsActive)
+                        if (_entities[i].isActive)
                         {
                                 yield return EntityId.FromIndex(i);
                         }
@@ -329,7 +329,7 @@ public sealed class TheWorld
 	private ushort CountActiveEntities()
 	{
 		ushort count = 0;
-		foreach (var entity in _entities.Where(entity => entity.IsActive))
+		foreach (var entity in _entities.Where(entity => entity.isActive))
 		{
 			count++;
 		}

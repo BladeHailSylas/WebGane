@@ -15,21 +15,24 @@ public static class BattleCore
 {
 	private static bool _initialized;
 	private static GameObject _runner;
-	private static TheWorld _world;
-	
 	static BattleCore()
 	{
-		Initialize();
-		_world = new TheWorld();
+		Initialize(); //Initialize doesn't work I think
 	}
-
+	/// <summary>
+	/// Global entity controller, it applies the updated status into every entity.
+	/// </summary>
+	public static TheWorld World { get; } = new();
 	/// <summary>
 	/// Global ticker operating with 60 ticks per real-time second.
 	/// </summary>
 	public static Ticker Ticker { get; } = new();
-
+	/// <summary>
+	/// Validates Intent from Collector.
+	/// </summary>
 	public static IntentValidator Validator { get; } = new();
-
+	public static SessionManager Manager { get; } = new(1);
+	public static IntentCollector Collector { get; } = new();
 	/// <summary>
 	/// Creates an invisible runner GameObject (if required) and keeps it alive across scenes.
 	/// </summary>
@@ -82,7 +85,7 @@ public readonly struct FixedVector2 : IEquatable<FixedVector2>
 	{ 
 		get
 		{
-			double length = Math.Sqrt(RawX * RawX + RawY * RawY);
+			double length = MagnitudeDouble;
 			if (length < 1e-6)
 			{
 				return new FixedVector2(0, 0);
@@ -94,6 +97,7 @@ public readonly struct FixedVector2 : IEquatable<FixedVector2>
 	/// The size (magnitude) of the vector in fixed units.
 	/// </summary>
 	public int Magnitude => (int)Math.Sqrt(RawX * RawX + RawY * RawY);
+	public double MagnitudeDouble => Math.Sqrt(RawX * RawX + RawY * RawY);
 
 	public FixedVector2(int rawX, int rawY)
 	{
@@ -141,6 +145,15 @@ public readonly struct FixedVector2 : IEquatable<FixedVector2>
 		return new FixedVector2(-value._rawX, -value._rawY);
 	}
 
+	public static FixedVector2 operator *(FixedVector2 vector, int scalar)
+	{
+		return new FixedVector2(scalar * vector._rawX, scalar * vector._rawY);
+	}
+
+	public static FixedVector2 operator *(int scalar, FixedVector2 vector)
+	{
+		return new FixedVector2(scalar * vector._rawX, scalar * vector._rawY);
+	}
 	public override string ToString()
 	{
 		return $"({ToVector2().x:F3}, {ToVector2().y:F3})";
@@ -365,6 +378,7 @@ public struct ContactInfo
 /// Core transform that stores a deterministic position alongside an optional planar rotation.
 /// </summary>
 [Serializable]
+[Obsolete("EntityData already has the transform field; use it instead.")]
 public struct CoreTransform
 {
 	public FixedVector2 position;

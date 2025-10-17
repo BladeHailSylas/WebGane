@@ -17,9 +17,9 @@ public class PlayerAttackController : MonoBehaviour
 	public InputActionReference skill2Key;
 	public InputActionReference ultimateKey;
 
-	ISkillRunner runner;
-	readonly Dictionary<SkillSlot, (ISkillMechanism mech, ISkillParam param)> slotBindings = new();
-
+	ISkillRunner _runner;
+	readonly Dictionary<SkillSlot, (ISkillMechanism mech, ISkillParam param)> _slotBindings = new();
+	private byte _mySID;
 	void Awake()
 	{
 		if (spec == null)
@@ -27,7 +27,7 @@ public class PlayerAttackController : MonoBehaviour
 			Debug.LogError("CharacterSpec이 할당되지 않았습니다. PlayerAttackController가 작동하지 않습니다.");
 			return;
 		}
-		runner = GetComponentInChildren<ISkillRunner>();
+		_runner = GetComponentInChildren<ISkillRunner>();
 		Bind(spec.attack);
 		Bind(spec.skill1);
 		Bind(spec.skill2);
@@ -51,7 +51,7 @@ public class PlayerAttackController : MonoBehaviour
 			Debug.LogError("ISkillRunner 구현체를 찾지 못했습니다. 액터 루트에 Runner 1개가 필요합니다.");
 			return;
 		}
-		slotBindings[binding.slot] = (mech, binding.param);
+		_slotBindings[binding.slot] = (mech, binding.param);
 	}
 
 	void OnEnable()
@@ -79,8 +79,8 @@ public class PlayerAttackController : MonoBehaviour
 	}
 	void TryCast(SkillSlot slot)
 	{
-		if (runner == null) return;
-		if (!slotBindings.TryGetValue(slot, out var binding)) return;
+		if (_runner == null) return;
+		if (!_slotBindings.TryGetValue(slot, out var binding)) return;
 	}
 	public int SkillPriority(ISkillMechanism mech, ISkillParam param, SkillSlot slot)
 	{

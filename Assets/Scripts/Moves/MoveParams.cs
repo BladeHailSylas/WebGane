@@ -139,20 +139,20 @@ public class MissileParams : ISkillParam, ICooldownParam, IFollowUpProvider, ITa
 public class DashParams : ISkillParam, ICooldownParam, IFollowUpProvider, ITargetingData, IAnchorClearance
 {
 	[Header("Targeting (Runner가 해석)")]
-        [SerializeField] TargetMode _mode = TargetMode.TowardsMovement;
-        [SerializeField] float _fallbackRange = 4f;
-        [SerializeField] Vector2 _localOffset = Vector2.zero;
-        [SerializeField] LayerMask _wallsMask;
-        [SerializeField] bool _canpen;
-        [SerializeField] bool _targetSelf;
+        [SerializeField] TargetMode mode = TargetMode.TowardsMovement;
+        [SerializeField] float fallbackRange = 4f;
+        [SerializeField] Vector2 localOffset = Vector2.zero;
+        [SerializeField] LayerMask wallsMask;
+        [SerializeField] bool canpen;
+        [SerializeField] bool targetSelf;
 
-        public TargetMode Mode => _mode;
-        public float FallbackRange => _fallbackRange;
-        public Vector2 LocalOffset => _localOffset;
-        public LayerMask WallsMask => _wallsMask;
+        public TargetMode Mode => mode;
+        public float FallbackRange => fallbackRange;
+        public Vector2 LocalOffset => localOffset;
+        public LayerMask WallsMask => wallsMask;
         public LayerMask TargetMask => enemyMask;
-        public bool TargetSelf => _targetSelf;
-        public bool CanPenetrate => _canpen;
+        public bool TargetSelf => targetSelf;
+        public bool CanPenetrate => canpen;
 
 	[Header("Motion")]
 	public float duration = 0.18f;           // 총 대시 시간

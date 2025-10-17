@@ -8,7 +8,7 @@ namespace EffectInterfaces
 {
 	public enum Effects
 	{
-		Stack = 0, Haste, DamageBoost, ArmorBoost, APBoost, DRBoost, Invisibility, Invincible, Slow, Stun, Suppressed, Root, Tumbled, Damage //Damage는 지속 피해, duration을 0으로 하면 즉시 피해도 가능함
+		Stack = 0, Haste, DamageBoost, ArmorBoost, APBoost, DrBoost, Invisibility, Invincible, Slow, Stun, Suppressed, Root, Tumbled, Damage //Damage는 지속 피해, duration을 0으로 하면 즉시 피해도 가능함
 	}
 	public class EffectState
 	{
@@ -99,7 +99,7 @@ namespace ActInterfaces
         public interface ISweepable
         {
                 FixedVector2 DepenVector(LayerMask blockersMask, int maxIterations = 4, float skin = 0.125f, float minEps = 0.001f, float maxTotal = 0.5f);
-                void SweepMove(FixedVector2 vec);
+                void Move(FixedVector2 vec);
                 MoveResult LastMoveResult { get; }
                 int LastProcessedTick { get; }
         }
@@ -112,13 +112,18 @@ namespace ActInterfaces
 
 	public interface IAffectable
 	{
-		void ApplyEffect(Effects buffType, GameObject effecter, float duration, int Amplifier = 0, string name = null);
+		void ApplyEffect(Effects buffType, GameObject effecter, float duration, int amplifier = 0, string name = null);
 		void ApplyStack(string name, int amp, GameObject go);
 		void Purify(Effects buffType);
 	}
 	public interface ITargetable
 	{
 		bool TryGetTarget(out Transform target); // 잠금 대상이 없으면 false
+	}
+
+	public interface IVerboseDebugger
+	{
+		bool Verbose { get; }
 	}
 }
 #endregion

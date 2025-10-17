@@ -49,10 +49,9 @@ public struct MoveIntent : IIntent
     public IntentType Type { get; }
     public ushort GeneratedTick { get; }
     public FixedVector2 Movement { get; private set; }
-
     public ushort MoverID { get; }
 
-    public MoveIntent(ushort ownerID, int intentID, ushort generatedTick, FixedVector2 movement, ushort moverID)
+    public MoveIntent(ushort ownerID, int intentID, ushort generatedTick, FixedVector2 movement, ushort moverID = 0)
     {
         OwnerID = ownerID;
         IntentID = intentID;
@@ -60,6 +59,7 @@ public struct MoveIntent : IIntent
         GeneratedTick = generatedTick;
         Movement = movement;
         MoverID = moverID;
+        if(moverID == 0) moverID = OwnerID;
     }
 }
 

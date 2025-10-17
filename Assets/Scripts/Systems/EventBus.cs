@@ -3,28 +3,28 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Å¸ÀÔ T¿Í ¼±ÅÃÀû ½ºÄÚÇÁ Å°(object)¸¦ ±âÁØÀ¸·Î ¹ßÇà/±¸µ¶ÇÏ´Â ¾ÈÀüÇÑ EventBus.
-/// - SafeInvoke: ±¸µ¶ÀÚº° try/catch·Î °Ý¸®
-/// - Weak context: MonoBehaviour µî ÄÁÅØ½ºÆ®°¡ ÆÄ±«µÇ¸é ÀÚµ¿ Á¤¸®
-/// - Snapshot invoke: ¼øÈ¸ Áß ¼öÁ¤ º¸È£
-/// - Scope Áö¿ø: °°Àº T¶óµµ Ã¤³Î/¿À³Êº°·Î ºÐ¸® °¡´É
-/// - Thread-safe: ¾èÀº lock
+/// Å¸ï¿½ï¿½ Tï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å°(object)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ EventBus.
+/// - SafeInvoke: ï¿½ï¿½ï¿½ï¿½ï¿½Úºï¿½ try/catchï¿½ï¿½ ï¿½Ý¸ï¿½
+/// - Weak context: MonoBehaviour ï¿½ï¿½ ï¿½ï¿½ï¿½Ø½ï¿½Æ®ï¿½ï¿½ ï¿½Ä±ï¿½ï¿½Ç¸ï¿½ ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½
+/// - Snapshot invoke: ï¿½ï¿½È¸ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£
+/// - Scope ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ Tï¿½ï¿½ Ã¤ï¿½ï¿½/ï¿½ï¿½ï¿½Êºï¿½ï¿½ï¿½ ï¿½Ð¸ï¿½ ï¿½ï¿½ï¿½ï¿½
+/// - Thread-safe: ï¿½ï¿½ï¿½ï¿½ lock
 /// </summary>
 public static class EventBus
 {
-    // ³»ºÎ ±¸µ¶ÀÚ Ç¥Çö
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½
     private interface ISub
     {
-        bool IsAlive { get; }               // ÄÁÅØ½ºÆ® »ýÁ¸ ¿©ºÎ(¾øÀ¸¸é true)
+        bool IsAlive { get; }               // ï¿½ï¿½ï¿½Ø½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ true)
         bool Matches(Delegate d, object ctx);
-        void Invoke(object payload);        // ¾ÈÀü È£Ãâ
-        UnityEngine.Object Context { get; } // µð¹ö±ë¿ë
-        Delegate Handler { get; }           // µð¹ö±ë¿ë
+        void Invoke(object payload);        // ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½
+        UnityEngine.Object Context { get; } // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        Delegate Handler { get; }           // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     }
 
     private class Sub<T> : ISub
     {
-        private readonly WeakReference<UnityEngine.Object> _ctx; // ÆÄ±« °¨Áö
+        private readonly WeakReference<UnityEngine.Object> _ctx; // ï¿½Ä±ï¿½ ï¿½ï¿½ï¿½ï¿½
         public Delegate Handler { get; }
         public UnityEngine.Object Context
         {
@@ -44,9 +44,9 @@ public static class EventBus
         {
             get
             {
-                if (_ctx == null) return true; // ÄÁÅØ½ºÆ® ¾øÀ½ = Ç×»ó alive
-                if (!_ctx.TryGetTarget(out var o)) return false; // ¼ö°ÅµÊ
-                return o != null; // UnityEngine.Object ÆÄ±« °¨Áö
+                if (_ctx == null) return true; // ï¿½ï¿½ï¿½Ø½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ = ï¿½×»ï¿½ alive
+                if (!_ctx.TryGetTarget(out var o)) return false; // ï¿½ï¿½ï¿½Åµï¿½
+                return o != null; // UnityEngine.Object ï¿½Ä±ï¿½ ï¿½ï¿½ï¿½ï¿½
             }
         }
 
@@ -57,7 +57,7 @@ public static class EventBus
 
         public void Invoke(object payload)
         {
-            // ±¸µ¶ÀÚº° ¿¹¿Ü °Ý¸®(SafeInvoke)
+            // ï¿½ï¿½ï¿½ï¿½ï¿½Úºï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ý¸ï¿½(SafeInvoke)
             try
             {
                 if (!IsAlive) return;
@@ -70,91 +70,91 @@ public static class EventBus
         }
     }
 
-    // (Type, Scope) ¡æ ±¸µ¶ÀÚ ¸®½ºÆ®
-    private static readonly Dictionary<(Type, object), List<ISub>> _map = new();
-    private static readonly object _gate = new();
+    // (Type, Scope) ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ®
+    private static readonly Dictionary<(Type, object), List<ISub>> Map = new();
+    private static readonly object Gate = new();
 
     /// <summary>
-    /// ±¸µ¶: ÄÁÅØ½ºÆ®(¿É¼Ç)¸¦ °°ÀÌ ³Ñ±â¸é ÆÄ±« ½Ã ÀÚµ¿ ÇØÁ¦µÊ.
+    /// ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½Ø½ï¿½Æ®(ï¿½É¼ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ñ±ï¿½ï¿½ ï¿½Ä±ï¿½ ï¿½ï¿½ ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
     /// </summary>
     public static void Subscribe<T>(Action<T> handler, UnityEngine.Object context = null, object scope = null)
     {
         if (handler == null) return;
         var key = (typeof(T), scope);
-        lock (_gate)
+        lock (Gate)
         {
-            if (!_map.TryGetValue(key, out var list))
+            if (!Map.TryGetValue(key, out var list))
             {
                 list = new List<ISub>(4);
-                _map[key] = list;
+                Map[key] = list;
             }
             list.Add(new Sub<T>(handler, context));
         }
     }
 
     /// <summary>
-    /// ±¸µ¶ ÇØÁ¦: µ¿ÀÏ handler/context/scope Á¶ÇÕÀ» Á¦°Å.
+    /// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ handler/context/scope ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
     /// </summary>
     public static void Unsubscribe<T>(Action<T> handler, UnityEngine.Object context = null, object scope = null)
     {
         var key = (typeof(T), scope);
-        lock (_gate)
+        lock (Gate)
         {
-            if (!_map.TryGetValue(key, out var list)) return;
+            if (!Map.TryGetValue(key, out var list)) return;
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 if (list[i].Matches(handler, context))
                     list.RemoveAt(i);
             }
-            if (list.Count == 0) _map.Remove(key);
+            if (list.Count == 0) Map.Remove(key);
         }
     }
 
     /// <summary>
-    /// ¹ßÇà: µ¿ÀÏ (T, scope) ±¸µ¶ÀÚ¿¡°Ô¸¸ Àü´Þ.
-    /// ÄÁÅØ½ºÆ®°¡ Á×Àº ±¸µ¶ÀÚ´Â È£Ãâ Àü/ÈÄ·Î Ã»¼Ò.
+    /// ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ (T, scope) ï¿½ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½Ô¸ï¿½ ï¿½ï¿½ï¿½ï¿½.
+    /// ï¿½ï¿½ï¿½Ø½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ È£ï¿½ï¿½ ï¿½ï¿½/ï¿½Ä·ï¿½ Ã»ï¿½ï¿½.
     /// </summary>
     public static void Publish<T>(T evt, object scope = null)
     {
         var key = (typeof(T), scope);
         List<ISub> snapshot = null;
 
-        lock (_gate)
+        lock (Gate)
         {
-            if (_map.TryGetValue(key, out var list) && list.Count > 0)
+            if (Map.TryGetValue(key, out var list) && list.Count > 0)
             {
-                // Á×Àº ±¸µ¶ÀÚ 1Â÷ Ã»¼Ò
+                // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1ï¿½ï¿½ Ã»ï¿½ï¿½
                 for (int i = list.Count - 1; i >= 0; i--)
                     if (!list[i].IsAlive) list.RemoveAt(i);
 
-                // ½º³À¼¦ º¹»ç(¼øÈ¸ Áß ¼öÁ¤ º¸È£)
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½È¸ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£)
                 if (list.Count > 0) snapshot = new List<ISub>(list);
-                if (list.Count == 0) _map.Remove(key);
+                if (list.Count == 0) Map.Remove(key);
             }
         }
 
         if (snapshot == null) return;
 
-        // ¾ÈÀü È£Ãâ
+        // ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½
         foreach (var sub in snapshot)
             sub.Invoke(evt);
 
-        // È£Ãâ ÈÄ 2Â÷ Ã»¼Ò(¼±ÅÃ)
-        lock (_gate)
+        // È£ï¿½ï¿½ ï¿½ï¿½ 2ï¿½ï¿½ Ã»ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½)
+        lock (Gate)
         {
-            if (_map.TryGetValue(key, out var list))
+            if (Map.TryGetValue(key, out var list))
             {
                 for (int i = list.Count - 1; i >= 0; i--)
                     if (!list[i].IsAlive) list.RemoveAt(i);
-                if (list.Count == 0) _map.Remove(key);
+                if (list.Count == 0) Map.Remove(key);
             }
         }
     }
 
-    // ---- µð¹ö±ë/°èÃø(¼±ÅÃ) ----
+    // ---- ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½) ----
     public static int Count(Type t, object scope = null)
     {
-        lock (_gate)
-            return _map.TryGetValue((t, scope), out var list) ? list.Count : 0;
+        lock (Gate)
+            return Map.TryGetValue((t, scope), out var list) ? list.Count : 0;
     }
 }

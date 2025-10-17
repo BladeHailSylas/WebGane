@@ -97,7 +97,7 @@ public class DashMechanism : SkillMechanismBase<DashParams>, ITargetedMechanic
 
 					motor.Depenetration();
 					int awaitedTick = motor.LastProcessedTick;
-					motor.SweepMove(new FixedVector2(dir * stepDist));
+					motor.Move(new FixedVector2(dir * stepDist));
 					yield return new WaitUntil(() => motor.LastProcessedTick > awaitedTick);
 					motor.Depenetration();
 					var res = motor.LastMoveResult;
