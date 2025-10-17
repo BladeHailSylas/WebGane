@@ -708,6 +708,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e98055def49fee449be0102741f9d62c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InputBinder
+  spec: {fileID: 0}
+  attackKey: {fileID: 0}
+  skill1Key: {fileID: 0}
+  skill2Key: {fileID: 0}
+  ultimateKey: {fileID: 0}
 --- !u!1 &855105501
 GameObject:
   m_ObjectHideFlags: 0
@@ -1428,30 +1433,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1475334590}
-  - component: {fileID: 1475334589}
+  - component: {fileID: 1475334591}
   m_Layer: 0
-  m_Name: SimulationCore
+  m_Name: Ticker
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1475334589
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1475334588}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 706d49d128e54424f85d11d88d6a2656, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Intents.IntentOrchestrator
-  matchSeed: 324478056
-  maxChainDepth: 8
-  perTickBudget: 64
-  verboseLog: 0
 --- !u!4 &1475334590
 Transform:
   m_ObjectHideFlags: 0
@@ -1467,6 +1456,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1475334591
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1475334588}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a38c14eef48a4483902a77ec5d7ee5ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TickerRunner
 --- !u!1 &1517524293
 GameObject:
   m_ObjectHideFlags: 0
@@ -1563,9 +1564,8 @@ GameObject:
   - component: {fileID: 1725135780}
   - component: {fileID: 1725135779}
   - component: {fileID: 1725135781}
-  - component: {fileID: 1725135782}
   - component: {fileID: 1725135783}
-  - component: {fileID: 1725135785}
+  - component: {fileID: 1725135784}
   m_Layer: 6
   m_Name: Player
   m_TagString: BlueTeam
@@ -1658,23 +1658,6 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.375
---- !u!114 &1725135782
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1725135777}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4bfd2eb4f2efb554595b918510adc5f3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerActs
-  stats: {fileID: 1921015322}
-  locomotion: {fileID: 565241915}
-  effects: {fileID: 881497802}
-  rig: {fileID: 1725135779}
-  moveSpeed: 0
 --- !u!114 &1725135783
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1692,7 +1675,7 @@ MonoBehaviour:
   skill1Key: {fileID: -7471211009204490832, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   skill2Key: {fileID: 2411907206095950430, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   ultimateKey: {fileID: 1781555164194001046, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
---- !u!114 &1725135785
+--- !u!114 &1725135784
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1701,14 +1684,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1725135777}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aee9f9b80df83304ba96fb8281e55555, type: 3}
+  m_Script: {fileID: 11500000, guid: 4bfd2eb4f2efb554595b918510adc5f3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SkillRunner
-  actorId: 1
-  boundCamera: {fileID: 519420031}
-  respectBusyCooldown: 1
-  defaultPriority: 0
-  verbose: 0
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerActController
+  stats: {fileID: 0}
+  locomotion: {fileID: 0}
+  effects: {fileID: 0}
+  moveUnits: 0
+  _moveInput: {}
 --- !u!1 &1752660213
 GameObject:
   m_ObjectHideFlags: 0

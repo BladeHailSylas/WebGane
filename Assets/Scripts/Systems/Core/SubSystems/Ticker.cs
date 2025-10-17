@@ -3,37 +3,6 @@ using System;
 using System.Collections;
 
 #region ===== Ticker =====
-[DisallowMultipleComponent]
-/// <summary>
-/// Internal runner that bridges Unity's Update loop to the deterministic ticker.
-/// </summary>
-internal sealed class BattleCoreTickerRunner : MonoBehaviour
-{
-	private Ticker _ticker;
-	private void Awake()
-	{
-		_ticker = new Ticker();
-		StartCoroutine(TickLoop());
-	}
-
-	IEnumerator TickLoop()
-	{
-		var interval = new WaitForSecondsRealtime(1f / Ticker.TicksPerSecond);
-		while (true)
-		{
-			try
-			{
-				_ticker.Step();
-			}
-			catch (TickCountOverflowException ex)
-			{
-				
-			}
-			yield return interval;
-		}
-		
-	}
-}
 
 /// <summary>
 /// Fixed-rate ticker that publishes a tick event 60 times per second.
@@ -71,6 +40,7 @@ public sealed class Ticker
 	public void Step()
 	{
 		TickCount++;
+		if(TickCount % TicksPerSecond == 0) Debug.Log($"Time? {TickCount}");
 		if (TickCount == 65535) // wrap around to avoid overflow, though unlikely to happen in practice(it needs a battle that lasts more than 18 minutes)
 		{
 			TickCount = 0;
