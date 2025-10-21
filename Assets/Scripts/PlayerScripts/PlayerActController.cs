@@ -1,6 +1,7 @@
 ﻿using ActInterfaces;
 using StatsInterfaces;
 using UnityEngine;
+using Intents;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerActController : IVulnerable, IPullable
@@ -19,16 +20,15 @@ public class PlayerActController : IVulnerable, IPullable
 		moveUnits = 8000; //Temporarily use
 	}
 	// 입력 이벤트에서 방향만 갱신(즉시 이동 금지)
-	private void MakeMove(Vector2 move)
-	{
-		MakeMove(new FixedVector2(move), _mySId);
-		//locomotion.Move(move, rig, moveSpeed);
-	}
 	public void MakeMove(FixedVector2 move, byte mySid = 1)
 	{
+		MakeMove(new NormalMoveData(move), mySid);
+	}
+	public void MakeMove(IMoveData move, byte mySid = 1)
+	{
 		mySid = _mySId;
-		Debug.Log($"[MakeMove] frame={Time.frameCount} move={move * moveUnits}");
-		_moveInput = move * moveUnits;
+		Debug.Log($"[MakeMove] frame={Time.frameCount} move={move.Type}");
+		//_moveInput = move * moveUnits;
 	}
 	/*
 	 private void TickHandler(ushort tick)

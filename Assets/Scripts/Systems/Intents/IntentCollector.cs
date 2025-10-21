@@ -7,7 +7,7 @@ namespace Intents
     public class IntentCollector
     {
         private List<IIntent> _intentCluster = new();
-
+        public static IntentCollector Instance { get; private set; }
         public bool QueueIntent(IIntent intent)
         {
             try
@@ -23,6 +23,10 @@ namespace Intents
             }
         }
 
+        void Awake()
+        {
+            if(Instance is null) Instance = this;
+        }
         void OnEnable()
         {
             BattleCore.Ticker.OnTick += TickHandler;

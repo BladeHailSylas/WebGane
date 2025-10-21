@@ -147,7 +147,7 @@ public struct EntityData
 	/// Entity faction/team identifier. Systems use it for deterministic filtering.
 	/// </summary>
 	[SerializeField]
-	public int teamId;
+	public Team teamId;
 
 	/// <summary>
 	/// Hit points represented as fixed raw units (avoid floats for determinism).
@@ -196,7 +196,7 @@ public struct EntityData
 	/// Factory helper that creates a clean entity template. Callers may further customize the
 	/// struct before submitting it to <see cref="TheWorld.SpawnEntity"/>.
 	/// </summary>
-	public static EntityData CreateTemplate(FixedVector2 position, HitCircle collision, int teamId = 0)
+	public static EntityData CreateTemplate(FixedVector2 position, HitCircle collision, Team teamId = 0)
 	{
 		return new EntityData
 		{

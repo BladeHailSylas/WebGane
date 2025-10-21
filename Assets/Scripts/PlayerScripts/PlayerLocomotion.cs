@@ -15,23 +15,22 @@ public class PlayerLocomotion : MonoBehaviour
 	{
 		_col.QueueIntent(new MoveIntent(mySID, 0, tick, movement));
 	}
-
 	void Awake()
 	{
-		_col = BattleCore.Collector;
+		_col = IntentCollector.Instance;
 	}
-	/*FixedVector2 _knockbackBudget;                         // ̹ ӿ Һ ߰ ( ǥ)
+	/*FixedVector2 _knockbackBudget;
 		float distancePerTick = Mathf.Max(0f, force) / Ticker.TicksPerSecond;
 		_knockbackBudget += new FixedVector2(dir * distancePerTick);
 			delta += _knockbackBudget;
 			_knockbackBudget = Vector2.zero;
 		}
-		// 의도 방향을 선호 방향으로 하여 겹침 청소(모서리 락 방지)  // :contentReference[oaicite:12]{index=12}
+		// 의도 방향을 선호 방향으로 하여 겹침 청소(모서리 락 방지)
 		var motor = GetComponentInParent<KinematicMotor2D>();
 		if (!motor) return;
 		//motor.RemoveComponent();
 		motor.Depenetration();
-		// 단일 스윕 이동(충돌로 절단/슬라이드는 Motor 정책에 따름)      // :contentReference[oaicite:13]{index=13}
+		// 단일 스윕 이동(충돌로 절단/슬라이드는 Motor 정책에 따름)
 		var res = motor.SweepMove(delta);
 		motor.Depenetration();
 		// 마지막 실제 이동 벡터 기록(원한다면 실제 속도 등 2차 파생 가능)

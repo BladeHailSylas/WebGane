@@ -25,6 +25,8 @@ public enum Team : byte
 	Me = 0,
 	Ally = 1,
 	Enemy = 2,
+	Walls = 3,
+	What = 255
 }
 /// <summary>
 /// Serializable snapshot of the entire world state. Used for rollback, save/load,
@@ -48,8 +50,8 @@ public struct WorldSnapshot
 [Serializable]
 public sealed class TheWorld
 {
-        private readonly List<EntityData> _entities = new();
-        private readonly List<int> _freeIds = new();
+	private readonly List<EntityData> _entities = new();
+	private readonly List<int> _freeIds = new();
 	[NonSerialized] private readonly List<SystemRegistration> _systems = new();
 	[SerializeField] private ulong worldVersion;
 
@@ -69,7 +71,7 @@ public sealed class TheWorld
 	public ushort CurrentTick { get; private set; }
 	public ulong WorldVersion => worldVersion;
 	public ushort ActiveEntityCount { get; private set; }
-
+	
 	/// <summary>
 	/// Optional deterministic random access for the Unity bridge.
 	/// The list reference must never be mutated externally.

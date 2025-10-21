@@ -1,3 +1,5 @@
+using System;
+using Intents;
 using SkillInterfaces;
 
 /// <summary>
@@ -37,6 +39,37 @@ public readonly struct SkillInfo
         Param = param;
     }
 }
+public enum MoveType
+{
+    None, Normal, Targeted, Knockback,
+}
+public interface IMoveData
+{
+    public MoveType Type { get; }
+}
+public struct NormalMoveData : IMoveData
+{
+    public MoveType Type { get; private set; }
+    public FixedVector2 Movement { get; private set; }
+
+    public NormalMoveData(FixedVector2 movement)
+    {
+        Type = MoveType.Normal;
+        Movement = movement;
+    }
+}
+
+public struct TargetedMoveData : IMoveData
+{
+    public MoveType Type { get; private set; }
+    public EntityData Target { get; private set; }
+    public int MaxDistance { get; private set; }
+
+    public TargetedMoveData(EntityData target, int maxDistance = 0)
+    {
+        Type = MoveType.Targeted; Target = target; MaxDistance = maxDistance;
+    }
+}
 
 /// <summary>
 ///     Declarative intent describing how an actor wishes to move during the next tick.
@@ -48,6 +81,8 @@ public struct MoveIntent : IIntent
     public int IntentID { get; }
     public IntentType Type { get; }
     public ushort GeneratedTick { get; }
+    public IMoveData MoveData { get; private set; }
+    [Obsolete("Use MoveData Instead.")]
     public FixedVector2 Movement { get; private set; }
     public ushort MoverID { get; }
 
@@ -57,7 +92,19 @@ public struct MoveIntent : IIntent
         IntentID = intentID;
         Type = IntentType.Move;
         GeneratedTick = generatedTick;
-        Movement = movement;
+        MoveData = new NormalMoveData(movement);
+        Movement = new FixedVector2(0, 0);
+        MoverID = moverID;
+        if(moverID == 0) moverID = OwnerID;
+    }
+    public MoveIntent(ushort ownerID, int intentID, ushort generatedTick, IMoveData moveData, ushort moverID = 0)
+    {
+        OwnerID = ownerID;
+        IntentID = intentID;
+        Type = IntentType.Move;
+        GeneratedTick = generatedTick;
+        MoveData = moveData;
+        Movement = new FixedVector2(0, 0);
         MoverID = moverID;
         if(moverID == 0) moverID = OwnerID;
     }
