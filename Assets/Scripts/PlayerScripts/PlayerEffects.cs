@@ -1,4 +1,4 @@
-using ActInterfaces;
+ï»¿using ActInterfaces;
 using EffectInterfaces;
 using StatsInterfaces;
 using System.Collections;
@@ -9,15 +9,16 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
 {
     public bool IsImmune { get; private set; } = false;
     public bool IsMovable { get; private set; } = true;
-    public float EffectResistance { get; private set; } = 0f; // È¿°ú ÀúÇ×·Â (0% ±âº»)
+	public bool IsAttackable { get; private set; } = true;
+	public float EffectResistance { get; private set; } = 0f; // íš¨ê³¼ ì €í•­ë ¥ (0% ê¸°ë³¸)
     public Dictionary<Effects, EffectState> EffectList { get; private set; } = new();
 	public List<EffectState> StackList { get; private set; } = new();
-    public HashSet<Effects> PositiveEffects { get; private set; } = new() { Effects.Haste, Effects.DamageBoost, Effects.ArmorBoost, Effects.APBoost, Effects.DRBoost, Effects.Invisibility, Effects.Invincible};
+    public HashSet<Effects> PositiveEffects { get; private set; } = new() { Effects.Haste, Effects.DamageBoost, Effects.ArmorBoost, Effects.APBoost, Effects.DrBoost, Effects.Invisibility, Effects.Invincible};
     public HashSet<Effects> NegativeEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Suppressed, Effects.Root, Effects.Tumbled, Effects.Damage };
-    public HashSet<Effects> DisturbEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Suppressed, Effects.Root, Effects.Tumbled }; //¹æÇØ È¿°ú, Damage´Â ¾ö¿¬ÇÑ °ø°İ È¿°úÀÌ¹Ç·Î EffectResistanceÀÇ ¿µÇâÀ» ¹ŞÁö ¾ÊÀ½, CC ¡ø ¹æÇØ
-    public HashSet<Effects> CCEffects { get; private set; } = new() { Effects.Stun, Effects.Suppressed, Effects.Root, Effects.Tumbled };
-    public bool HasEffect(Effects e) => EffectList.ContainsKey(e); //CC È®ÀÎ¿¡ ÇÊ¿äÇÔ
-	public void ApplyStack(string name, int amp = 1, GameObject go = null) //³»°¡ ³» ½ºÅÃÀ» ½×À¸·Á¸é ApplyStackÀ» Á÷Á¢ È£Ãâ, ³»°¡ ³²ÀÇ ½ºÅÃÀ» ½×´Â °æ¿ì ApplyEffect·Î Àü´ŞÇØ¾ß ÇÑ´Ù
+    public HashSet<Effects> DisturbEffects { get; private set; } = new() { Effects.Slow, Effects.Stun, Effects.Suppressed, Effects.Root, Effects.Tumbled }; //ë°©í•´ íš¨ê³¼, DamageëŠ” ì—„ì—°í•œ ê³µê²© íš¨ê³¼ì´ë¯€ë¡œ EffectResistanceì˜ ì˜í–¥ì„ ë°›ì§€ ì•ŠìŒ, CC âŠ‚ ë°©í•´
+    public HashSet<Effects> CcEffects { get; private set; } = new() { Effects.Stun, Effects.Suppressed, Effects.Root, Effects.Tumbled };
+    public bool HasEffect(Effects e) => EffectList.ContainsKey(e); //CC í™•ì¸ì— í•„ìš”í•¨
+	public void ApplyStack(string name, int amp = 1, GameObject go = null) //ë‚´ê°€ ë‚´ ìŠ¤íƒì„ ìŒ“ìœ¼ë ¤ë©´ ApplyStackì„ ì§ì ‘ í˜¸ì¶œ, ë‚´ê°€ ë‚¨ì˜ ìŠ¤íƒì„ ìŒ“ëŠ” ê²½ìš° ApplyEffectë¡œ ì „ë‹¬í•´ì•¼ í•œë‹¤
 	{
 		if (amp == 0) amp = 1;
 		if (go == null) go = gameObject;
@@ -47,18 +48,18 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
 			EffectList.Add(buffType, new EffectState(duration, amp, effecter));
 			StartCoroutine(CoEffectDuration(buffType, duration));
 		}
-		Affection(buffType, duration, amp); // FixedUpdate()¿Í È£ÃâÀÌ Áßº¹µÇ¾î 2¹ø Àû¿ëµÇ´Â °Í¿¡ À¯ÀÇ, ÃßÈÄ ÀÌÆåÆ® ±¸ÇöÇÒ ¶§ ÇÚµé¸µ ÇÊ¿ä
-											// FixedUpdate()´Â Verify ¹× reload ¿ëµµ·Î »ç¿ëÇÏ°í ½ÍÀ¸¹Ç·Î ±¸ÇöÇÒ ¶§ °í·ÁÇØ¾ß ÇÔ
+		Affection(buffType, duration, amp); // FixedUpdate()ì™€ í˜¸ì¶œì´ ì¤‘ë³µë˜ì–´ 2ë²ˆ ì ìš©ë˜ëŠ” ê²ƒì— ìœ ì˜, ì¶”í›„ ì´í™íŠ¸ êµ¬í˜„í•  ë•Œ í•¸ë“¤ë§ í•„ìš”
+											// FixedUpdate()ëŠ” Verify ë° reload ìš©ë„ë¡œ ì‚¬ìš©í•˜ê³  ì‹¶ìœ¼ë¯€ë¡œ êµ¬í˜„í•  ë•Œ ê³ ë ¤í•´ì•¼ í•¨
 	}
-	public void Affection(Effects buffType, float duration, float Amplifier = 0) // Amplifier´Â È¿°úÀÇ °­µµ, ¿¹¸¦ µé¾î Haste/Slow¸é ÀÌµ¿¼Óµµ º¯µ¿¼º, Damage¸é ÃÊ´ç ÇÇÇØ·® -> Âü°í·Î, DamageÀÇ Amplifier´Â »ó´ë°¡ °¡ÇÏ´Â ¿ø·¡ ÇÇÇØ·®À» ¹ŞÀ¸¹Ç·Î ¿©±â¼­ DamageResistance¸¦ °è»êÇØ¾ß ÇÔ
+	public void Affection(Effects buffType, float duration, float amplifier = 0) // AmplifierëŠ” íš¨ê³¼ì˜ ê°•ë„, ì˜ˆë¥¼ ë“¤ì–´ Haste/Slowë©´ ì´ë™ì†ë„ ë³€ë™ì„±, Damageë©´ ì´ˆë‹¹ í”¼í•´ëŸ‰ -> ì°¸ê³ ë¡œ, Damageì˜ AmplifierëŠ” ìƒëŒ€ê°€ ê°€í•˜ëŠ” ì›ë˜ í”¼í•´ëŸ‰ì„ ë°›ìœ¼ë¯€ë¡œ ì—¬ê¸°ì„œ DamageResistanceë¥¼ ê³„ì‚°í•´ì•¼ í•¨
     {
-        Debug.Log($"Effect {buffType.GetType()} has affected for {duration} with amp {Amplifier}"); //Effect Àû¿ëÇÒ ¶§ Tumbled ÀÌ¿ÜÀÇ DisturbEffects´Â EffectResistance Àû¿ëÇÒ °Í
-        if(CCEffects.Contains(buffType))
+        Debug.Log($"Effect {buffType.GetType()} has affected for {duration} with amp {amplifier}"); //Effect ì ìš©í•  ë•Œ Tumbled ì´ì™¸ì˜ DisturbEffectsëŠ” EffectResistance ì ìš©í•  ê²ƒ
+        if(CcEffects.Contains(buffType))
         {
             IsMovable = false;
         }
     }
-    public IEnumerator CoEffectDuration(Effects e, float duration) //Effect Áö¼Ó½Ã°£ °ü¸®
+    public IEnumerator CoEffectDuration(Effects e, float duration) //Effect ì§€ì†ì‹œê°„ ê´€ë¦¬
     {
         while (duration > 0f)
         {
@@ -68,18 +69,18 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
         }
         EffectList.Remove(e);
     }
-    public void Purify(Effects buffType) // Á¤È­, Cleanse°¡ ¸ğµç ¹öÇÁ¸¦ Á¦°ÅÇÒ ¼ö ÀÖ´ÂÁö »ı°¢ÇÒ ÇÊ¿ä°¡ ÀÖÀ½
-                                                // ¹°·Ğ Cleanse´Â Åë³äÀûÀ¸·Î ±àÁ¤Àû È¿°ú¸¦ Á¦°ÅÇÏÁö ¾Ê´Â °ÍÀ¸·Î ÀÎ½ÄµÇ¹Ç·Î Á¦°ÅÇÏÁö ¾Ê´Â °Ô ³ªÀ» °Í
-                                                // ÇÑÆí ³Ñ¾îÁü(Tumbled)Àº °¡Àå °­·ÂÇÑ CC È¿°ú·Î ¼³°èÇß±â¿¡ Á¤È­·Î Á¦°ÅÇÏÁö ¾Ê¾Æ¾ß ÇÏ´ÂÁö °í·Á ÇÊ¿ä
+    public void Purify(Effects buffType) // ì •í™”, Cleanseê°€ ëª¨ë“  ë²„í”„ë¥¼ ì œê±°í•  ìˆ˜ ìˆëŠ”ì§€ ìƒê°í•  í•„ìš”ê°€ ìˆìŒ
+                                                // ë¬¼ë¡  CleanseëŠ” í†µë…ì ìœ¼ë¡œ ê¸ì •ì  íš¨ê³¼ë¥¼ ì œê±°í•˜ì§€ ì•ŠëŠ” ê²ƒìœ¼ë¡œ ì¸ì‹ë˜ë¯€ë¡œ ì œê±°í•˜ì§€ ì•ŠëŠ” ê²Œ ë‚˜ì„ ê²ƒ
+                                                // í•œí¸ ë„˜ì–´ì§(Tumbled)ì€ ê°€ì¥ ê°•ë ¥í•œ CC íš¨ê³¼ë¡œ ì„¤ê³„í–ˆê¸°ì— ì •í™”ë¡œ ì œê±°í•˜ì§€ ì•Šì•„ì•¼ í•˜ëŠ”ì§€ ê³ ë ¤ í•„ìš”
     {
         if (EffectList.ContainsKey(buffType))
         {
             EffectList.Remove(buffType);
         }
     }
-    public void ClearNegative() // ¹æÇØ È¿°ú ÀüÃ¼ Á¦°Å: Áö¼Ó ÇÇÇØ È¿°ú´Â Á¦°ÅÇÏÁö ¾Ê´Â ¼³°è°¡ ÁÁÀ½(ÁöµôÀ» »ì), Cleanse°¡ È£ÃâÇÏ´Â ¸Ş¼­µå
-                                // ¹æÇØ È¿°úÀÇ Á¤ÀÇ¸¦ "Á¾·á/ÇØÁ¦µÉ ¶§±îÁö Á¦´ë·Î Çàµ¿ÇÒ ¼ö ¾ø°Ô ¸¸µå´Â È¿°ú" ·Î Á¤ÀÇÇÏ¸é µÊ, Áö¼Ó ÇÇÇØ´Â ¹Şµç ¾îÂ¼µç Çàµ¿ÀÌ µÇ´Ï±î
-                                // "Áö¼Ó ÇÇÇØ·Î Á×À¸¸é Á¦´ë·Î Çàµ¿ÇÒ ¼ö ¾øÀİ¾Æ¿ä!" << ÁöµôÀÌ Á¾·á/ÇØÁ¦µÈ ÈÄ¿¡µµ Á¦´ë·Î Çàµ¿ÇÒ ¼ö ¾ø´Â °Å´Ï±î ¸ğ¼ø ¾øÀ½
+    public void ClearNegative() // ë°©í•´ íš¨ê³¼ ì „ì²´ ì œê±°: ì§€ì† í”¼í•´ íš¨ê³¼ëŠ” ì œê±°í•˜ì§€ ì•ŠëŠ” ì„¤ê³„ê°€ ì¢‹ìŒ(ì§€ë”œì„ ì‚´), Cleanseê°€ í˜¸ì¶œí•˜ëŠ” ë©”ì„œë“œ
+                                // ë°©í•´ íš¨ê³¼ì˜ ì •ì˜ë¥¼ "ì¢…ë£Œ/í•´ì œë  ë•Œê¹Œì§€ ì œëŒ€ë¡œ í–‰ë™í•  ìˆ˜ ì—†ê²Œ ë§Œë“œëŠ” íš¨ê³¼" ë¡œ ì •ì˜í•˜ë©´ ë¨, ì§€ì† í”¼í•´ëŠ” ë°›ë“  ì–´ì©Œë“  í–‰ë™ì´ ë˜ë‹ˆê¹Œ
+                                // "ì§€ì† í”¼í•´ë¡œ ì£½ìœ¼ë©´ ì œëŒ€ë¡œ í–‰ë™í•  ìˆ˜ ì—†ì–ì•„ìš”!" << ì§€ë”œì´ ì¢…ë£Œ/í•´ì œëœ í›„ì—ë„ ì œëŒ€ë¡œ í–‰ë™í•  ìˆ˜ ì—†ëŠ” ê±°ë‹ˆê¹Œ ëª¨ìˆœ ì—†ìŒ
     {
         foreach (var effect in EffectList.Keys)
         {
@@ -89,31 +90,43 @@ public class PlayerEffects : MonoBehaviour, IAffectable, IEffectStats
             }
         }
     }
-    /*void OnEnable()
-    {
-        EventBus.Subscribe<BuffApplyReq>(OnBuffApply);
-        EventBus.Subscribe<BuffRemoveReq>(OnBuffRemove);
-    }
-    void OnDisable()
-    {
-        EventBus.Unsubscribe<BuffApplyReq>(OnBuffApply);
-        EventBus.Unsubscribe<BuffRemoveReq>(OnBuffRemove);
-    }
+	void OnEnable()
+	{
+		BattleCore.Ticker.OnTick += TickHandler;
+	}
+	void OnDisable()
+	{
+		BattleCore.Ticker.OnTick -= TickHandler;
+	}
+	public void TickHandler(ushort tick)
+	{
+		return;
+	}
+	/*void OnEnable()
+{
+   EventBus.Subscribe<BuffApplyReq>(OnBuffApply);
+   EventBus.Subscribe<BuffRemoveReq>(OnBuffRemove);
+}
+void OnDisable()
+{
+   EventBus.Unsubscribe<BuffApplyReq>(OnBuffApply);
+   EventBus.Unsubscribe<BuffRemoveReq>(OnBuffRemove);
+}
 
-    void OnBuffApply(BuffApplyReq e)
-    {
-        if (e.Target != transform) return;
-        e.Mod.Apply(this);
-        if (e.Duration > 0) StartCoroutine(CoExpire(e.Mod, e.Duration));
-    }
-    void OnBuffRemove(BuffRemoveReq e)
-    {
-        if (e.Target != transform) return;
-        e.Mod.Remove(this);
-    }
-    IEnumerator CoExpire(IEffectModifier mod, float dur)
-    {
-        yield return new WaitForSeconds(dur);
-        mod.Remove(this);
-    }*/
+void OnBuffApply(BuffApplyReq e)
+{
+   if (e.Target != transform) return;
+   e.Mod.Apply(this);
+   if (e.Duration > 0) StartCoroutine(CoExpire(e.Mod, e.Duration));
+}
+void OnBuffRemove(BuffRemoveReq e)
+{
+   if (e.Target != transform) return;
+   e.Mod.Remove(this);
+}
+IEnumerator CoExpire(IEffectModifier mod, float dur)
+{
+   yield return new WaitForSeconds(dur);
+   mod.Remove(this);
+}*/
 }

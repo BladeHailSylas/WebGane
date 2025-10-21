@@ -1,59 +1,42 @@
-// PlayerAttackController.cs  (��ü)
-using UnityEngine;
-using UnityEngine.InputSystem;
-using System.Collections.Generic;
 using SkillInterfaces;
-
-public class PlayerAttackController : MonoBehaviour
+using UnityEngine;
+public class PlayerAttackController
 {
-    [Header("Character")]
-    public CharacterSpec spec; // ĳ���� SO (���ԡ��Ŀ����+�Ķ����)
-    //public ICharacter Spec { get { return spec; } set { spec = value; } }
-
-    [Header("Input")]
-    public InputActionReference attackKey;   // LMB(+Passive)
-    public InputActionReference skill1Key;   // Shift
-    public InputActionReference skill2Key;   // Space
-    public InputActionReference ultimateKey; // RMB
-                                            //���� LMB, Skill1 Shift, Skill2 Space, Ultimate RMB?
-    private readonly Dictionary<SkillSlot, ISkillRunner> _runners = new();
-
-    readonly Dictionary<SkillSlot, ISkillRunner> runners = new();
-
-    void Awake()
+    public void TryCast(SkillSlot slot)
     {
-        Bind(spec.attack);
-        Bind(spec.skill1);
-        Bind(spec.skill2);
+        Debug.Log($"Temporarily disabled. You pressed: {slot}");
     }
-
-    void Bind(SkillBinding b)
+    public int SkillPriority(ISkillMechanism mech, ISkillParam param, SkillSlot slot)
     {
-        if (b.mechanic is not ISkillMechanic mech || b.param == null) return;
-        if (!mech.ParamType.IsInstanceOfType(b.param))
+        return SkillPriority(mech, param as ICooldownParam, slot);
+    }
+    public int SkillPriority(ISkillMechanism mech, ICooldownParam param, SkillSlot slot)
+    {
+        if (mech == null || param == null)
         {
-            Debug.LogError($"Param mismatch: need {mech.ParamType.Name}, got {b.param.GetType().Name}"); return;
+            Debug.LogWarning("SkillPriority: 메커니즘 또는 파라미터가 null입니다. Priority level이 임시로 0이 됩니다.");
+            return 0;
         }
-        var r = gameObject.AddComponent<SkillRunner>();
-        r.Init(mech, b.param);
-        runners[b.slot] = r;
+        if (!mech.ParamType.IsInstanceOfType(param))
+        {
+            Debug.LogError($"ParamType mismatch: {mech.ParamType.Name} 필요, {param.GetType().Name} 제공. Priority level이 임시로 -1이 됩니다.");
+            return -1;
+        }
+        int weight = 0;
+        weight += mech.ParamType.Name switch
+        {
+            "MeleeParams" or "MissileParams" or "HitscanParams" or "AreaParams" => 3,
+            "DashParams" or "TeleportParams" => 2,
+            _ => 1,
+        };
+        weight += slot switch
+        {
+            SkillSlot.Attack => 1,
+            SkillSlot.AttackSkill or SkillSlot.Skill1 or SkillSlot.Skill2 => 2,
+            SkillSlot.Ultimate => 3,
+            _ => 0,
+        };
+        //Debug.Log($"[Runner] SkillPriority: {slot} 슬롯의 {mech.ParamType.Name} 타입은 {weight * 1000} priority입니다");
+        return weight * 1000 + (int)param.Cooldown;
     }
-
-    void OnEnable()
-    {
-        if (attackKey) { attackKey.action.Enable(); attackKey.action.performed += _ => TryCast(SkillSlot.Attack); }
-        if (skill1Key) { skill1Key.action.Enable(); skill1Key.action.performed += _ => TryCast(SkillSlot.Skill1); }
-        if (skill2Key) { skill2Key.action.Enable(); skill2Key.action.performed += _ => TryCast(SkillSlot.Skill2); }
-        if (ultimateKey) { ultimateKey.action.Enable(); ultimateKey.action.performed += _ => TryCast(SkillSlot.Ultimate); }
-    }
-    void OnDisable()
-    {
-        if (attackKey) attackKey.action.performed -= _ => TryCast(SkillSlot.Attack);
-        if (skill1Key) skill1Key.action.performed -= _ => TryCast(SkillSlot.Skill1);
-        if (skill2Key) skill2Key.action.performed -= _ => TryCast(SkillSlot.Skill2);
-        if (ultimateKey) ultimateKey.action.performed -= _ => TryCast(SkillSlot.Ultimate);
-        attackKey?.action.Disable(); skill1Key?.action.Disable(); skill2Key?.action.Disable(); ultimateKey?.action.Disable(); 
-    }
-
-    void TryCast(SkillSlot slot) { if (runners.TryGetValue(slot, out var r)) r.TryCast(); }
 }

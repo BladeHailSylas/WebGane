@@ -1,50 +1,50 @@
 using UnityEngine;
 
 /// <summary>
-/// TargetAnchor(·±Å¸ÀÓ ¾ÞÄ¿) ½Ã°¢È­ µð¹ö°Å.
-/// - ¾Àºä: ±½Àº ¿ø, ÀÌ¸§ ¶óº§, (¼±ÅÃ) ÃÖ±Ù ÀÌµ¿ º¤ÅÍ/¹ý¼± µî
-/// - °ÔÀÓºä: LineRenderer·Î ¾ãÀº µµ³Ó Ç¥½Ã(¿É¼Ç)
+/// TargetAnchor(ï¿½ï¿½Å¸ï¿½ï¿½ ï¿½ï¿½Ä¿) ï¿½Ã°ï¿½È­ ï¿½ï¿½ï¿½ï¿½ï¿½.
+/// - ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½, ï¿½Ì¸ï¿½ ï¿½ï¿½, (ï¿½ï¿½ï¿½ï¿½) ï¿½Ö±ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
+/// - ï¿½ï¿½ï¿½Óºï¿½: LineRendererï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½(ï¿½É¼ï¿½)
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class TargetAnchorDebug : MonoBehaviour
 {
     [Header("Appearance")]
-    [SerializeField] float radius = 0.15f;            // È­¸é¿¡¼­ º¸ÀÏ ÀÓÀÇ ¹Ý°æ(½Ã°¢È­ Àü¿ë)
+    [SerializeField] float radius = 0.15f;            // È­ï¿½é¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ý°ï¿½(ï¿½Ã°ï¿½È­ ï¿½ï¿½ï¿½ï¿½)
     [SerializeField] bool enableRuntimeVisual = true;
     [SerializeField] int segments = 24;
 
-    LineRenderer lr; Vector3[] ring;
+    LineRenderer _lr; Vector3[] _ring;
 
     void Awake()
     {
         if (enableRuntimeVisual)
         {
-            lr = gameObject.GetComponent<LineRenderer>();
-            if (!lr) lr = gameObject.AddComponent<LineRenderer>();
-            lr.positionCount = segments + 1;
-            lr.loop = true;
-            lr.useWorldSpace = true;
-            lr.widthMultiplier = 0.03f;      // È­¸é¿¡¼­ Àû´çÈ÷ º¸ÀÌ´Â µÎ²²
-            lr.material = new Material(Shader.Find("Sprites/Default"));
-            lr.textureMode = LineTextureMode.Stretch;
+            _lr = gameObject.GetComponent<LineRenderer>();
+            if (!_lr) _lr = gameObject.AddComponent<LineRenderer>();
+            _lr.positionCount = segments + 1;
+            _lr.loop = true;
+            _lr.useWorldSpace = true;
+            _lr.widthMultiplier = 0.03f;      // È­ï¿½é¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì´ï¿½ ï¿½Î²ï¿½
+            _lr.material = new Material(Shader.Find("Sprites/Default"));
+            _lr.textureMode = LineTextureMode.Stretch;
 
-            ring = new Vector3[segments + 1];
+            _ring = new Vector3[segments + 1];
             BuildRing();
         }
     }
 
     void Update()
     {
-        if (!enableRuntimeVisual || lr == null) return;
+        if (!enableRuntimeVisual || _lr == null) return;
 
-        // »ìÂ¦ ÆÞ½º È¿°ú(°¡º­¿î ½Ã°¢È­)
+        // ï¿½ï¿½Â¦ ï¿½Þ½ï¿½ È¿ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½È­)
         float r = radius * (1f + 0.05f * Mathf.Sin(Time.time * 6f));
         for (int i = 0; i <= segments; i++)
         {
             float a = (Mathf.PI * 2f) * i / segments;
-            ring[i] = transform.position + new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f);
+            _ring[i] = transform.position + new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f);
         }
-        lr.SetPositions(ring);
+        _lr.SetPositions(_ring);
     }
 
     void BuildRing()
@@ -52,19 +52,19 @@ public sealed class TargetAnchorDebug : MonoBehaviour
         for (int i = 0; i <= segments; i++)
         {
             float a = (Mathf.PI * 2f) * i / segments;
-            ring[i] = transform.position + new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f);
+            _ring[i] = transform.position + new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f);
         }
-        lr.SetPositions(ring);
+        _lr.SetPositions(_ring);
     }
 
 #if UNITY_EDITOR
     void OnDrawGizmos()
     {
-        // ¾Àºä¿¡¼­ ±½Àº ¿ø
+        // ï¿½ï¿½ï¿½ä¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
         Gizmos.color = new Color(0.2f, 0.9f, 1f, 0.9f);
         DrawWireDisc(transform.position, Vector3.forward, radius, 32);
 
-        // ¶óº§
+        // ï¿½ï¿½
         UnityEditor.Handles.color = Color.cyan;
         UnityEditor.Handles.Label(transform.position + Vector3.up * (radius + 0.05f), $"ANCHOR\n{gameObject.name}");
     }

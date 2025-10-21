@@ -1,97 +1,112 @@
-using StatsInterfaces;
+ï»¿using StatsInterfaces;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
-public sealed class PlayerStats : MonoBehaviour // ÇÃ·¹ÀÌ¾î ½ºÅÈ °ü¸®, ´Ù¸¥ °÷¿¡¼­´Â ÂüÁ¶¸¸
+public sealed class PlayerStats : MonoBehaviour // í”Œë ˆì´ì–´ ìŠ¤íƒ¯ ê´€ë¦¬, ë‹¤ë¥¸ ê³³ì—ì„œëŠ” ì°¸ì¡°ë§Œ
 {
-    [SerializeField] PlayerEffects effects;
-    public float BaseHealth { get; private set; }
-    public float MaxHealth { get; private set; }
-    public float Health { get; private set; }
-    public float Shield { get; private set; }
-    public float SpecialShield { get; private set; }
-    public float BaseArmor { get; private set; }
-    public float Armor { get; private set; }
-    public float BaseHealthRegen { get; private set; }
-    public float HealthRegen { get; private set; }
-    public List<float> DamageReduction { get; private set; }
-    public float BaseAttackDamage { get; private set; } = 10f;
-    public float AttackDamage { get; private set; } = 12f;
-    public List<float> ArmorPenetration { get; private set; } = new();
-    public float BaseMana { get; private set; }
-    public float MaxMana { get; private set; }
-    public float Mana { get; private set; }
-    public float BaseManaRegen { get; private set; }
-    public float ManaRegen { get; private set; }
-    public float BaseSpeed { get; private set; } = 8f;
-    public float Speed { get; private set; } = 8f;
-    public float JumpTime { get; private set; }
-    public bool OnGround { get; private set; }
-    public bool IsDead { get; private set; }
-    public void ReduceStat(ReduceType stat, float damage, float armorRatio = 1f, bool isfixed = false)
-    {
-        if (stat == ReduceType.Mana) // 1(Mana)ÀÌ¸é ¸¶³ª, 0(Health)ÀÌ¸é Ã¼·Â
-        {
-            Mana = Mathf.Max(0f, Mana - damage);
-        }
-        else
-        {
-            Damaged(damage, armorRatio, isfixed);
-        }
-        if (Health <= 0f) IsDead = true;
-    }
-    float DamageReductionCalc(float armor, float armorRatio = 1f, float damageRatio = 1f) //Player°¡ ÇÇÇØ¸¦ ¹Ş´Â °æ¿ì
-    {
-        return (80 / (80 + armor * armorRatio)) * damageRatio;
-    }
-    void Damaged(float damage, float armorRatio = 1f, bool isfixed = false) //ºñ·Ê ÇÇÇØ¸¦ ¿©±â¼­ °è»êÇØ¾ß µÇ³ª << ±×·² °Å °°Áö ¾ÊÀ½
-    {
-        if (IsDead || damage <= 0f) return;
-        if (!isfixed) damage *= DamageReductionCalc(Armor, armorRatio, TotalDamageReduction());
-        if (SpecialShield > damage)
-        {
-            SpecialShield -= damage;
-        }
-        else if (SpecialShield + Shield > damage)
-        {
-            Shield -= SpecialShield - damage;
-        }
-        else
-        {
-            Health -= Shield + SpecialShield - damage;
-        }
-        if (Health <= 0f)
-        {
-            IsDead = true;
-        }
-    }
-    public float TotalArmorPenetration() //ÇÊµå¸¦ °Çµå´Â ¸Ş¼­µå°¡ ¾Æ´Ï¹Ç·Î publicÀ¸·Î µÎ¾îµµ µÇÁö ¾ÊÀ»±î
-    {
-        float totalAP = 1f;
-        foreach (var ap in ArmorPenetration)
-        {
-            totalAP *= (1 - ap / 100); // ´ÜÀÏ AP ºñÀ²ÀÌ 100%¸¦ ³ÑÀ¸¸é ¹æ¾î·ÂÀÌ ¸¶ÀÌ³Ê½º¶ó ÇÇÇØ ¹èÀ²ÀÌ ³Ê¹« Ä¿Áö¹Ç·Î ±×·± ÀÏÀÌ ¾ø¾î¾ß ÇÔ
-        }
-        return totalAP;
-    }
-    public float TotalDamageReduction()
-    {
-        float totalDR = 1f;
-        foreach (var dr in DamageReduction)
-        {
-            totalDR *= (1 - dr / 100); //´ÜÀÏ DR ºñÀ²ÀÌ 100%¸¦ ³ÑÀ¸¸é ¸Â´Âµ¥ È¸º¹ÇÔ, APµµ 100%¸¦ ³ÑÀ¸¸é ¾È µÇÁö¸¸ DRÀº ´õ´õ¿í ´ÜÀÏ ºñÀ²ÀÌ 100%À» ³Ñ¾î¼­´Â ¾È µÊ(¸Á°×ÀÓ)
-        }
-        return Mathf.Max(0.15f, totalDR); //°ø°İÀÚ ¿ì¼±(ÇÏ°Ô µÎµÇ ´ë¾ÈÀ» ÁÖ¾î¶ó) -> ´ë¹ÌÁö°¡ µé¾î°¡°Ô µÎµÇ ´Ù¸¥ »ıÁ¸ ¼ö´Ü(Ã¼·Â È¸º¹, º¸È£¸· µî)À¸·Î ¿øÄŞÀÌ ¾È ³ª°Ô ÇÏ¶ó
-    }
+	[SerializeReference] readonly CharacterSpec _spec;
+	public int BaseHealth { get; private set; }
+	public int MaxHealth { get; private set; }
+	public int Health { get; private set; }
+	public int Shield { get; private set; }
+	public int SpecialShield { get; private set; }
+	public int BaseArmor { get; private set; }
+	public int Armor { get; private set; }
+	public int BaseHealthRegen { get; private set; }
+	public int HealthRegen { get; private set; }
+	public List<int> DamageReduction { get; private set; } = new();
+	public int BaseAttackDamage { get; private set; } = 10;
+	public int AttackDamage { get; private set; } = 12;
+	public List<int> ArmorPenetration { get; private set; } = new();
+	public int BaseMana { get; private set; }
+	public int MaxMana { get; private set; }
+	public int Mana { get; private set; }
+	public int BaseManaRegen { get; private set; }
+	public int ManaRegen { get; private set; }
+	public int BaseSpeed { get; private set; } = 8;
+	public int Speed { get; private set; } = 8;
+	public int JumpTime { get; private set; }
+	public bool OnGround { get; private set; }
+	public bool IsDead { get; private set; }
+	private void Awake()
+	{
+		/*BaseHealth = _spec.baseHp;
+		BaseHealthRegen = _spec.baseHpGen;
+		BaseArmor = _spec.baseDefense;
+		BaseAttackDamage = _spec.baseAttack;
+		BaseMana = _spec.baseMana;
+		BaseManaRegen = _spec.baseManaGen;
+		BaseSpeed = _spec.baseSpeed;*/
+		BaseSpeed = 8000;
+	}
+	public void ReduceStat(ReduceType stat, int amount, int apRatio = 0, DamageType type = DamageType.Normal)
+	{
+		if (stat == ReduceType.Mana) // 1(Mana)ì´ë©´ ë§ˆë‚˜, 0(Health)ì´ë©´ ì²´ë ¥
+		{
+			Mana = (int)Math.Max(0f, Mana - amount);
+		}
+		else
+		{
+			GetDamage(amount, apRatio, type);
+		}
+		if (Health <= 0f) IsDead = true;
+	}
+	void GetDamage(int damage, int apRatio = 0, DamageType type = DamageType.Normal) //ë¹„ë¡€ í”¼í•´ë¥¼ ì—¬ê¸°ì„œ ê³„ì‚°í•´ì•¼ ë˜ë‚˜ << ê·¸ëŸ´ ê±° ê°™ì§€ ì•ŠìŒ
+	{
+		if (IsDead || damage <= 0f) return;
+		switch (type) 
+		{ 
+			case DamageType.CurrentPercent:
+				damage = Health * damage / 100;
+				break;
+			case DamageType.LostPercent:
+				damage = (MaxHealth - Health) * damage / 100;
+				break;
+			case DamageType.MaxPercent:
+				damage = MaxHealth * damage / 100;
+				break;
+			default:
+				break;
+		}
+		if (type != DamageType.Fixed) damage *= (int)DamageReductionCalc(Armor, apRatio, TotalDamageReduction());
+		if (SpecialShield > damage)
+		{
+			SpecialShield -= damage;
+		}
+		else if (SpecialShield + Shield > damage)
+		{
+			Shield -= SpecialShield - damage;
+		}
+		else
+		{
+			Health -= Shield + SpecialShield - damage;
+		}
+		if (Health <= 0f)
+		{
+			IsDead = true;
+		}
+	}
+	double DamageReductionCalc(int armor, int apRatio = 0, double damageRatio = 1) //Playerê°€ í”¼í•´ë¥¼ ë°›ëŠ” ê²½ìš°
+		=> (double)(80 / (80 + armor * (1 - apRatio))) * damageRatio;
+	public double TotalArmorPenetration() //APë¥¼ ë°˜í™˜í•˜ëŠ” ê±°ë©´ 1 - totalAPê°€ ë§ëŠ”ë° ê·¸ëŸ¼ ê³„ì‚°ì´ ê·€ì°®ì•„ì§, ëª…ì¹­ì„ ë°”ê¾¸ëŠ” ê²ƒì´ ë§ì§€ ì•Šë‚˜
+										//ì–´ì©Œë©´ ê´œì°®ì„ì§€ë„ ëª¨ë¥´ê² ë‹¤, ì–´ì°¨í”¼ AP ê³„ì‚°ì‹ì€ 1 - (80 / (80 + Armor * (1 - TotalAP)))ë¡œ ì´ë¯¸ ì •í•´ì ¸ ìˆìœ¼ë‹ˆê¹Œ
+										//ì˜¤íˆë ¤ ê·¸ ê³µì‹ì„ ë°”ê¾¸ë ¤ ë“¤ì—ˆë‹¤ê°€ ìˆ˜ì‹ì´ ë‹¬ë¼ í˜¼ë€ì´ ì˜¬ ê°€ëŠ¥ì„±ì´ ìˆìŒ, ì´ë¦„ë„ ArmorPenetrationì—ì„œ ArmorRatioë¡œ ë°”ê¿”ì•¼ ë¨
+	{
+		float totalAP = 1f;
+		foreach (var ap in ArmorPenetration)
+		{
+			totalAP *= (1 - ap / 100); // ë‹¨ì¼ AP ë¹„ìœ¨ì´ 100%ë¥¼ ë„˜ìœ¼ë©´ ë°©ì–´ë ¥ì´ ë§ˆì´ë„ˆìŠ¤ë¼ í”¼í•´ ë°°ìœ¨ì´ ë„ˆë¬´ ì»¤ì§€ë¯€ë¡œ ê·¸ëŸ° ì¼ì´ ì—†ì–´ì•¼ í•¨
+		}
+		return 1 - totalAP;
+	}
+	public double TotalDamageReduction()
+	{
+		float totalDr = 1f;
+		foreach (var dr in DamageReduction)
+		{
+			totalDr *= (1 - dr / 100);
+		}
+		return Mathf.Max(0.15f, totalDr); //ê³µê²©ì ìš°ì„ (í•˜ê²Œ ë‘ë˜ ëŒ€ì•ˆì„ ì£¼ì–´ë¼) -> ëŒ€ë¯¸ì§€ê°€ ë“¤ì–´ê°€ê²Œ ë‘ë˜ ë‹¤ë¥¸ ìƒì¡´ ìˆ˜ë‹¨(ì²´ë ¥ íšŒë³µ, ë³´í˜¸ë§‰ ë“±)ìœ¼ë¡œ ì›ì½¤ì´ ì•ˆ ë‚˜ê²Œ í•˜ë¼
+											//ì™œ í•˜í•œì„ ë‘ë‚˜ìš”? ì•ˆ ê·¸ëŸ¬ë©´ ë§ëŠ”ë° í”¼ê°€ ë‹³ëŠ” ëŒ€ì‹  íšŒë³µí•˜ëŠ” ë§ê²œì´ ë˜ì–´ë²„ë¦¼
+	}
 }
-//PlayerStats°¡ ²Ï ±æ¾îÁö´Âµ¥ µû·Î ºĞ·ùÇÒ ¹æ¹ıÀÌ?
-//Health, Mana¿Í °°Àº °ÍÀº array³ª List·Î ¹­¾î¼­ enum StatRef(Base, Max, Current)¿Í ¿¬°èÇØ¾ß µÇ³ª?
-//¾Æ´Ï¸é ±æ¾îÁö´Â °ÍÀÌ ÇÊ¿¬ÀûÀÌ¹Ç·Î ±×³É °¡¸¸È÷ µĞ´Ù? StatºÎÅÍ ³Ê¹« ¸¹¾Æ¼­ ¾îÂ¿ ¼ö ¾ø³ª?
-//PlayerStatsController°¡ Á¸ÀçÇÑ´Ù°í ÇØµµ ¸Ş¼­µå¸¦ À¯ÀÇ¹ÌÇÏ°Ô °¡Á®°¥ °Í °°Áö ¾ÊÀºµ¥?
-//¿©±â¿¡ event listening±îÁö ÇÏ¸é ÄÚµå°¡ ²Ï ±æ¾îÁú °ÍÀÎµ¥
-//±×·¸´Ù°í PlayerStatsController°¡ PlayerStats¸¦ Á÷Á¢ ¼öÁ¤ÇÏ´Â °Ç ½È´Ù, Á¢±Ù º¤ÅÍ¸¦ ÁÙÀÌ°í ½ÍÀ½
-//¾Æ´Ï¸é ¿ÀÈ÷·Á Controller°¡ ÀÖ±â¿¡ Á¢±Ù º¤ÅÍ°¡ ÁÙ¾îµç´Ù?
-//ÇöÀç ±¸Á¶: ´Ù¸¥ °´Ã¼°¡ ÇÊ¿äÇÑ ½Ã±â¿¡ Á÷Á¢ PlayerStats¸¦ ÂüÁ¶
-//ÄÁÆ®·Ñ·¯: ´Ù¸¥ °´Ã¼°¡ Controller¸¦ ÂüÁ¶, Controller¸¸ PlayerStats¸¦ ÂüÁ¶
-//ÀÌ°Ô ´õ ³ªÀº °Í °°±â´Â ÇÏÁö¸¸, ¿ì¸®´Â ±Ã±ØÀûÀ¸·Î event¸¦ ÅëÇÑ SerializeField ÂüÁ¶ Á¦°Å¸¦ ¿øÇÔ
-//event·Î SerializeField ÀüÃ¼ ÂüÁ¶°¡ °¡´ÉÇÑÁö´Â Àß ¸ô¶óµµ °¡´ÉÇÑ ÇÑ Á¢±Ù º¤ÅÍ¸¦ ÁÙÀÏ ¼ö ÀÖÀ» °ÍÀ¸·Î ¿¹»ó
-//StatsEventListener°°Àº °É ¸¸µç´Ù? ¿ÀÈ÷·Á Á¢±Ù º¤ÅÍ¸¦ ´Ã¸®´Â ¹æ¾È °°´Ù°í »ı°¢

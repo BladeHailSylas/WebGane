@@ -2,18 +2,18 @@ using UnityEngine;
 public sealed class PlayerInstaller : MonoBehaviour
 {
     [SerializeField] private CharacterSpec spec;
-    [SerializeField] private PlayerAttackController controller;
+    [SerializeField] private InputBinder controller;
 
     private void Awake()
     {
         if (spec == null || controller == null)
         {
-            Debug.LogError("[PlayerInstaller] Spec ¶Ç´Â Controller°¡ ºñ¾î ÀÖ½À´Ï´Ù.");
+            Debug.LogError("[PlayerInstaller] Spec ï¿½Ç´ï¿½ Controllerï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ö½ï¿½ï¿½Ï´ï¿½.");
             return;
         }
 
-        // ¿©±â¼­ ¾Æ¹« ÀÏµµ ÇÏÁö ¾Ê°í,
-        // PlayerAttackController°¡ ½º½º·Î Awake¿¡¼­ specÀ» ÀÐµµ·Ï µÓ´Ï´Ù.
+        // ï¿½ï¿½ï¿½â¼­ ï¿½Æ¹ï¿½ ï¿½Ïµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½,
+        // PlayerAttackControllerï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Awakeï¿½ï¿½ï¿½ï¿½ specï¿½ï¿½ ï¿½Ðµï¿½ï¿½ï¿½ ï¿½Ó´Ï´ï¿½.
         controller.spec = spec;
     }
 }

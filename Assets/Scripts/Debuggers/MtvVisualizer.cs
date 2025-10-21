@@ -23,18 +23,18 @@ public sealed class NormalMtvVisualizer2D : MonoBehaviour
     [SerializeField] Color mtvColor = Color.magenta;
     [SerializeField] Color ringColor = new(1f, 1f, 1f, 0.2f);
 
-    Vector2 avgNormal, mtvDir; bool intruding; float minDist; Vector3 samplePos;
+    Vector2 _avgNormal, _mtvDir; bool _intruding; float _minDist; Vector3 _samplePos;
 
     void Update()
     {
-        samplePos = previewMode ? (Vector3)previewPosition : transform.position;
-        SampleAt(samplePos);
+        _samplePos = previewMode ? (Vector3)previewPosition : transform.position;
+        SampleAt(_samplePos);
     }
 
     /// <summary>외부에서 임의 지점을 주고 바로 샘플링 가능</summary>
     public void SampleAt(Vector3 pos)
     {
-        avgNormal = Vector2.zero; mtvDir = Vector2.zero; intruding = false; minDist = float.PositiveInfinity;
+        _avgNormal = Vector2.zero; _mtvDir = Vector2.zero; _intruding = false; _minDist = float.PositiveInfinity;
 
         var cols = Physics2D.OverlapCircleAll(pos, probeRadius, wallsMask);
         int n = 0; float best = float.PositiveInfinity;
@@ -45,15 +45,15 @@ public sealed class NormalMtvVisualizer2D : MonoBehaviour
             Vector2 v = (Vector2)pos - p;
             float d = v.magnitude;
 
-            if (d <= nearThreshold) intruding = true;
+            if (d <= nearThreshold) _intruding = true;
             if (d < best) best = d;
 
-            if (d > 1e-4f) { avgNormal += v / d; n++; }
+            if (d > 1e-4f) { _avgNormal += v / d; n++; }
         }
 
-        if (n > 0) avgNormal = avgNormal.normalized;
-        minDist = (best < float.PositiveInfinity) ? best : minDist;
-        if (intruding && avgNormal != Vector2.zero) mtvDir = avgNormal;
+        if (n > 0) _avgNormal = _avgNormal.normalized;
+        _minDist = (best < float.PositiveInfinity) ? best : _minDist;
+        if (_intruding && _avgNormal != Vector2.zero) _mtvDir = _avgNormal;
     }
 
 #if UNITY_EDITOR
@@ -64,20 +64,20 @@ public sealed class NormalMtvVisualizer2D : MonoBehaviour
         Gizmos.color = ringColor;
         Gizmos.DrawWireSphere(pos, probeRadius);
 
-        if (avgNormal != Vector2.zero)
+        if (_avgNormal != Vector2.zero)
         {
             Gizmos.color = normalColor;
-            DrawArrow(pos, avgNormal.normalized, arrowLength);
+            DrawArrow(pos, _avgNormal.normalized, arrowLength);
         }
-        if (mtvDir != Vector2.zero)
+        if (_mtvDir != Vector2.zero)
         {
             Gizmos.color = mtvColor;
-            DrawArrow(pos, mtvDir.normalized, arrowLength * 0.9f);
+            DrawArrow(pos, _mtvDir.normalized, arrowLength * 0.9f);
         }
 
-        UnityEditor.Handles.color = intruding ? Color.red : Color.white;
+        UnityEditor.Handles.color = _intruding ? Color.red : Color.white;
         UnityEditor.Handles.Label(pos + Vector3.up * 0.07f,
-            intruding ? $"MTV dir shown • minDist≈{minDist:F3}" : $"avgN shown • minDist≈{minDist:F3}");
+            _intruding ? $"MTV dir shown • minDist≈{_minDist:F3}" : $"avgN shown • minDist≈{_minDist:F3}");
     }
 
     static void DrawArrow(Vector3 o, Vector2 dir, float len)

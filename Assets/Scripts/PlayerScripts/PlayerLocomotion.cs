@@ -1,51 +1,52 @@
-using ActInterfaces;
+ï»¿using ActInterfaces;
 using UnityEngine;
+using System;
+using Intents;
 
-public class PlayerLocomotion : MonoBehaviour, IMovable, IPullable
+public class PlayerLocomotion : MonoBehaviour
 {
-    [SerializeField] private Rigidbody2D rb;          // Kinematic º»Ã¼
-    public Vector2 LastMoveDir { get; private set; }
-    // KnockbackÀº Kinematic¿¡¼­ ¹°¸®¼Óµµ°¡ ¾Æ´Ñ "Ãß°¡ º¯À§"·Î Ã³¸®
-    Vector2 _knockbackBudget;                         // ÀÌ¹ø ÇÁ·¹ÀÓ¿¡ ¼ÒºñÇÒ Ãß°¡ º¯À§(¿ùµå ÁÂÇ¥)
-
-    /// <summary>
-    /// IMovable: ÀÇµµ(¹æÇâ¡¤¼Óµµ)¸¦ ´ÜÀÏ ½ºÀ¬¿ë "µ¨Å¸"·Î È¯»êÇÏ¿© Motor·Î Àü´ŞÇÕ´Ï´Ù.
-    /// - ÀÌµ¿ °áÁ¤Àº »óÀ§¿¡¼­(¼Óµµ/ÀÔ·Â), Ãæµ¹-Àı´ÜÀº Motor¿¡¼­.
-    /// - ÇÁ·¹ÀÓ´ç ´Ü ÇÑ ¹ø È£ÃâµÇµµ·Ï ÄÁÆ®·Ñ·¯(Update)¿¡¼­¸¸ È£ÃâÇÏ¼¼¿ä.
-    /// </summary>
-    public void Move(Vector2 direction, Rigidbody2D rbArg, float speed)
-    {
-        // ¹æÇâ Á¤±ÔÈ­ ¹× µ¨Å¸ »êÃâ
-        Vector2 dir = direction.sqrMagnitude > 1e-4f ? direction.normalized : Vector2.zero;
-        Vector2 delta = Mathf.Max(0f, speed) * Time.deltaTime * dir;
-        // Knockback Ãß°¡ º¯À§´Â °°Àº ÇÁ·¹ÀÓ¿¡ ¼Òºñ ÈÄ 0À¸·Î
-        if (_knockbackBudget.sqrMagnitude > 0f)
-        {
-            delta += _knockbackBudget;
-            _knockbackBudget = Vector2.zero;
-        }
-		// ÀÇµµ ¹æÇâÀ» ¼±È£ ¹æÇâÀ¸·Î ÇÏ¿© °ãÄ§ Ã»¼Ò(¸ğ¼­¸® ¶ô ¹æÁö)  // :contentReference[oaicite:12]{index=12}
+	private IntentCollector _col;// = BattleCore.Collector;
+	[Obsolete]
+	public void MoveIntent(Vector2 _, Rigidbody2D __)
+	{
+		MoveIntent(new FixedVector2(_), (byte)1, (ushort)1);
+	}
+	public void MoveIntent(FixedVector2 movement, byte mySID, ushort tick)
+	{
+		_col.QueueIntent(new MoveIntent(mySID, 0, tick, movement));
+	}
+	void Awake()
+	{
+		_col = IntentCollector.Instance;
+	}
+	/*FixedVector2 _knockbackBudget;
+		float distancePerTick = Mathf.Max(0f, force) / Ticker.TicksPerSecond;
+		_knockbackBudget += new FixedVector2(dir * distancePerTick);
+			delta += _knockbackBudget;
+			_knockbackBudget = Vector2.zero;
+		}
+		// ì˜ë„ ë°©í–¥ì„ ì„ í˜¸ ë°©í–¥ìœ¼ë¡œ í•˜ì—¬ ê²¹ì¹¨ ì²­ì†Œ(ëª¨ì„œë¦¬ ë½ ë°©ì§€)
 		var motor = GetComponentInParent<KinematicMotor2D>();
 		if (!motor) return;
 		//motor.RemoveComponent();
 		motor.Depenetration();
-        // ´ÜÀÏ ½ºÀ¬ ÀÌµ¿(Ãæµ¹·Î Àı´Ü/½½¶óÀÌµå´Â Motor Á¤Ã¥¿¡ µû¸§)      // :contentReference[oaicite:13]{index=13}
-        var res = motor.SweepMove(delta);
+		// ë‹¨ì¼ ìŠ¤ìœ• ì´ë™(ì¶©ëŒë¡œ ì ˆë‹¨/ìŠ¬ë¼ì´ë“œëŠ” Motor ì •ì±…ì— ë”°ë¦„)
+		var res = motor.SweepMove(delta);
 		motor.Depenetration();
-        // ¸¶Áö¸· ½ÇÁ¦ ÀÌµ¿ º¤ÅÍ ±â·Ï(¿øÇÑ´Ù¸é ½ÇÁ¦ ¼Óµµ µî 2Â÷ ÆÄ»ı °¡´É)
-        LastMoveDir = direction;//motor.LastMoveVector;
-    }
+		// ë§ˆì§€ë§‰ ì‹¤ì œ ì´ë™ ë²¡í„° ê¸°ë¡(ì›í•œë‹¤ë©´ ì‹¤ì œ ì†ë„ ë“± 2ì°¨ íŒŒìƒ ê°€ëŠ¥)
+		LastMoveDir = direction;//motor.LastMoveVector;
+	}
 
-    /// <summary>
-    /// IPullable: Kinematic¿¡¼­´Â velocity º¯°æÀÌ ¹«ÀÇ¹ÌÇÏ¹Ç·Î,
-    /// "Áï½Ã ÇÑ ¹ø ¹Ğ¸®´Â Ãß°¡ º¯À§" ¿¹»êÀ¸·Î ÀüÈ¯ÇØ ´ÙÀ½ Move¿¡¼­ ¼ÒºñÇÕ´Ï´Ù.
-    /// force ´ÜÀ§´Â '°Å¸®'·Î °£ÁÖ(ÇÊ¿ä ½Ã °¨¼è/½Ã°£±â¹İÀ¸·Î È®Àå °¡´É).
-    /// </summary>
-    public void ApplyKnockback(Vector2 direction, float force)
-    {
-        Vector2 dir = direction.sqrMagnitude > 1e-4f ? direction.normalized : Vector2.zero;
-        _knockbackBudget += dir * Mathf.Max(0f, force);
-    }
+	/// <summary>
+	/// IPullable: Kinematicì—ì„œëŠ” velocity ë³€ê²½ì´ ë¬´ì˜ë¯¸í•˜ë¯€ë¡œ,
+	/// "ì¦‰ì‹œ í•œ ë²ˆ ë°€ë¦¬ëŠ” ì¶”ê°€ ë³€ìœ„" ì˜ˆì‚°ìœ¼ë¡œ ì „í™˜í•´ ë‹¤ìŒ Moveì—ì„œ ì†Œë¹„í•©ë‹ˆë‹¤.
+	/// force ë‹¨ìœ„ëŠ” 'ê±°ë¦¬'ë¡œ ê°„ì£¼(í•„ìš” ì‹œ ê°ì‡ /ì‹œê°„ê¸°ë°˜ìœ¼ë¡œ í™•ì¥ ê°€ëŠ¥).
+	/// </summary>
+	public void ApplyKnockback(Vector2 direction, float force)
+	{
+		Vector2 dir = direction.sqrMagnitude > 1e-4f ? direction.normalized : Vector2.zero;
+		_knockbackBudget += dir * Mathf.Max(0f, force);
+	}*/
 
-    // (Âü°í) ±âÁ¸ Jump/CoroutineÀº ±×´ë·Î µÎµÇ, ½ÇÁ¦ ¼öÁ÷ ÀÌµ¿ÀÌ ÇÊ¿äÇÏ¸é º°µµ ¸ğÅÍ/·¹ÀÌ¾î·Î ºĞ¸® ±ÇÀå -> Jump¸¦ °è¼Ó »ç¿ëÇØ¾ß ÇÒÁö ¸ğ¸£°ÚÀ½
+	// (ì°¸ê³ ) ê¸°ì¡´ Jump/Coroutineì€ ê·¸ëŒ€ë¡œ ë‘ë˜, ì‹¤ì œ ìˆ˜ì§ ì´ë™ì´ í•„ìš”í•˜ë©´ ë³„ë„ ëª¨í„°/ë ˆì´ì–´ë¡œ ë¶„ë¦¬ ê¶Œì¥ -> Jumpë¥¼ ê³„ì† ì‚¬ìš©í•´ì•¼ í• ì§€ ëª¨ë¥´ê² ìŒ
 }
