@@ -55,6 +55,13 @@ public sealed class TheWorld
 	[NonSerialized] private readonly List<SystemRegistration> _systems = new();
 	[SerializeField] private ulong worldVersion;
 
+	/// <summary>
+	/// Delegate used to customize freshly created entities before they are spawned.
+	/// Keeping this callback deterministic allows callers to inject additional data
+	/// without bypassing <see cref="TheWorld"/>'s ownership guarantees.
+	/// </summary>
+	public delegate void EntityConfigurator(ref EntityData entityData);
+
 	public TheWorld()
 	{
 		Initialize();
@@ -122,6 +129,36 @@ public sealed class TheWorld
 		}
 		return false;
 	}
+
+	/// <summary>
+	/// Creates a new entity in a deterministic fashion and registers it with the world.
+	/// Internally, this method leverages the <see cref="EntityData.CreateTemplate"/> helper
+	/// to guarantee that every entity starts from the same zeroed baseline. Callers may
+	/// optionally provide a configurator to fill in gameplay-specific fields before the
+	/// entity is spawned.
+	/// </summary>
+	/// <param name="entityType">High-level classification for downstream systems.</param>
+	/// <param name="position">Initial world transform expressed in fixed units.</param>
+	/// <param name="collisionShape">Deterministic collision primitive assigned to the entity.</param>
+	/// <param name="teamId">Owning team; defaults to the player's side for convenience.</param>
+	/// <param name="configurator">Optional deterministic callback for additional initialization.</param>
+	/// <returns>The <see cref="EntityId"/> assigned by the world.</returns>
+	public EntityId CreateEntity(
+		EntityType entityType,
+		FixedVector2 position,
+		HitCircle collisionShape,
+		Team teamId = Team.Me,
+		EntityConfigurator configurator = null)
+	{
+		var entity = EntityData.CreateTemplate(position, collisionShape, teamId);
+		entity.entityType = entityType;
+
+		configurator?.Invoke(ref entity);
+
+		// Delegate to SpawnEntity so that identifier allocation remains centralized.
+		return SpawnEntity(entity);
+	}
+	/** Future extension: expose overloads that accept prefab-like blueprints for richer authoring. */
 
 	/// <summary>
 	/// Spawns an entity by reserving a deterministic identifier and copying the template.

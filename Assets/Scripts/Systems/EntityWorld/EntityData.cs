@@ -118,6 +118,14 @@ public struct EntityData
 	/// </summary>
 	[SerializeField]
 	public bool isActive;
+
+	/// <summary>
+	/// High-level classification used by systems that need to filter by archetype.
+	/// This remains under <see cref="TheWorld"/>'s control so that entity ownership
+	/// is centralized and deterministic.
+	/// </summary>
+	[SerializeField]
+	public EntityType entityType;
 	
 	/// <summary>
 	/// World-space position expressed in fixed units.
@@ -202,6 +210,7 @@ public struct EntityData
 		{
 			id = EntityId.Invalid, //?
 			isActive = false,
+			entityType = EntityType.None,
 			transform = position,
 			velocity = new FixedVector2(0, 0),
 			externalImpulse = new FixedVector2(0, 0),
